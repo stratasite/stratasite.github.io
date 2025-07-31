@@ -33,7 +33,7 @@
         }
 
         .logo img {
-            max-width: 800px;
+            max-width: 100%;
             height: auto;
             border-radius: 10px;
         }
@@ -42,6 +42,10 @@
             margin-top: -60px;
             border-radius: 10px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .substack-embed iframe .embed-page-inner{
+          display: none;
         }
 
         /* Custom Substack form styling if you want to create your own */
@@ -124,7 +128,7 @@
 
         <!-- Option 1: Substack embed iframe (replace with your actual Substack embed code) -->
         <div class="substack-embed">
-            <iframe src="https://ajoabraham.substack.com/embed" width="480" height="320" style="border:1px solid #EEE; background:white;" frameborder="0" scrolling="no"></iframe><!-- Replace this with your actual Substack embed code -->
+            <iframe src="https://ajoabraham.substack.com/embed" width="100%" height="280" style="border:1px solid #EEE; background:white;" frameborder="0" scrolling="no"></iframe><!-- Replace this with your actual Substack embed code -->
       </div>
 
         <!-- Option 2: Custom newsletter signup form (alternative to Substack embed) -->
