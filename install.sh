@@ -257,7 +257,7 @@ install_gem() {
       echo ""
       print_info "The package may not be released yet, or there may be a temporary issue."
       echo ""
-      print_info "Documentation: https://strata.do/developer-documentation"
+      print_info "Documentation: https://strata.do/developer-docs"
     else
       print_error "Failed to install Strata CLI."
       echo ""
@@ -315,7 +315,7 @@ print_completion() {
   echo ""
   printf "  %bDocumentation:%b\n" "${BOLD}" "${NC}"
   echo ""
-  echo "    https://docs.strata.do"
+  echo "    https://strata.do/developer-docs"
   echo ""
 }
 
