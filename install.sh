@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Strata CLI Installation Script
 # This script installs the Strata CLI tool with all necessary prerequisites.
 #
 # Usage:
-#   curl -fsSL https://install.strata.site/install.sh | bash
+#   curl -fsSL https://strata.do/install.sh | sh
 #
 # Requirements:
 #   - Ruby >= 3.4.4
@@ -23,44 +23,45 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 BOLD='\033[1m'
 
-# Print functions
+# Print functions (using printf for POSIX compatibility)
 print_header() {
-  echo -e "\n${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  echo -e "${BOLD}${BLUE}  Strata CLI Installer${NC}"
-  echo -e "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+  printf "\n%b━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%b\n" "${BOLD}${BLUE}" "${NC}"
+  printf "%b  Strata CLI Installer%b\n" "${BOLD}${BLUE}" "${NC}"
+  printf "%b━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%b\n\n" "${BOLD}${BLUE}" "${NC}"
 }
 
 print_step() {
-  echo -e "${CYAN}[•]${NC} $1"
+  printf "%b[•]%b %s\n" "${CYAN}" "${NC}" "$1"
 }
 
 print_success() {
-  echo -e "${GREEN}[✓]${NC} $1"
+  printf "%b[✓]%b %s\n" "${GREEN}" "${NC}" "$1"
 }
 
 print_warning() {
-  echo -e "${YELLOW}[!]${NC} $1"
+  printf "%b[!]%b %s\n" "${YELLOW}" "${NC}" "$1"
 }
 
 print_error() {
-  echo -e "${RED}[✗]${NC} $1"
+  printf "%b[✗]%b %s\n" "${RED}" "${NC}" "$1"
 }
 
 print_info() {
-  echo -e "${BLUE}[i]${NC} $1"
+  printf "%b[i]%b %s\n" "${BLUE}" "${NC}" "$1"
 }
 
 # Version comparison function
 # Returns 0 if version1 >= version2, 1 otherwise
 version_gte() {
-  local version1=$1
-  local version2=$2
+  version1=$1
+  version2=$2
   
   # Use sort -V for version comparison
-  if [[ "$(printf '%s\n' "$version2" "$version1" | sort -V | head -n1)" == "$version2" ]]; then
+  result=$(printf '%s\n' "$version2" "$version1" | sort -V | head -n1)
+  if [ "$result" = "$version2" ]; then
     return 0
   else
     return 1
@@ -86,27 +87,27 @@ check_ruby() {
     echo ""
     print_info "Strata CLI requires Ruby ${REQUIRED_RUBY_VERSION} or higher."
     echo ""
-    echo -e "  ${BOLD}To install Ruby, you can use one of the following methods:${NC}"
+    printf "  %bTo install Ruby, you can use one of the following methods:%b\n" "${BOLD}" "${NC}"
     echo ""
-    echo -e "  ${YELLOW}Using rbenv (recommended):${NC}"
+    printf "  %bUsing rbenv (recommended):%b\n" "${YELLOW}" "${NC}"
     echo "    brew install rbenv ruby-build"
     echo "    rbenv install ${REQUIRED_RUBY_VERSION}"
     echo "    rbenv global ${REQUIRED_RUBY_VERSION}"
     echo ""
-    echo -e "  ${YELLOW}Using asdf:${NC}"
+    printf "  %bUsing asdf:%b\n" "${YELLOW}" "${NC}"
     echo "    asdf plugin add ruby"
     echo "    asdf install ruby ${REQUIRED_RUBY_VERSION}"
     echo "    asdf global ruby ${REQUIRED_RUBY_VERSION}"
     echo ""
-    echo -e "  ${YELLOW}Using RVM:${NC}"
+    printf "  %bUsing RVM:%b\n" "${YELLOW}" "${NC}"
     echo "    curl -sSL https://get.rvm.io | bash -s stable"
     echo "    rvm install ${REQUIRED_RUBY_VERSION}"
     echo "    rvm use ${REQUIRED_RUBY_VERSION} --default"
     echo ""
-    echo -e "  ${YELLOW}On macOS (system Ruby is outdated):${NC}"
+    printf "  %bOn macOS (system Ruby is outdated):%b\n" "${YELLOW}" "${NC}"
     echo "    brew install ruby"
     echo ""
-    echo -e "  ${YELLOW}On Ubuntu/Debian:${NC}"
+    printf "  %bOn Ubuntu/Debian:%b\n" "${YELLOW}" "${NC}"
     echo "    sudo apt update && sudo apt install ruby-full"
     echo ""
     print_info "After installing Ruby, please run this installer again."
@@ -114,12 +115,10 @@ check_ruby() {
   fi
   
   # Get installed Ruby version
-  local ruby_version_full
   ruby_version_full=$(ruby --version | awk '{print $2}')
-  local ruby_version
   ruby_version=$(extract_version "$ruby_version_full")
   
-  if [[ -z "$ruby_version" ]]; then
+  if [ -z "$ruby_version" ]; then
     print_error "Could not determine Ruby version."
     exit 1
   fi
@@ -135,22 +134,22 @@ check_ruby() {
     
     # Detect Ruby version manager
     if command_exists rbenv; then
-      echo -e "  ${BOLD}You appear to be using rbenv. To upgrade:${NC}"
+      printf "  %bYou appear to be using rbenv. To upgrade:%b\n" "${BOLD}" "${NC}"
       echo "    rbenv install ${REQUIRED_RUBY_VERSION}"
       echo "    rbenv global ${REQUIRED_RUBY_VERSION}"
       echo "    rbenv rehash"
     elif command_exists asdf && asdf plugin list 2>/dev/null | grep -q ruby; then
-      echo -e "  ${BOLD}You appear to be using asdf. To upgrade:${NC}"
+      printf "  %bYou appear to be using asdf. To upgrade:%b\n" "${BOLD}" "${NC}"
       echo "    asdf install ruby ${REQUIRED_RUBY_VERSION}"
       echo "    asdf global ruby ${REQUIRED_RUBY_VERSION}"
     elif command_exists rvm; then
-      echo -e "  ${BOLD}You appear to be using RVM. To upgrade:${NC}"
+      printf "  %bYou appear to be using RVM. To upgrade:%b\n" "${BOLD}" "${NC}"
       echo "    rvm install ${REQUIRED_RUBY_VERSION}"
       echo "    rvm use ${REQUIRED_RUBY_VERSION} --default"
     else
-      echo -e "  ${BOLD}To upgrade Ruby, consider using a version manager:${NC}"
+      printf "  %bTo upgrade Ruby, consider using a version manager:%b\n" "${BOLD}" "${NC}"
       echo ""
-      echo -e "  ${YELLOW}rbenv (recommended):${NC}"
+      printf "  %brbenv (recommended):%b\n" "${YELLOW}" "${NC}"
       echo "    brew install rbenv ruby-build"
       echo "    rbenv install ${REQUIRED_RUBY_VERSION}"
       echo "    rbenv global ${REQUIRED_RUBY_VERSION}"
@@ -172,27 +171,26 @@ check_git() {
     echo ""
     print_info "Strata CLI requires Git for project management."
     echo ""
-    echo -e "  ${BOLD}To install Git:${NC}"
+    printf "  %bTo install Git:%b\n" "${BOLD}" "${NC}"
     echo ""
-    echo -e "  ${YELLOW}On macOS:${NC}"
+    printf "  %bOn macOS:%b\n" "${YELLOW}" "${NC}"
     echo "    brew install git"
     echo "    # or"
     echo "    xcode-select --install"
     echo ""
-    echo -e "  ${YELLOW}On Ubuntu/Debian:${NC}"
+    printf "  %bOn Ubuntu/Debian:%b\n" "${YELLOW}" "${NC}"
     echo "    sudo apt update && sudo apt install git"
     echo ""
-    echo -e "  ${YELLOW}On Fedora:${NC}"
+    printf "  %bOn Fedora:%b\n" "${YELLOW}" "${NC}"
     echo "    sudo dnf install git"
     echo ""
-    echo -e "  ${YELLOW}On Windows:${NC}"
+    printf "  %bOn Windows:%b\n" "${YELLOW}" "${NC}"
     echo "    Download from https://git-scm.com/download/win"
     echo ""
     print_info "After installing Git, please run this installer again."
     exit 1
   fi
   
-  local git_version
   git_version=$(git --version | awk '{print $3}')
   print_success "Git ${git_version} is installed"
 }
@@ -202,13 +200,13 @@ check_existing_installation() {
   print_step "Checking for existing Strata CLI installation..."
   
   if gem list -i "^${GEM_NAME}$" >/dev/null 2>&1; then
-    local installed_version
     installed_version=$(gem list "${GEM_NAME}" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[^)]*' | head -1)
     print_warning "Strata CLI is already installed (version ${installed_version})"
     echo ""
     
     # Ask user if they want to reinstall/upgrade
-    read -r -p "Do you want to reinstall/upgrade? [y/N] " response
+    printf "Do you want to reinstall/upgrade? [y/N] "
+    read -r response
     case "$response" in
       [yY][eE][sS]|[yY])
         print_info "Proceeding with reinstallation..."
@@ -219,7 +217,7 @@ check_existing_installation() {
         echo ""
         print_success "Strata CLI is ready to use!"
         echo ""
-        echo -e "  Run ${BOLD}strata --help${NC} to get started."
+        printf "  Run %bstrata --help%b to get started.\n" "${BOLD}" "${NC}"
         echo ""
         exit 0
         ;;
@@ -235,10 +233,9 @@ install_gem() {
   echo ""
   
   # Check if user has write permissions to gem directory
-  local gem_dir
   gem_dir=$(gem environment gemdir 2>/dev/null)
   
-  if [[ -n "$gem_dir" ]] && [[ ! -w "$gem_dir" ]]; then
+  if [ -n "$gem_dir" ] && [ ! -w "$gem_dir" ]; then
     print_warning "Installing to system gem directory requires sudo."
     print_info "Consider using a Ruby version manager (rbenv, asdf, rvm) for user-level installations."
     echo ""
@@ -273,7 +270,6 @@ verify_installation() {
   fi
   
   if command_exists strata; then
-    local installed_version
     installed_version=$(strata version 2>/dev/null || strata --version 2>/dev/null || echo "unknown")
     print_success "Strata CLI is now available (${installed_version})"
   else
@@ -285,9 +281,8 @@ verify_installation() {
     echo ""
     
     # Try to find where the gem was installed
-    local gem_bin
     gem_bin=$(gem environment | grep "EXECUTABLE DIRECTORY" | awk -F': ' '{print $2}')
-    if [[ -n "$gem_bin" ]]; then
+    if [ -n "$gem_bin" ]; then
       print_info "The strata command should be at: ${gem_bin}/strata"
       echo ""
       echo "  If it's not in your PATH, add this to your shell profile:"
@@ -299,17 +294,17 @@ verify_installation() {
 # Print completion message
 print_completion() {
   echo ""
-  echo -e "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  echo -e "${BOLD}${GREEN}  Installation Complete!${NC}"
-  echo -e "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  printf "%b━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%b\n" "${BOLD}${GREEN}" "${NC}"
+  printf "%b  Installation Complete!%b\n" "${BOLD}${GREEN}" "${NC}"
+  printf "%b━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%b\n" "${BOLD}${GREEN}" "${NC}"
   echo ""
-  echo -e "  ${BOLD}Getting Started:${NC}"
+  printf "  %bGetting Started:%b\n" "${BOLD}" "${NC}"
   echo ""
   echo "    strata --help          Show available commands"
   echo "    strata init            Initialize a new Strata project"
   echo "    strata datasource add  Add a datasource connection"
   echo ""
-  echo -e "  ${BOLD}Documentation:${NC}"
+  printf "  %bDocumentation:%b\n" "${BOLD}" "${NC}"
   echo ""
   echo "    https://docs.strata.site"
   echo ""
