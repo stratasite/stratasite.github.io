@@ -204,13 +204,13 @@ check_existing_installation() {
     print_warning "Strata CLI is already installed (version ${installed_version})"
     echo ""
     
-    # Ask user if they want to reinstall/upgrade
+    # Ask user if they want to reinstall/upgrade (read from TTY when piped)
     printf "Do you want to reinstall/upgrade? [y/N] "
-    read -r response
+    read -r response < /dev/tty
     case "$response" in
       [yY][eE][sS]|[yY])
         print_info "Proceeding with reinstallation..."
-        return 1
+        return 0
         ;;
       *)
         print_info "Keeping existing installation."
@@ -224,7 +224,7 @@ check_existing_installation() {
     esac
   fi
   
-  return 1
+  return 0
 }
 
 # Install the gem
@@ -235,29 +235,38 @@ install_gem() {
   # Check if user has write permissions to gem directory
   gem_dir=$(gem environment gemdir 2>/dev/null)
   
-  if [ -n "$gem_dir" ] && [ ! -w "$gem_dir" ]; then
-    print_warning "Installing to system gem directory requires sudo."
-    print_info "Consider using a Ruby version manager (rbenv, asdf, rvm) for user-level installations."
-    echo ""
-    
-    if sudo gem install "${GEM_NAME}" --source "${GEM_SOURCE}"; then
-      print_success "Strata CLI installed successfully!"
+  run_gem_install() {
+    if [ -n "$gem_dir" ] && [ ! -w "$gem_dir" ]; then
+      print_warning "Installing to system gem directory requires sudo."
+      print_info "Consider using a Ruby version manager (rbenv, asdf, rvm) for user-level installations."
+      echo ""
+      sudo gem install "${GEM_NAME}" --source "${GEM_SOURCE}" --pre 2>&1
+    else
+      gem install "${GEM_NAME}" --source "${GEM_SOURCE}" --pre 2>&1
+    fi
+  }
+  
+  gem_output=$(run_gem_install) || true
+  gem_exit=$?
+  
+  echo "$gem_output"
+  
+  if [ $gem_exit -ne 0 ]; then
+    if echo "$gem_output" | grep -q "Could not find a valid gem"; then
+      print_error "The gem '${GEM_NAME}' was not found on RubyGems.org."
+      echo ""
+      print_info "The package may not be released yet, or there may be a temporary issue."
+      echo ""
+      print_info "Documentation: https://strata.do/developer-documentation"
     else
       print_error "Failed to install Strata CLI."
       echo ""
       print_info "Please check the error message above and try again."
-      exit 1
     fi
-  else
-    if gem install "${GEM_NAME}" --source "${GEM_SOURCE}"; then
-      print_success "Strata CLI installed successfully!"
-    else
-      print_error "Failed to install Strata CLI."
-      echo ""
-      print_info "Please check the error message above and try again."
-      exit 1
-    fi
+    exit 1
   fi
+  
+  print_success "Strata CLI installed successfully!"
 }
 
 # Verify installation
@@ -306,7 +315,7 @@ print_completion() {
   echo ""
   printf "  %bDocumentation:%b\n" "${BOLD}" "${NC}"
   echo ""
-  echo "    https://docs.strata.site"
+  echo "    https://docs.strata.do"
   echo ""
 }
 
