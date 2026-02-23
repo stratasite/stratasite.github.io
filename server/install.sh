@@ -288,7 +288,7 @@ echo -e "  ${DIM}Press Enter to accept the default shown in [brackets].${RESET}"
 # Format: key|description|default|required|secret
 PROMPTS=(
   "LICENSE_KEY|Your Strata license key (JWT token from purchase email)||true|secret"
-  "DB_HOST|PostgreSQL hostname or IP (use host.docker.internal for a DB on this machine)||true|"
+  "DB_HOST|PostgreSQL hostname or IP||true|"
   "DB_PORT|PostgreSQL port|5432|true|"
   "DB_USERNAME|PostgreSQL username||true|"
   "DB_PASSWORD|PostgreSQL password||true|secret"
