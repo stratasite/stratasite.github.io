@@ -323,9 +323,9 @@ done
 DEFAULTS=(
   "RAILS_LOG_LEVEL|info"
   "APP_HOST|localhost"
-  "APP_PROTOCOL|https"
-  "ASSUME_SSL|true"
-  "FORCE_SSL|true"
+  "APP_PROTOCOL|http"
+  "ASSUME_SSL|false"
+  "FORCE_SSL|false"
 )
 
 for entry in "${DEFAULTS[@]}"; do
