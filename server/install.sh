@@ -240,7 +240,7 @@ cat > "$INSTALL_DIR/docker-compose.yml" << 'COMPOSE_EOF'
 # Managed by the Strata installer. All configuration belongs in .env.
 
 services:
-  strata:
+  web:
     image: ghcr.io/stratasite/strata:${STRATA_VERSION:-latest}
     ports:
       - "${PORT:-3000}:80"
@@ -340,8 +340,53 @@ if [ "$prompted" = false ]; then
 else
   echo ""
   success "Configuration saved to .env"
-  echo -e "  ${DIM}Advanced settings (SMTP, SSL, S3 storage) can be configured later in:${RESET}"
-  echo -e "  ${DIM}${ENV_FILE}${RESET}"
+fi
+
+# ── Step 7b: Optional SMTP configuration ─────────────────────
+#
+# Email is optional. If not configured, the application will show
+# a message asking users to contact their system administrator.
+
+smtp_configured=$(grep "^SMTP_HOST=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || true)
+
+if [ -z "$smtp_configured" ]; then
+  echo ""
+  info "Email (SMTP) configuration"
+  echo -e "  ${DIM}Email enables password resets, share notifications, and invites.${RESET}"
+  echo -e "  ${DIM}You can skip this and configure it later in .env.${RESET}"
+  echo ""
+  read -rp "  Would you like to configure email (SMTP) now? [y/N]: " setup_smtp < /dev/tty
+  setup_smtp="${setup_smtp:-N}"
+
+  if [[ "$setup_smtp" =~ ^[Yy]$ ]]; then
+    # SMTP_HOST is required if configuring email
+    smtp_host=$(prompt "SMTP_HOST" "SMTP server hostname (e.g. smtp.gmail.com)" "" "true")
+    write_env "SMTP_HOST" "$smtp_host" "$ENV_FILE"
+
+    smtp_port=$(prompt "SMTP_PORT" "SMTP server port" "587" "false")
+    [ -n "$smtp_port" ] && write_env "SMTP_PORT" "$smtp_port" "$ENV_FILE"
+
+    smtp_user=$(prompt "SMTP_USERNAME" "SMTP username (leave empty if no auth required)" "" "false")
+    [ -n "$smtp_user" ] && write_env "SMTP_USERNAME" "$smtp_user" "$ENV_FILE"
+
+    if [ -n "$smtp_user" ]; then
+      smtp_pass=$(prompt_secret "SMTP_PASSWORD" "SMTP password" "false")
+      [ -n "$smtp_pass" ] && write_env "SMTP_PASSWORD" "$smtp_pass" "$ENV_FILE"
+
+      smtp_auth=$(prompt "SMTP_AUTHENTICATION" "Authentication method" "plain" "false")
+      [ -n "$smtp_auth" ] && write_env "SMTP_AUTHENTICATION" "$smtp_auth" "$ENV_FILE"
+    fi
+
+    smtp_tls=$(prompt "SMTP_ENABLE_STARTTLS" "Enable STARTTLS" "true" "false")
+    [ -n "$smtp_tls" ] && write_env "SMTP_ENABLE_STARTTLS" "$smtp_tls" "$ENV_FILE"
+
+    echo ""
+    success "SMTP configuration saved"
+  else
+    echo ""
+    echo -e "  ${DIM}Skipped. You can configure SMTP later by adding SMTP_HOST to:${RESET}"
+    echo -e "  ${DIM}${ENV_FILE}${RESET}"
+  fi
 fi
 
 # ── Step 8: Pull image ───────────────────────────────────────────
