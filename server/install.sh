@@ -335,6 +335,13 @@ for entry in "${DEFAULTS[@]}"; do
   fi
 done
 
+# Generate SECRET_KEY_BASE if not already set
+if ! grep -q "^SECRET_KEY_BASE=" "$ENV_FILE" 2>/dev/null; then
+  secret=$(openssl rand -hex 64)
+  echo "SECRET_KEY_BASE=${secret}" >> "$ENV_FILE"
+  success "Generated SECRET_KEY_BASE"
+fi
+
 if [ "$prompted" = false ]; then
   success "All configuration values are set"
 else
