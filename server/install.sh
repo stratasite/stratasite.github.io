@@ -479,9 +479,10 @@ info "Waiting for Strata to be ready..."
 
 healthy=false
 for i in $(seq 1 30); do
-  # Check if the main container has crashed
-  strata_status=$(docker compose ps strata --format '{{.State}}' 2>/dev/null || echo "")
-  if [ "$strata_status" = "exited" ] || [ "$strata_status" = "dead" ]; then
+  # Check if either service container has crashed
+  web_status=$(docker compose ps web --format '{{.State}}' 2>/dev/null || echo "")
+  jobs_status=$(docker compose ps jobs --format '{{.State}}' 2>/dev/null || echo "")
+  if [ "$web_status" = "exited" ] || [ "$web_status" = "dead" ] || [ "$jobs_status" = "exited" ] || [ "$jobs_status" = "dead" ]; then
     echo ""
     echo -e "${RED}═══════════════════════════════════════════════════════${RESET}"
     echo -e "${RED}  Strata failed to start.${RESET}"
@@ -489,7 +490,7 @@ for i in $(seq 1 30); do
     echo ""
     echo -e "  ${BOLD}Recent logs:${RESET}"
     echo ""
-    docker compose logs --tail 20 strata 2>/dev/null
+    docker compose logs --tail 20 web jobs 2>/dev/null
     echo ""
     echo -e "  ${BOLD}How to fix:${RESET}"
     echo -e "  1. Edit the config:          ${BOLD}nano $INSTALL_DIR/.env${RESET}"
@@ -517,7 +518,7 @@ if [ "$healthy" = false ]; then
   echo ""
   echo -e "  ${BOLD}Recent logs:${RESET}"
   echo ""
-  docker compose logs --tail 15 strata 2>/dev/null
+  docker compose logs --tail 15 web jobs 2>/dev/null
   echo ""
   echo -e "  The container is running but hasn't passed the health check yet."
   echo -e "  This can be normal on first run (database setup takes time)."
