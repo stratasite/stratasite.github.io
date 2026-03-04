@@ -124,6 +124,30 @@ write_env() {
   fi
 }
 
+# Resolve config value with precedence:
+#   1) .env file
+#   2) current shell environment
+# Returns empty string if neither is set.
+resolve_config_value() {
+  local key="$1" file="$2"
+  local file_value=""
+  local shell_value=""
+
+  file_value=$(grep "^${key}=" "$file" 2>/dev/null | head -1 | cut -d'=' -f2- || true)
+  if [ -n "$file_value" ]; then
+    echo "$file_value"
+    return
+  fi
+
+  shell_value="${!key-}"
+  if [ -n "$shell_value" ]; then
+    echo "$shell_value"
+    return
+  fi
+
+  echo ""
+}
+
 version_gte() {
   printf '%s\n%s\n' "$2" "$1" | sort -V -C
 }
@@ -253,7 +277,7 @@ services:
 
   jobs:
     image: ghcr.io/stratasite/strata:${STRATA_VERSION:-latest}
-    command: ["./bin/rails", "solid_queue:start"]
+    command: ["./bin/jobs"]
     env_file: .env
     environment:
       RAILS_ENV: production
@@ -300,11 +324,11 @@ prompted=false
 for entry in "${PROMPTS[@]}"; do
   IFS='|' read -r key description default_value required secret <<< "$entry"
 
-  # Read current value from .env
-  current_value=$(grep "^${key}=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d'=' -f2- || true)
+  current_value=$(resolve_config_value "$key" "$ENV_FILE")
 
-  # Skip if already has a value
+  # If the value already exists in .env or shell env, persist to .env and skip prompt.
   if [ -n "$current_value" ]; then
+    write_env "$key" "$current_value" "$ENV_FILE"
     continue
   fi
 
@@ -330,16 +354,42 @@ DEFAULTS=(
 
 for entry in "${DEFAULTS[@]}"; do
   IFS='|' read -r key default_value <<< "$entry"
-  if ! grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
-    echo "${key}=${default_value}" >> "$ENV_FILE"
-  fi
+  current_value=$(resolve_config_value "$key" "$ENV_FILE")
+  value_to_write="${current_value:-$default_value}"
+  write_env "$key" "$value_to_write" "$ENV_FILE"
 done
 
-# Generate SECRET_KEY_BASE if not already set
-if ! grep -q "^SECRET_KEY_BASE=" "$ENV_FILE" 2>/dev/null; then
+# Generate Strata encryption secrets if not already set
+if [ -z "$(resolve_config_value "STRATA_SECRET_KEY_BASE" "$ENV_FILE")" ]; then
   secret=$(openssl rand -hex 64)
-  echo "SECRET_KEY_BASE=${secret}" >> "$ENV_FILE"
-  success "Generated SECRET_KEY_BASE"
+  write_env "STRATA_SECRET_KEY_BASE" "$secret" "$ENV_FILE"
+  success "Generated STRATA_SECRET_KEY_BASE"
+else
+  write_env "STRATA_SECRET_KEY_BASE" "$(resolve_config_value "STRATA_SECRET_KEY_BASE" "$ENV_FILE")" "$ENV_FILE"
+fi
+
+if [ -z "$(resolve_config_value "STRATA_ENCRYPTION_PRIMARY_KEY" "$ENV_FILE")" ]; then
+  secret=$(openssl rand -hex 16)
+  write_env "STRATA_ENCRYPTION_PRIMARY_KEY" "$secret" "$ENV_FILE"
+  success "Generated STRATA_ENCRYPTION_PRIMARY_KEY"
+else
+  write_env "STRATA_ENCRYPTION_PRIMARY_KEY" "$(resolve_config_value "STRATA_ENCRYPTION_PRIMARY_KEY" "$ENV_FILE")" "$ENV_FILE"
+fi
+
+if [ -z "$(resolve_config_value "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$ENV_FILE")" ]; then
+  secret=$(openssl rand -hex 16)
+  write_env "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$secret" "$ENV_FILE"
+  success "Generated STRATA_ENCRYPTION_DETERMINISTIC_KEY"
+else
+  write_env "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$(resolve_config_value "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$ENV_FILE")" "$ENV_FILE"
+fi
+
+if [ -z "$(resolve_config_value "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$ENV_FILE")" ]; then
+  secret=$(openssl rand -hex 16)
+  write_env "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$secret" "$ENV_FILE"
+  success "Generated STRATA_ENCRYPTION_KEY_DERIVATION_SALT"
+else
+  write_env "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$(resolve_config_value "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$ENV_FILE")" "$ENV_FILE"
 fi
 
 if [ "$prompted" = false ]; then
@@ -354,7 +404,7 @@ fi
 # Email is optional. If not configured, the application will show
 # a message asking users to contact their system administrator.
 
-smtp_configured=$(grep "^SMTP_HOST=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || true)
+smtp_configured=$(resolve_config_value "SMTP_HOST" "$ENV_FILE")
 
 if [ -z "$smtp_configured" ]; then
   echo ""
@@ -401,7 +451,7 @@ fi
 echo ""
 info "Pulling Strata image..."
 
-strata_version=$(grep "^STRATA_VERSION=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+strata_version=$(resolve_config_value "STRATA_VERSION" "$ENV_FILE")
 pull_tag="${strata_version:-latest}"
 
 docker pull "$IMAGE:$pull_tag" || fail "Failed to pull image. Check your network and registry access."
@@ -421,7 +471,7 @@ docker compose up -d || fail "Failed to start containers."
 
 # ── Step 10: Wait for health check ───────────────────────────────
 
-port=$(grep "^PORT=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "3000")
+port=$(resolve_config_value "PORT" "$ENV_FILE")
 port="${port:-3000}"
 health_url="http://localhost:${port}/up"
 
