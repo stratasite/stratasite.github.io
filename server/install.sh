@@ -5,6 +5,7 @@
 #
 # Install:   curl -fsSL https://strata.do/server/install.sh | bash
 # Upgrade:   re-run the same command in the install directory
+# Env file:  curl -fsSL https://strata.do/server/install.sh | bash -s -- --write-env-example ./.env.example
 #
 # What this script does:
 #   1. Checks Docker and Docker Compose are installed and recent enough
@@ -32,11 +33,101 @@ DIM='\033[2m'
 RESET='\033[0m'
 
 INSTALL_DIR="${STRATA_INSTALL_DIR:-$(pwd)/strata}"
-REGISTRY="ghcr.io"
-IMAGE="ghcr.io/stratasite/strata"
+REGISTRY="registry.gitlab.com"
+IMAGE="registry.gitlab.com/stratado/server"
 MIN_DOCKER_VERSION="24"
 MIN_COMPOSE_VERSION="2.20"
 LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
+
+write_env_example_file() {
+  local target_path="$1"
+  cat > "$target_path" << 'ENV_EOF'
+# Strata Server Environment Template
+# Source of truth for customer-facing runtime configuration.
+# Copy this file to .env and replace placeholder values.
+
+# ===================================================================
+# Required: License and Database Connectivity
+# ===================================================================
+
+# License token provided by Strata.
+LICENSE_KEY=replace_with_license_key
+
+# PostgreSQL connection used by Strata (primary, queue, cache, cable DBs).
+DB_HOST=replace_with_db_host
+DB_PORT=5432
+DB_USERNAME=replace_with_db_username
+DB_PASSWORD=replace_with_db_password
+
+# ===================================================================
+# Required: Strata Encryption and Signing Secrets
+# ===================================================================
+
+# 128 hex chars (generate with: openssl rand -hex 64)
+# Used for session and token signing.
+STRATA_SECRET_KEY_BASE=replace_with_secret_key_base
+
+# Each must be 32 hex chars (generate each with: openssl rand -hex 16)
+# Used for data-at-rest encryption internals.
+STRATA_ENCRYPTION_PRIMARY_KEY=replace_with_primary_key
+STRATA_ENCRYPTION_DETERMINISTIC_KEY=replace_with_deterministic_key
+STRATA_ENCRYPTION_KEY_DERIVATION_SALT=replace_with_key_derivation_salt
+
+# ===================================================================
+# Common Application Settings
+# ===================================================================
+
+# Host port exposed by docker compose (maps to container port 80).
+PORT=3000
+
+# Public hostname and protocol used for generated URLs.
+APP_HOST=localhost
+APP_PROTOCOL=http
+
+# SSL behavior behind reverse proxy / load balancer.
+ASSUME_SSL=false
+FORCE_SSL=false
+
+# Logging level (debug, info, warn, error, fatal).
+RAILS_LOG_LEVEL=info
+
+# Image tag to run; pin in production (avoid relying only on latest).
+STRATA_VERSION=latest
+
+# ===================================================================
+# Optional: Email (SMTP)
+# ===================================================================
+
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_USERNAME=
+# SMTP_PASSWORD=
+# SMTP_AUTHENTICATION=plain
+# SMTP_ENABLE_STARTTLS=true
+
+# ===================================================================
+# Optional: File Storage Backend
+# ===================================================================
+
+# local | amazon | google | microsoft
+# STORAGE_BACKEND=local
+
+# Add provider-specific variables when using non-local storage backends.
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
+# AWS_REGION=
+# S3_BUCKET=
+# S3_ENDPOINT=
+ENV_EOF
+}
+
+if [ "${1:-}" = "--write-env-example" ]; then
+  target="${2:-./.env.example}"
+  mkdir -p "$(dirname "$target")"
+  write_env_example_file "$target"
+  echo "[strata] Wrote environment template to $target"
+  exit 0
+fi
 
 # ── Helpers ───────────────────────────────────────────────────────
 
@@ -235,6 +326,7 @@ fi
 mkdir -p "$INSTALL_DIR"
 LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
 
+
 # ── Step 4: Registry authentication ──────────────────────────────
 
 echo ""
@@ -243,14 +335,15 @@ info "Registry authentication"
 if docker pull "$IMAGE:latest" --quiet &>/dev/null 2>&1; then
   success "Already authenticated with $REGISTRY"
 else
-  echo -e "  ${DIM}You need an access token to pull the Strata image.${RESET}"
-  echo -e "  ${DIM}This was provided with your license purchase.${RESET}"
+  echo -e "  ${DIM}You need your GitLab container registry credentials to pull the Strata image.${RESET}"
+  echo -e "  ${DIM}These were provided with your license purchase.${RESET}"
   echo ""
 
-  registry_token=$(prompt_secret "REGISTRY_TOKEN" "Your container registry access token" "true")
+  registry_username=$(prompt "REGISTRY_USERNAME" "Your GitLab registry username (user or deploy token username)" "" "true")
+  registry_token=$(prompt_secret "REGISTRY_TOKEN" "Your GitLab registry token/password" "true")
 
-  echo "$registry_token" | docker login "$REGISTRY" -u strata-customer --password-stdin 2>/dev/null \
-    || fail "Authentication failed. Check your access token and try again."
+  echo "$registry_token" | docker login "$REGISTRY" -u "$registry_username" --password-stdin 2>/dev/null \
+    || fail "Authentication failed. Check your registry username/token and try again."
 
   success "Authenticated with $REGISTRY"
 fi
@@ -265,7 +358,7 @@ cat > "$INSTALL_DIR/docker-compose.yml" << 'COMPOSE_EOF'
 
 services:
   web:
-    image: ghcr.io/stratasite/strata:${STRATA_VERSION:-latest}
+    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
     ports:
       - "${PORT:-3000}:80"
     env_file: .env
@@ -276,7 +369,7 @@ services:
     restart: unless-stopped
 
   jobs:
-    image: ghcr.io/stratasite/strata:${STRATA_VERSION:-latest}
+    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
     command: ["./bin/jobs"]
     env_file: .env
     environment:
