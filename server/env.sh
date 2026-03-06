@@ -17,8 +17,6 @@ strata_encryption_key_derivation_salt="$(openssl rand -hex 16)"
 
 cat > "$target" << ENV_EOF
 # Strata Server Environment Template
-# Source of truth for customer-facing runtime configuration.
-# Copy this file to .env and replace placeholder values.
 
 # ===================================================================
 # Required: License and Database Connectivity
@@ -49,22 +47,21 @@ STRATA_ENCRYPTION_KEY_DERIVATION_SALT=${strata_encryption_key_derivation_salt}
 # Common Application Settings
 # ===================================================================
 
-# Host port exposed by docker compose (maps to container port 80).
-PORT=3000
-
 # Public hostname and protocol used for generated URLs.
-APP_HOST=localhost
-APP_PROTOCOL=http
+# APP_HOST=localhost
+# APP_PROTOCOL=http
+# Host port exposed by docker compose (maps to container port 80).
+# PORT=3000
 
 # SSL behavior behind reverse proxy / load balancer.
-ASSUME_SSL=false
-FORCE_SSL=false
+# ASSUME_SSL=false
+# FORCE_SSL=false
 
 # Logging level (debug, info, warn, error, fatal).
-RAILS_LOG_LEVEL=info
+# RAILS_LOG_LEVEL=info
 
 # Image tag to run; pin in production (avoid relying only on latest).
-STRATA_VERSION=latest
+# STRATA_VERSION=latest
 
 # ===================================================================
 # Optional: File Storage Backend
