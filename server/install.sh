@@ -274,16 +274,17 @@ services:
     env_file: .env
     environment:
       RAILS_ENV: production
+      STRATA_PROCESS_TYPE: web
     volumes:
       - strata_storage:/rails/storage
     restart: unless-stopped
 
-  jobs:
+  worker:
     image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
-    command: ["./bin/jobs"]
     env_file: .env
     environment:
       RAILS_ENV: production
+      STRATA_PROCESS_TYPE: worker
     volumes:
       - strata_storage:/rails/storage
     restart: unless-stopped
@@ -304,7 +305,7 @@ fi
 
 # ── Step 7: Prompt for required values ────────────────────────────
 #
-# Only essential config is prompted. Advanced settings (SMTP, SSL, S3,
+# Only essential config is prompted. Advanced settings (SSL, S3,
 # log level, etc.) are written with sensible defaults and can be edited
 # in .env later.
 
@@ -314,7 +315,7 @@ echo -e "  ${DIM}Press Enter to accept the default shown in [brackets].${RESET}"
 
 # Format: key|description|default|required|secret
 PROMPTS=(
-  "LICENSE_KEY|Your Strata license key (JWT token from purchase email)||true|secret"
+  "LICENSE_KEY|Your Strata license key (JWT token issued for your organization)||true|secret"
   "DB_HOST|PostgreSQL hostname or IP||true|"
   "DB_PORT|PostgreSQL port|5432|true|"
   "DB_USERNAME|PostgreSQL username||true|"
@@ -402,53 +403,6 @@ else
   success "Configuration saved to .env"
 fi
 
-# ── Step 7b: Optional SMTP configuration ─────────────────────
-#
-# Email is optional. If not configured, the application will show
-# a message asking users to contact their system administrator.
-
-smtp_configured=$(resolve_config_value "SMTP_HOST" "$ENV_FILE")
-
-if [ -z "$smtp_configured" ]; then
-  echo ""
-  info "Email (SMTP) configuration"
-  echo -e "  ${DIM}Email enables password resets, share notifications, and invites.${RESET}"
-  echo -e "  ${DIM}You can skip this and configure it later in .env.${RESET}"
-  echo ""
-  read -rp "  Would you like to configure email (SMTP) now? [y/N]: " setup_smtp < /dev/tty
-  setup_smtp="${setup_smtp:-N}"
-
-  if [[ "$setup_smtp" =~ ^[Yy]$ ]]; then
-    # SMTP_HOST is required if configuring email
-    smtp_host=$(prompt "SMTP_HOST" "SMTP server hostname (e.g. smtp.gmail.com)" "" "true")
-    write_env "SMTP_HOST" "$smtp_host" "$ENV_FILE"
-
-    smtp_port=$(prompt "SMTP_PORT" "SMTP server port" "587" "false")
-    [ -n "$smtp_port" ] && write_env "SMTP_PORT" "$smtp_port" "$ENV_FILE"
-
-    smtp_user=$(prompt "SMTP_USERNAME" "SMTP username (leave empty if no auth required)" "" "false")
-    [ -n "$smtp_user" ] && write_env "SMTP_USERNAME" "$smtp_user" "$ENV_FILE"
-
-    if [ -n "$smtp_user" ]; then
-      smtp_pass=$(prompt_secret "SMTP_PASSWORD" "SMTP password" "false")
-      [ -n "$smtp_pass" ] && write_env "SMTP_PASSWORD" "$smtp_pass" "$ENV_FILE"
-
-      smtp_auth=$(prompt "SMTP_AUTHENTICATION" "Authentication method" "plain" "false")
-      [ -n "$smtp_auth" ] && write_env "SMTP_AUTHENTICATION" "$smtp_auth" "$ENV_FILE"
-    fi
-
-    smtp_tls=$(prompt "SMTP_ENABLE_STARTTLS" "Enable STARTTLS" "true" "false")
-    [ -n "$smtp_tls" ] && write_env "SMTP_ENABLE_STARTTLS" "$smtp_tls" "$ENV_FILE"
-
-    echo ""
-    success "SMTP configuration saved"
-  else
-    echo ""
-    echo -e "  ${DIM}Skipped. You can configure SMTP later by adding SMTP_HOST to:${RESET}"
-    echo -e "  ${DIM}${ENV_FILE}${RESET}"
-  fi
-fi
-
 # ── Step 8: Pull image ───────────────────────────────────────────
 
 echo ""
@@ -484,8 +438,8 @@ healthy=false
 for i in $(seq 1 30); do
   # Check if either service container has crashed
   web_status=$(docker compose ps web --format '{{.State}}' 2>/dev/null || echo "")
-  jobs_status=$(docker compose ps jobs --format '{{.State}}' 2>/dev/null || echo "")
-  if [ "$web_status" = "exited" ] || [ "$web_status" = "dead" ] || [ "$jobs_status" = "exited" ] || [ "$jobs_status" = "dead" ]; then
+  worker_status=$(docker compose ps worker --format '{{.State}}' 2>/dev/null || echo "")
+  if [ "$web_status" = "exited" ] || [ "$web_status" = "dead" ] || [ "$worker_status" = "exited" ] || [ "$worker_status" = "dead" ]; then
     echo ""
     echo -e "${RED}═══════════════════════════════════════════════════════${RESET}"
     echo -e "${RED}  Strata failed to start.${RESET}"
@@ -493,7 +447,7 @@ for i in $(seq 1 30); do
     echo ""
     echo -e "  ${BOLD}Recent logs:${RESET}"
     echo ""
-    docker compose logs --tail 20 web jobs 2>/dev/null
+    docker compose logs --tail 20 web worker 2>/dev/null
     echo ""
     echo -e "  ${BOLD}How to fix:${RESET}"
     echo -e "  1. Edit the config:          ${BOLD}nano $INSTALL_DIR/.env${RESET}"
@@ -521,7 +475,7 @@ if [ "$healthy" = false ]; then
   echo ""
   echo -e "  ${BOLD}Recent logs:${RESET}"
   echo ""
-  docker compose logs --tail 15 web jobs 2>/dev/null
+  docker compose logs --tail 15 web worker 2>/dev/null
   echo ""
   echo -e "  The container is running but hasn't passed the health check yet."
   echo -e "  This can be normal on first run (database setup takes time)."

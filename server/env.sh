@@ -67,17 +67,6 @@ RAILS_LOG_LEVEL=info
 STRATA_VERSION=latest
 
 # ===================================================================
-# Optional: Email (SMTP)
-# ===================================================================
-
-# SMTP_HOST=smtp.example.com
-# SMTP_PORT=587
-# SMTP_USERNAME=
-# SMTP_PASSWORD=
-# SMTP_AUTHENTICATION=plain
-# SMTP_ENABLE_STARTTLS=true
-
-# ===================================================================
 # Optional: File Storage Backend
 # ===================================================================
 
