@@ -270,7 +270,7 @@ services:
   web:
     image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
     ports:
-      - "${PORT:-3000}:80"
+      - "${PORT:-3000}:${STRATA_CONTAINER_PORT:-80}"
     env_file: .env
     environment:
       RAILS_ENV: production
@@ -341,6 +341,7 @@ DEFAULTS=(
   "RAILS_LOG_LEVEL|info"
   "APP_HOST|localhost"
   "APP_PROTOCOL|http"
+  "STRATA_CONTAINER_PORT|80"
   "ASSUME_SSL|false"
   "FORCE_SSL|false"
 )

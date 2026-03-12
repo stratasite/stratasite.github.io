@@ -50,8 +50,11 @@ STRATA_ENCRYPTION_KEY_DERIVATION_SALT=${strata_encryption_key_derivation_salt}
 # Public hostname and protocol used for generated URLs.
 # APP_HOST=localhost
 # APP_PROTOCOL=http
-# Host port exposed by docker compose (maps to container port 80).
+# Host port exposed by docker compose (maps to container STRATA_CONTAINER_PORT).
 # PORT=3000
+
+# Container HTTP listen port for Strata runtime (default: 80).
+# STRATA_CONTAINER_PORT=80
 
 # SSL behavior behind reverse proxy / load balancer.
 # ASSUME_SSL=false
