@@ -292,6 +292,7 @@ services:
       RAILS_ENV: production
       STRATA_RUN_DB_PREPARE: "false"
       JOB_CONCURRENCY: "${JOB_CONCURRENCY:-4}"
+      JOB_THREADS: "${JOB_THREADS:-3}"
     command: ["./bin/jobs"]
     volumes:
       - strata_storage:/rails/storage
@@ -367,8 +368,9 @@ DEFAULTS=(
   "ASSUME_SSL|false"
   "FORCE_SSL|false"
   "WEB_CONCURRENCY|2"
-  "STRATA_MAX_THREADS|5"
+  "WEB_THREADS|5"
   "JOB_CONCURRENCY|4"
+  "JOB_THREADS|3"
 )
 
 for entry in "${DEFAULTS[@]}"; do

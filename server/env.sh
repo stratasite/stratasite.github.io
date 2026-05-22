@@ -72,17 +72,18 @@ STRATA_ENCRYPTION_KEY_DERIVATION_SALT=${strata_encryption_key_derivation_salt}
 
 # Web: Puma worker processes and threads per worker.
 # WEB_CONCURRENCY=2
-# STRATA_MAX_THREADS=5
+# WEB_THREADS=5
 #
-# Database pool (database.yml) follows STRATA_MAX_THREADS when STRATA_DB_POOL_SIZE is unset.
-# Only set STRATA_DB_POOL_SIZE to override pool independently (advanced).
-# STRATA_DB_POOL_SIZE=5
+# Database pool (database.yml) follows WEB_THREADS when DB_POOL_SIZE is unset.
+# Only set DB_POOL_SIZE to override pool independently (advanced).
+# DB_POOL_SIZE=5
 
-# Job: Solid Queue OS processes per job container (see config/queue.yml for threads per process).
+# Job: Solid Queue processes and threads per job container (config/queue.yml).
 # JOB_CONCURRENCY=4
+# JOB_THREADS=3
 
 # Solid Queue runs in Puma automatically in development/test. Production uses a job
-# container (no extra env vars). Set SOLID_QUEUE_IN_PUMA=true on web only for monolith production.
+# container (omit below). Monolith only: HANDLE_JOBS_IN_WEB_SERVER=true
 
 # Web runs db:prepare on boot; job containers set STRATA_RUN_DB_PREPARE=false.
 # STRATA_RUN_DB_PREPARE=true
