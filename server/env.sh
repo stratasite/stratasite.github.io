@@ -61,10 +61,31 @@ STRATA_ENCRYPTION_KEY_DERIVATION_SALT=${strata_encryption_key_derivation_salt}
 # FORCE_SSL=false
 
 # Logging level (debug, info, warn, error, fatal).
-# RAILS_LOG_LEVEL=info
+# STRATA_LOG_LEVEL=info
 
 # Image tag to run; pin in production (avoid relying only on latest).
 # STRATA_VERSION=latest
+
+# ===================================================================
+# Performance (web + job containers)
+# ===================================================================
+
+# Web: Puma worker processes and threads per worker.
+# WEB_CONCURRENCY=2
+# STRATA_MAX_THREADS=5
+#
+# Database pool (database.yml) follows STRATA_MAX_THREADS when STRATA_DB_POOL_SIZE is unset.
+# Only set STRATA_DB_POOL_SIZE to override pool independently (advanced).
+# STRATA_DB_POOL_SIZE=5
+
+# Job: Solid Queue OS processes per job container (see config/queue.yml for threads per process).
+# JOB_CONCURRENCY=4
+
+# Solid Queue runs in Puma automatically in development/test. Production uses a job
+# container (no extra env vars). Set SOLID_QUEUE_IN_PUMA=true on web only for monolith production.
+
+# Web runs db:prepare on boot; job containers set STRATA_RUN_DB_PREPARE=false.
+# STRATA_RUN_DB_PREPARE=true
 
 # ===================================================================
 # Optional: File Storage Backend

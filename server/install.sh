@@ -37,7 +37,7 @@ REGISTRY="registry.gitlab.com"
 IMAGE="registry.gitlab.com/stratado/server"
 MIN_DOCKER_VERSION="24"
 MIN_COMPOSE_VERSION="2.20"
-LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
+LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web job"
 
 # ── Helpers ───────────────────────────────────────────────────────
 
@@ -234,7 +234,7 @@ else
 fi
 
 mkdir -p "$INSTALL_DIR"
-LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
+LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web job"
 
 
 # ── Step 4: Registry authentication ──────────────────────────────
@@ -274,9 +274,31 @@ services:
     env_file: .env
     environment:
       RAILS_ENV: production
+      STRATA_RUN_DB_PREPARE: "true"
     volumes:
       - strata_storage:/rails/storage
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:$${STRATA_CONTAINER_PORT:-80}/up || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+
+  job:
+    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
+    env_file: .env
+    environment:
+      RAILS_ENV: production
+      STRATA_RUN_DB_PREPARE: "false"
+      JOB_CONCURRENCY: "${JOB_CONCURRENCY:-4}"
+    command: ["./bin/jobs"]
+    volumes:
+      - strata_storage:/rails/storage
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
 
 volumes:
   strata_storage:
@@ -338,12 +360,15 @@ done
 
 # Write sensible defaults for non-prompted keys (only if missing)
 DEFAULTS=(
-  "RAILS_LOG_LEVEL|info"
+  "STRATA_LOG_LEVEL|info"
   "APP_HOST|localhost"
   "APP_PROTOCOL|http"
   "STRATA_CONTAINER_PORT|80"
   "ASSUME_SSL|false"
   "FORCE_SSL|false"
+  "WEB_CONCURRENCY|2"
+  "STRATA_MAX_THREADS|5"
+  "JOB_CONCURRENCY|4"
 )
 
 for entry in "${DEFAULTS[@]}"; do
