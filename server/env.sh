@@ -50,6 +50,8 @@ STRATA_ENCRYPTION_KEY_DERIVATION_SALT=${strata_encryption_key_derivation_salt}
 # Public hostname and protocol used for generated URLs.
 # APP_HOST=localhost
 # APP_PROTOCOL=http
+# Internal URL for worker-to-web requests (PDF asset loading via Ferrum).
+# APP_INTERNAL_URL=http://web:80
 # Host port exposed by docker compose (maps to container STRATA_CONTAINER_PORT).
 # PORT=3000
 

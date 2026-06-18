@@ -364,6 +364,7 @@ DEFAULTS=(
   "STRATA_LOG_LEVEL|info"
   "APP_HOST|localhost"
   "APP_PROTOCOL|http"
+  "APP_INTERNAL_URL|http://web:80"
   "STRATA_CONTAINER_PORT|80"
   "ASSUME_SSL|false"
   "FORCE_SSL|false"
