@@ -1,0 +1,74 @@
+/* ============================================================
+   STRATA — Brand Design Tokens (source of truth)
+   Import this once at app root. Never hardcode hex values in
+   components; reference these custom properties instead.
+   ============================================================ */
+
+:root {
+  /* --- Core brand palette --- */
+  --strata-rust:        #BC3908;  /* primary brand */
+  --strata-rust-deep:   #9C2A04;  /* deepest stratum / pressed states */
+  --strata-orange:      #E0641F;  /* warm mid layer */
+  --strata-peach:       #FFC26E;  /* light layer / highlights */
+  --strata-cream:       #FFF6EA;  /* field / light surface tint */
+  --strata-ink:         #1C2B45;  /* cool accent: text, trend line, wordmark */
+  --strata-ink-soft:    #243450;  /* secondary ink */
+
+  /* --- Semantic tokens (light theme) --- */
+  --background:          #FBF7F1;
+  --surface:            #FFFFFF;
+  --surface-2:          #FFF6EA;
+  --foreground:         #1C2B45;  /* body text = ink */
+  --muted-foreground:   #5B6472;
+  --border:             #ECE3D6;
+
+  --primary:            #BC3908;
+  --primary-foreground: #FFF6EA;
+  --accent:             #1C2B45;
+  --accent-foreground:  #FFF6EA;
+  --ring:               #BC3908;
+
+  /* --- Data-viz: categorical series (use in this order) --- */
+  --chart-1: #BC3908;  /* rust */
+  --chart-2: #E0641F;  /* orange */
+  --chart-3: #FFC26E;  /* peach */
+  --chart-4: #1C2B45;  /* ink */
+  --chart-5: #1F8A8C;  /* teal (harmonious cool extension) */
+  --chart-6: #E3A23C;  /* gold */
+  --chart-7: #5B6E8C;  /* slate */
+  --chart-8: #9C2A04;  /* deep rust */
+
+  /* --- Data-viz: sequential "strata" ramp (heatmaps / intensity) --- */
+  --ramp-0: #FFF6EA;
+  --ramp-1: #FFC26E;
+  --ramp-2: #E0641F;
+  --ramp-3: #BC3908;
+  --ramp-4: #9C2A04;
+  --ramp-5: #1C2B45;
+
+  /* --- Typography --- */
+  --font-display: 'Poppins', 'Inter', system-ui, sans-serif; /* wordmark + headings */
+  --font-sans:    'Inter', system-ui, sans-serif;            /* UI + body */
+  --font-mono:    'JetBrains Mono', 'IBM Plex Mono', monospace;
+  /* Use tabular figures in data tables: font-feature-settings: "tnum" 1; */
+
+  /* --- Radius (soft, grown-up) --- */
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 16px;
+}
+
+.dark {
+  --background:          #14203A;
+  --surface:            #1C2B45;
+  --surface-2:          #243450;
+  --foreground:         #FFF6EA;
+  --muted-foreground:   #9AA6BF;
+  --border:             #2A3A57;
+
+  --primary:            #E0641F;  /* orange reads better on dark than rust */
+  --primary-foreground: #14203A;
+  --accent:             #FFC26E;
+  --accent-foreground:  #14203A;
+  --ring:               #E0641F;
+}

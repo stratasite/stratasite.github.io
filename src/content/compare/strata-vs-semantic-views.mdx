@@ -1,0 +1,24 @@
+---
+title: Strata vs Snowflake Semantic Views
+competitor: Snowflake Semantic Views
+summary: Opposite philosophies — in Snowflake, two same-named dimensions break the view; in Strata, that shared name is the signal they're conformed.
+order: 20
+sections:
+  - { id: where-snowflake-is-strong, label: Where Snowflake is strong }
+  - { id: the-structural-difference, label: The structural difference }
+---
+
+## Where Snowflake is strong
+
+Snowflake semantic views are native (already where the data is), inherit strong
+RLS/masking, are deeply agent-native (Cortex), and ship AI-assisted modeling.
+
+## The structural difference
+
+> In Snowflake, two dimensions with the same name from different tables **break**
+> the semantic view. In Strata, that same shared name **is** the signal that
+> they're conformed and safely blendable.
+
+Snowflake is Snowflake-only (no hot-tier federation) with no built-in
+self-service or dashboards. Strata fronts the warehouse with a fast OLAP hot tier
+and aggregate awareness, and is itself the consumption layer.

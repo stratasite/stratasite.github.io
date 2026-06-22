@@ -1,0 +1,24 @@
+---
+import { getCollection } from 'astro:content';
+import Article from '../../layouts/Article.astro';
+
+export async function getStaticPaths() {
+  const features = await getCollection('features', ({ data }) => !data.draft);
+  return features.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<Article
+  eyebrow="Feature"
+  title={entry.data.title}
+  summary={entry.data.summary}
+  sections={entry.data.sections}
+>
+  <Content />
+</Article>

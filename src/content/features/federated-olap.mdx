@@ -1,0 +1,27 @@
+---
+title: Federated Open OLAP & hot-tier routing
+summary: Route queries to pre-aggregated tables and fast OLAP hot tiers — sub-second answers, lower warehouse spend.
+order: 20
+sections:
+  - { id: aggregate-aware, label: Aggregate-aware }
+  - { id: federation, label: Open federation }
+  - { id: partition-aware-routing, label: Partition-aware routing }
+---
+
+## Aggregate-aware
+
+strata routes queries to pre-aggregated tables when they can satisfy the request,
+avoiding base-fact scans entirely.
+
+## Open federation
+
+Additional sources — ClickHouse, Druid, other fast OLAP DBs, Databricks — map
+into the same project. A source can be designated a **hot tier**, chosen
+preferentially. One measure definition serves every engine; no double modeling.
+
+## Partition-aware routing
+
+Partition logic makes the semantic model aware of the data range each source
+holds, so strata routes to the hot tier only when user filters are compatible,
+and falls back to the warehouse of record otherwise. Net effect: sub-second
+dashboards and agent turns, plus reduced load and compute cost.

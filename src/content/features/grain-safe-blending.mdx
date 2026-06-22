@@ -1,0 +1,33 @@
+---
+title: Automatic grain-safe blending
+summary: Blend measures across fact domains by naming, not configuration — never a silent wrong number.
+order: 10
+sections:
+  - { id: the-problem, label: The problem }
+  - { id: how-it-works, label: How it works }
+  - { id: why-it-matters, label: Why it matters }
+---
+
+## The problem
+
+Measures live at different granularities across fact domains. Naive tools either
+refuse valid cross-domain questions or silently join facts and double-count,
+producing confident wrong numbers — the #1 reason "AI agent over the warehouse"
+projects fail.
+
+## How it works
+
+For a valid multi-measure request across conformed dimensions, strata decomposes
+into one subquery per fact, aggregates each fact independently to the common
+grain, then stitches results with a full outer join on the conformed dimension
+keys — never row-level fact-to-fact joins.
+
+Compatibility is **derived, not configured**: each measure resolves to a source
+fact, that fact's grain, and reachable dimensions. Invalid combinations are
+refused before execution with an explanation and nearest-valid alternatives.
+
+## Why it matters
+
+The default failure mode is a *missed blend* (safe), never a *silent wrong
+answer* (dangerous). Users and agents never need to know grain details — the
+compiler makes it impossible to violate them.

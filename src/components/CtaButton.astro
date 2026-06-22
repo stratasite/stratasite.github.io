@@ -1,0 +1,25 @@
+---
+import { site } from '../config/site';
+
+interface Props {
+  /** Visual style. `primary` = filled rust; `ghost` = outlined for dark/hero. */
+  variant?: 'primary' | 'ghost';
+  label?: string;
+  class?: string;
+}
+
+const { variant = 'primary', label = site.demoLabel, class: className = '' } = Astro.props;
+
+const base =
+  'inline-flex items-center justify-center rounded font-display font-semibold tracking-tight px-6 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+const variants = {
+  primary: 'bg-primary text-primary-foreground hover:bg-strata-rust-deep',
+  ghost:
+    'border border-border bg-surface/60 text-foreground hover:bg-surface backdrop-blur',
+};
+---
+
+<a href={site.demoUrl} class={`${base} ${variants[variant]} ${className}`}>
+  {label}
+</a>

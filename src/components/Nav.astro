@@ -1,0 +1,65 @@
+---
+import { getCollection } from 'astro:content';
+import { nav, site } from '../config/site';
+import CtaButton from './CtaButton.astro';
+
+// Product dropdown is generated from the features collection so it never drifts.
+const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+---
+
+<header class="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border/60">
+  <nav class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <!-- Left: logo + wordmark -->
+    <a href="/" class="flex items-center gap-2.5 shrink-0">
+      <img src="/brand/assets/strata_mark.svg" alt="" class="h-7 w-auto dark:hidden" />
+      <img src="/brand/assets/strata_mark_dark.svg" alt="" class="hidden h-7 w-auto dark:block" />
+      <span class="font-display text-xl font-bold tracking-tight text-foreground">strata</span>
+    </a>
+
+    <!-- Center: primary navigation -->
+    <ul class="hidden items-center gap-1 md:flex">
+      <li class="group relative">
+        <button
+          class="flex items-center gap-1 rounded px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground"
+          aria-haspopup="true"
+        >
+          Product
+          <svg class="h-3.5 w-3.5 opacity-60" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <!-- Dropdown -->
+        <div class="invisible absolute left-1/2 top-full -translate-x-1/2 pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+          <ul class="w-72 rounded-lg border border-border bg-surface p-2 shadow-lg">
+            {features.map((f) => (
+              <li>
+                <a href={`/features/${f.slug}/`} class="block rounded px-3 py-2 hover:bg-surface-2">
+                  <span class="block text-sm font-semibold text-foreground">{f.data.title}</span>
+                  <span class="block text-xs text-muted-foreground">{f.data.summary}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </li>
+      {nav.links.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            class="rounded px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground"
+            {...('external' in link && link.external ? { target: '_blank', rel: 'noopener' } : {})}
+          >
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <!-- Right: CTA -->
+    <div class="flex items-center gap-3">
+      <CtaButton class="hidden sm:inline-flex !px-4 !py-2 text-sm" />
+    </div>
+  </nav>
+</header>

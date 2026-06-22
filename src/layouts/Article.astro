@@ -1,0 +1,47 @@
+---
+import Base from './Base.astro';
+import SectionScrollNav from '../components/SectionScrollNav.astro';
+import CtaButton from '../components/CtaButton.astro';
+
+interface Props {
+  title: string;
+  summary?: string;
+  eyebrow?: string;
+  sections?: { id: string; label: string }[];
+  description?: string;
+}
+
+const { title, summary, eyebrow, sections = [], description } = Astro.props;
+---
+
+<Base title={`${title} — strata`} description={description ?? summary}>
+  <article class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <header class="mx-auto max-w-3xl text-center">
+      {eyebrow && (
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">{eyebrow}</p>
+      )}
+      <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
+      {summary && <p class="mt-5 text-lg text-muted-foreground">{summary}</p>}
+    </header>
+
+    <div class="mt-14 lg:grid lg:grid-cols-[1fr_15rem] lg:gap-12">
+      <!-- Content: MDX renders prose here; `.prose-strata` styles it. -->
+      <div class="prose-strata mx-auto w-full max-w-3xl">
+        <slot />
+
+        <div class="mt-16 rounded-lg border border-border bg-surface-2 p-8 text-center not-prose">
+          <h2 class="font-display text-2xl font-bold">See it on your own data</h2>
+          <p class="mx-auto mt-2 max-w-xl text-muted-foreground">
+            The fastest way to understand strata is a live walkthrough against a warehouse like yours.
+          </p>
+          <CtaButton class="mt-6" />
+        </div>
+      </div>
+
+      <!-- Optional right-side jump nav -->
+      <aside class="order-last">
+        <SectionScrollNav sections={sections} />
+      </aside>
+    </div>
+  </article>
+</Base>
