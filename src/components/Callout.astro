@@ -1,0 +1,26 @@
+---
+// Reusable callout for article/feature MDX. Use inside MDX:
+//   <Callout type="tip">Naming discipline matters…</Callout>
+interface Props {
+  type?: 'note' | 'tip' | 'warning';
+  title?: string;
+}
+const { type = 'note', title } = Astro.props;
+
+const styles = {
+  note: 'border-border bg-surface-2',
+  tip: 'border-primary/40 bg-strata-peach/15',
+  warning: 'border-strata-orange/50 bg-strata-orange/10',
+} as const;
+
+const defaultTitle = { note: 'Note', tip: 'Tip', warning: 'Heads up' } as const;
+---
+
+<aside class={`not-prose my-6 rounded-lg border-l-4 p-5 ${styles[type]}`}>
+  <p class="font-display text-sm font-semibold tracking-tight text-foreground">
+    {title ?? defaultTitle[type]}
+  </p>
+  <div class="mt-2 text-[0.95rem] leading-relaxed text-foreground/90">
+    <slot />
+  </div>
+</aside>

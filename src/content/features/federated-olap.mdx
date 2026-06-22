@@ -8,6 +8,11 @@ sections:
   - { id: partition-aware-routing, label: Partition-aware routing }
 ---
 
+import FederatedOlapDiagram from '../../components/FederatedOlapDiagram.astro';
+import Callout from '../../components/Callout.astro';
+
+<FederatedOlapDiagram />
+
 ## Aggregate-aware
 
 strata routes queries to pre-aggregated tables when they can satisfy the request,
@@ -25,3 +30,9 @@ Partition logic makes the semantic model aware of the data range each source
 holds, so strata routes to the hot tier only when user filters are compatible,
 and falls back to the warehouse of record otherwise. Net effect: sub-second
 dashboards and agent turns, plus reduced load and compute cost.
+
+<Callout type="tip" title="Sizing the savings">
+  Cost reduction is workload-dependent — strongest when a meaningful share of
+  traffic is repetitive queries over recent or aggregated data a hot tier can
+  absorb. Size it against your own query history.
+</Callout>
