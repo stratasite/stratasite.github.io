@@ -1,93 +1,217 @@
 ---
-// Phase 1 skeleton of the 3-slide auto-advancing hero. Phase 3 fills in the
-// final animated word-swap, product GIF, and animated OLAP SVG diagram.
+// Hero: three auto-advancing slides.
+//  1. Animated headline with a "thrilling" rotating word (agents/humans/everyone).
+//  2. Product showcase (animated stand-in for the product GIF).
+//  3. Animated federated Open OLAP routing diagram.
+// Carousel + rotator are vanilla JS; animation respects prefers-reduced-motion.
 import CtaButton from './CtaButton.astro';
+import ProductShowcase from './ProductShowcase.astro';
+import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
+
 const rotatingWords = ['Agents', 'Humans', 'Everyone'];
 ---
 
-<section class="relative overflow-hidden bg-background">
-  <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-    <div class="hero" data-hero>
-      <!-- Slide 1 -->
-      <div class="hero-slide" data-slide aria-hidden="false">
-        <div class="mx-auto max-w-3xl text-center">
-          <h1 class="font-display text-5xl font-bold leading-tight tracking-tight sm:text-6xl">
-            Enterprise reporting for
-            <span class="hero-rotator block text-primary" data-rotator data-words={JSON.stringify(rotatingWords)}>
-              {rotatingWords[0]}
+<section class="hero-wrap relative overflow-hidden bg-background">
+  <!-- soft brand glow backdrop -->
+  <div class="hero-glow" aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="hero" data-hero data-reduced={undefined}>
+      <!-- SLIDE 1 -->
+      <div class="hero-slide" data-slide>
+        <div class="mx-auto flex min-h-[34rem] max-w-3xl flex-col items-center justify-center py-20 text-center">
+          <h1 class="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+            <span class="block text-foreground">Enterprise reporting for</span>
+            <span class="rotator" data-rotator data-words={JSON.stringify(rotatingWords)}>
+              <span class="rotator-word" data-word>{rotatingWords[0]}</span>
             </span>
           </h1>
-          <div class="mt-8 flex justify-center"><CtaButton /></div>
+          <p class="mt-6 max-w-xl text-lg text-muted-foreground">
+            High-performance, AI-safe self-service analytics — one platform from warehouse to beautiful dashboard.
+          </p>
+          <div class="mt-9"><CtaButton /></div>
         </div>
       </div>
 
-      <!-- Slide 2 -->
+      <!-- SLIDE 2 -->
       <div class="hero-slide" data-slide hidden>
-        <div class="mx-auto max-w-3xl text-center">
+        <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-            Introducing the most capable BI platform for the AI age
+            The most capable BI platform for the AI age
           </h2>
-          <div class="mt-8 aspect-[16/9] w-full rounded-lg border border-border bg-surface-2"></div>
+          <p class="mt-5 max-w-xl text-lg text-muted-foreground">
+            A governed semantic layer fused with beautiful-by-default dashboards.
+          </p>
+          <div class="mt-10 w-full"><ProductShowcase /></div>
         </div>
       </div>
 
-      <!-- Slide 3 -->
+      <!-- SLIDE 3 -->
       <div class="hero-slide" data-slide hidden>
-        <div class="mx-auto max-w-3xl text-center">
+        <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-            Highest-performance AI turns with our federated Open OLAP query engine
+            Highest-performance AI turns,
+            <span class="text-primary">federated Open OLAP</span>
           </h2>
-          <div class="mt-8 aspect-[16/9] w-full rounded-lg border border-border bg-surface-2"></div>
+          <p class="mt-5 max-w-xl text-lg text-muted-foreground">
+            Partition-aware routing to fast hot tiers and aggregate tables — sub-second answers, lower warehouse spend.
+          </p>
+          <div class="mt-10 w-full"><FederatedOlapDiagram /></div>
         </div>
       </div>
     </div>
 
-    <!-- Slide indicators -->
-    <div class="mt-10 flex justify-center gap-2" data-dots></div>
+    <!-- controls -->
+    <div class="flex items-center justify-center gap-2 pb-10" data-dots aria-label="Hero slides"></div>
   </div>
 </section>
 
+<style>
+  .hero-glow {
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 60%;
+    background: radial-gradient(
+      60% 80% at 50% 0%,
+      color-mix(in srgb, var(--strata-peach) 45%, transparent),
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  .hero-slide {
+    animation: slide-in 0.6s ease both;
+  }
+
+  /* Rotating word: gradient text + a "thrilling" entrance per word. */
+  .rotator {
+    display: block;
+    min-height: 1.1em;
+  }
+  .rotator-word {
+    display: inline-block;
+    background: linear-gradient(
+      100deg,
+      var(--strata-rust) 0%,
+      var(--strata-orange) 40%,
+      var(--strata-peach) 55%,
+      var(--strata-orange) 70%,
+      var(--strata-rust) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+  .rotator-word.enter {
+    animation:
+      shimmer 4s linear infinite,
+      word-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  @keyframes word-in {
+    0% {
+      opacity: 0;
+      transform: translateY(0.5em) scale(0.96);
+      filter: blur(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+  @keyframes shimmer {
+    to {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-slide,
+    .rotator-word,
+    .rotator-word.enter {
+      animation: none;
+    }
+    .rotator-word {
+      background: none;
+      -webkit-background-clip: border-box;
+      background-clip: border-box;
+      color: var(--primary);
+    }
+  }
+</style>
+
 <script>
-  // Auto-advancing slide carousel + word rotator (vanilla, no framework).
   const hero = document.querySelector<HTMLElement>('[data-hero]');
   if (hero) {
     const slides = Array.from(hero.querySelectorAll<HTMLElement>('[data-slide]'));
     const dotsWrap = document.querySelector<HTMLElement>('[data-dots]');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let current = 0;
+    let timer: ReturnType<typeof setInterval> | undefined;
 
     const dots = slides.map((_, i) => {
       const b = document.createElement('button');
-      b.className = 'h-2 w-2 rounded-full bg-border transition-colors';
-      b.setAttribute('aria-label', `Go to slide ${i + 1}`);
-      b.addEventListener('click', () => show(i));
+      b.type = 'button';
+      b.className = 'h-2.5 w-2.5 rounded-full bg-border transition-all hover:bg-muted-foreground';
+      b.setAttribute('aria-label', `Show slide ${i + 1}`);
+      b.addEventListener('click', () => {
+        show(i);
+        restart();
+      });
       dotsWrap?.appendChild(b);
       return b;
     });
 
     function show(i: number) {
       slides.forEach((s, idx) => (s.hidden = idx !== i));
-      dots.forEach((d, idx) =>
-        d.classList.toggle('bg-primary', idx === i)
-      );
+      dots.forEach((d, idx) => {
+        const active = idx === i;
+        d.classList.toggle('bg-primary', active);
+        d.classList.toggle('w-6', active);
+        d.classList.toggle('bg-border', !active);
+      });
       current = i;
     }
-    show(0);
-    setInterval(() => show((current + 1) % slides.length), 6000);
 
-    // Word rotator on slide 1.
+    function restart() {
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => show((current + 1) % slides.length), 6500);
+    }
+
+    show(0);
+    if (!reduced) restart();
+
+    // Pause auto-advance on hover/focus for accessibility.
+    hero.addEventListener('mouseenter', () => timer && clearInterval(timer));
+    hero.addEventListener('mouseleave', () => !reduced && restart());
+
+    // Rotating word on slide 1.
     const rotator = hero.querySelector<HTMLElement>('[data-rotator]');
-    if (rotator) {
+    const wordEl = rotator?.querySelector<HTMLElement>('[data-word]');
+    if (rotator && wordEl && !reduced) {
       const words: string[] = JSON.parse(rotator.dataset.words || '[]');
       let w = 0;
       setInterval(() => {
         w = (w + 1) % words.length;
-        rotator.style.opacity = '0';
-        setTimeout(() => {
-          rotator.textContent = words[w];
-          rotator.style.opacity = '1';
-        }, 250);
-      }, 2200);
-      rotator.style.transition = 'opacity 250ms ease';
+        wordEl.classList.remove('enter');
+        // reflow to restart the animation
+        void wordEl.offsetWidth;
+        wordEl.textContent = words[w];
+        wordEl.classList.add('enter');
+      }, 2400);
     }
   }
 </script>

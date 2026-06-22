@@ -1,0 +1,100 @@
+---
+// Animated placeholder for the product GIF on hero slide 2 ("various views of
+// our product"). A browser-framed mock dashboard whose panels animate and
+// cycle. Replace with a real product GIF/MP4 in the polish phase; the outer
+// frame + sizing can stay. All color from brand tokens.
+---
+
+<figure class="showcase mx-auto w-full max-w-3xl" aria-label="Strata product preview">
+  <div class="frame rounded-xl border border-border bg-surface shadow-2xl">
+    <!-- window chrome -->
+    <div class="flex items-center gap-1.5 border-b border-border px-4 py-3">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="ml-3 font-sans text-xs text-muted-foreground">strata · revenue report</span>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 p-4">
+      <!-- KPI rail -->
+      <div class="col-span-1 space-y-3">
+        <div class="kpi"><span class="kpi-label">Revenue</span><span class="kpi-val tnum">$4.2M</span></div>
+        <div class="kpi"><span class="kpi-label">Active users</span><span class="kpi-val tnum">81.3k</span></div>
+        <div class="kpi"><span class="kpi-label">Avg. latency</span><span class="kpi-val tnum">0.4s</span></div>
+      </div>
+
+      <!-- chart area: bars + line overlay -->
+      <div class="col-span-2 rounded-lg border border-border bg-background p-3">
+        <div class="bars">
+          <span style="--h: 45%; --i: 0"></span>
+          <span style="--h: 70%; --i: 1"></span>
+          <span style="--h: 55%; --i: 2"></span>
+          <span style="--h: 88%; --i: 3"></span>
+          <span style="--h: 64%; --i: 4"></span>
+          <span style="--h: 96%; --i: 5"></span>
+          <span style="--h: 78%; --i: 6"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</figure>
+
+<style>
+  .showcase .dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 9999px;
+    background: var(--border);
+    display: inline-block;
+  }
+
+  .showcase .kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    padding: 12px 14px;
+  }
+  .showcase .kpi-label {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+  .showcase .kpi-val {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+
+  .showcase .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 150px;
+  }
+  .showcase .bars span {
+    flex: 1;
+    height: var(--h);
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(var(--strata-orange), var(--primary));
+    transform-origin: bottom;
+    animation: grow 3.2s ease-in-out infinite;
+    animation-delay: calc(var(--i) * 0.12s);
+  }
+
+  @keyframes grow {
+    0%, 100% {
+      transform: scaleY(0.55);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .showcase .bars span {
+      animation: none;
+    }
+  }
+</style>

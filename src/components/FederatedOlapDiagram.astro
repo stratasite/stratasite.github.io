@@ -1,0 +1,162 @@
+---
+// Animated SVG explaining the federated Open OLAP query engine for hero slide 3.
+// A query from humans/agents enters the strata semantic layer, which routes
+// partition-aware: preferentially to fast hot tiers / aggregate tables, falling
+// back to the warehouse of record. Flow is animated with stroke-dashoffset
+// (disabled under prefers-reduced-motion). All color comes from brand tokens.
+---
+
+<figure class="olap mx-auto w-full max-w-3xl" aria-label="Federated Open OLAP query routing diagram">
+  <svg viewBox="0 0 820 360" role="img" class="h-auto w-full">
+    <title>Strata routes queries to fast hot tiers and aggregate tables, falling back to the warehouse</title>
+
+    <!-- Flow paths (drawn first so nodes sit on top) -->
+    <g class="flow" fill="none" stroke-width="2">
+      <!-- sources -> strata -->
+      <path class="line line-in" d="M150 90 C 250 90, 250 160, 360 170" />
+      <path class="line line-in" d="M150 270 C 250 270, 250 200, 360 190" />
+      <!-- strata -> destinations -->
+      <path class="line line-hot" d="M540 150 C 620 130, 640 80, 690 70" />
+      <path class="line line-hot" d="M540 170 C 620 160, 640 140, 690 135" />
+      <path class="line line-agg" d="M540 190 C 620 200, 640 200, 690 200" />
+      <path class="line line-cold" d="M540 210 C 620 240, 640 290, 690 300" />
+    </g>
+
+    <!-- Inputs -->
+    <g class="node node-in">
+      <rect x="40" y="64" width="110" height="52" rx="10" />
+      <text x="95" y="95">Humans</text>
+    </g>
+    <g class="node node-in">
+      <rect x="40" y="244" width="110" height="52" rx="10" />
+      <text x="95" y="275">Agents</text>
+    </g>
+
+    <!-- Strata semantic layer -->
+    <g class="node node-strata">
+      <rect x="360" y="140" width="180" height="80" rx="14" />
+      <text x="450" y="172" class="t-title">strata</text>
+      <text x="450" y="196" class="t-sub">semantic layer</text>
+    </g>
+    <text x="450" y="252" class="route-label">partition-aware routing</text>
+
+    <!-- Destinations -->
+    <g class="node node-hot">
+      <rect x="690" y="44" width="120" height="52" rx="10" />
+      <text x="750" y="68" class="t-dest">hot tier</text>
+      <text x="750" y="86" class="t-destsub">ClickHouse · Druid</text>
+    </g>
+    <g class="node node-agg">
+      <rect x="690" y="174" width="120" height="52" rx="10" />
+      <text x="750" y="198" class="t-dest">aggregate</text>
+      <text x="750" y="216" class="t-destsub">pre-agg tables</text>
+    </g>
+    <g class="node node-cold">
+      <rect x="690" y="276" width="120" height="52" rx="10" />
+      <text x="750" y="300" class="t-dest">warehouse</text>
+      <text x="750" y="318" class="t-destsub">Snowflake</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .olap text {
+    font-family: var(--font-sans);
+    fill: var(--foreground);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .olap .t-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    fill: var(--primary-foreground);
+  }
+  .olap .t-sub {
+    font-size: 12px;
+    font-weight: 500;
+    fill: var(--primary-foreground);
+    opacity: 0.85;
+  }
+  .olap .t-dest {
+    font-size: 14px;
+  }
+  .olap .t-destsub {
+    font-size: 11px;
+    font-weight: 500;
+    fill: var(--muted-foreground);
+  }
+  .olap .route-label {
+    font-size: 11px;
+    font-weight: 600;
+    fill: var(--muted-foreground);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .olap .node rect {
+    fill: var(--surface);
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+  .olap .node-strata rect {
+    fill: var(--primary);
+    stroke: var(--primary);
+  }
+  /* Hot tier is the preferred path — emphasize it. */
+  .olap .node-hot rect {
+    stroke: var(--primary);
+    stroke-width: 2;
+  }
+
+  .olap .line {
+    stroke: var(--border);
+    stroke-dasharray: 7 7;
+  }
+  .olap .line-in {
+    stroke: var(--chart-7, var(--muted-foreground));
+    animation: flow 1.6s linear infinite;
+  }
+  .olap .line-hot {
+    stroke: var(--primary);
+    stroke-width: 2.5;
+    animation: flow 1s linear infinite;
+  }
+  .olap .line-agg {
+    stroke: var(--strata-orange, var(--primary));
+    animation: flow 1.4s linear infinite;
+  }
+  .olap .line-cold {
+    stroke: var(--border);
+    animation: flow 2.6s linear infinite;
+    opacity: 0.7;
+  }
+
+  /* Pulse the preferred destination. */
+  .olap .node-hot rect {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes flow {
+    to {
+      stroke-dashoffset: -28;
+    }
+  }
+  @keyframes pulse {
+    0%, 100% {
+      filter: none;
+    }
+    50% {
+      filter: drop-shadow(0 0 6px var(--primary));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .olap .line,
+    .olap .node-hot rect {
+      animation: none !important;
+    }
+  }
+</style>
