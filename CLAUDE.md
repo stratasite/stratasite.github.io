@@ -17,6 +17,6 @@ Core rule: **never hardcode hex values in components** — reference tokens
 missing, add it to `brand/tokens.css` first.
 
 ## Conventions
-- Headings/wordmark use Poppins (`font-display`); UI/body uses Inter (`font-sans`).
+- Headings/wordmark use Space Grotesk (`font-display`); UI/body uses Inter (`font-sans`).
 - Product name is lowercase in UI and prose: "strata".
 - Charts are first-class: use the `--chart-*` series and `--ramp-*` sequential ramp.

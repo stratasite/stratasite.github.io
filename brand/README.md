@@ -23,8 +23,8 @@ brand/
    const strata = require('./brand/tailwind.brand.js');
    module.exports = { darkMode: 'class', theme: { extend: { ...strata } } };
    ```
-3. **Fonts**: load Poppins (display) + Inter (UI). Self-host or:
-   `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">`
+3. **Fonts**: load Space Grotesk (display) + Inter (UI). Self-host or:
+   `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">`
 4. **Dark mode**: toggle the `.dark` class on `<html>`; tokens swap automatically.
 5. **Favicon**: point to `brand/assets/strata_mark_32.png` (and 16/64 for other sizes).
 

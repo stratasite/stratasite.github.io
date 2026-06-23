@@ -18,7 +18,7 @@ consistently in all UI, marketing, and generated assets.
 - Cool accent (text, lines, emphasis): ink `--strata-ink` (#1C2B45).
 
 ## Typography
-- Display / headings / wordmark: **Poppins** (`font-display`).
+- Display / headings / wordmark: **Space Grotesk** (`font-display`).
 - UI / body: **Inter** (`font-sans`).
 - Data tables & numerals: enable tabular figures — `font-feature-settings: "tnum" 1;`.
 - The wordmark "strata" is always lowercase.

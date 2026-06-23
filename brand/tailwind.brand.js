@@ -44,7 +44,7 @@ module.exports = {
     },
   },
   fontFamily: {
-    display: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
+    display: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
     sans: ['Inter', 'system-ui', 'sans-serif'],
     mono: ['JetBrains Mono', 'IBM Plex Mono', 'monospace'],
   },
