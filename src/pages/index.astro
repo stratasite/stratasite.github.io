@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
-import FeatureCard from '../components/FeatureCard.astro';
+import FeatureRows from '../components/FeatureRows.astro';
 import ComparisonMatrix from '../components/ComparisonMatrix.astro';
 import CtaButton from '../components/CtaButton.astro';
 import { site } from '../config/site';
@@ -20,9 +20,9 @@ const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).
   <Hero />
 
   <!-- SOCIAL PROOF -->
-  <section class="border-y border-border bg-surface-2">
-    <div class="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
-      <p class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+  <section>
+    <div class="mx-auto max-w-7xl px-4 py-8 text-center sm:px-6 lg:px-8">
+      <p class="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground sm:text-sm">
         Born at Netflix, ready for the world
       </p>
     </div>
@@ -35,15 +35,8 @@ const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).
         <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Built for correct, fast self-service</h2>
         <p class="mt-4 text-muted-foreground">A governed semantic layer fused with beautiful-by-default dashboards.</p>
       </div>
-      <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f) => (
-          <FeatureCard
-            title={f.data.title}
-            summary={f.data.summary}
-            href={`/features/${f.slug}/`}
-            image={f.data.image}
-          />
-        ))}
+      <div class="mt-16">
+        <FeatureRows features={features} />
       </div>
     </div>
   </section>

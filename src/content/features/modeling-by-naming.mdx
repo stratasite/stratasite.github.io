@@ -1,0 +1,35 @@
+---
+title: Modeling by naming
+summary: Freely-named fields in a registry, conformed by consistent naming — the semantic model emerges instead of being hand-configured per combination.
+icon: tag
+order: 40
+sections:
+  - { id: the-registry, label: The registry }
+  - { id: conformed-by-naming, label: Conformed by naming }
+  - { id: blending-groups, label: Blending groups }
+---
+
+import Callout from '../../components/Callout.astro';
+
+## The registry
+
+Strata keeps a semantic field registry of both dimensions and measures. Names are
+the modeler's choice — optionally derived from physical columns, but never bound
+to them.
+
+## Conformed by naming
+
+When the same business concept gets the same registered name across fact domains,
+Strata treats those fields as conformed and blendable. Distinct concepts get
+distinct names, so they're never silently merged.
+
+<Callout type="tip" title="Modeling by naming, not zero modeling">
+  Naming discipline still matters: same concept, same name to blend; distinct
+  concepts, distinct names to stay safe. The model is expressed in the cheapest
+  medium instead of per-combination views.
+</Callout>
+
+## Blending groups
+
+When entities should blend but don't share a name, an explicit blending group
+(via `extended_blending_refs`) unifies them under one governed blend key.

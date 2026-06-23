@@ -14,8 +14,10 @@ const features = defineCollection({
   type: 'content',
   schema: z.object({
     title: z.string(),
-    // One-line teaser used on cards and nav.
+    // One-line teaser used on rows and the nav mega-menu.
     summary: z.string(),
+    // Icon name (see src/components/Icon.astro) for the nav mega-menu.
+    icon: z.string().optional(),
     // Optional hero/card image (path under /public or imported asset URL).
     image: z.string().optional(),
     // Display order on the homepage + dropdown (lower = earlier).

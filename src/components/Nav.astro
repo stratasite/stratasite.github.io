@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import { nav, site } from '../config/site';
 import CtaButton from './CtaButton.astro';
+import Icon from './Icon.astro';
 
 // Product dropdown is generated from the features collection so it never drifts.
 const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
@@ -13,15 +14,15 @@ const features = (await getCollection('features', ({ data }) => !data.draft)).so
   <nav class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
     <!-- Left: logo + wordmark. Rust is a dark/busy field, so use the dark mark. -->
     <a href="/" class="flex items-center gap-2.5 shrink-0">
-      <img src="/brand/assets/strata_mark_dark.svg" alt="" class="h-7 w-auto" />
-      <span class="font-display text-xl font-bold tracking-tight text-strata-cream">strata</span>
+      <img src="/brand/assets/strata_mark_dark.svg" alt="" class="h-8 w-auto" />
+      <span class="font-display text-2xl font-bold tracking-tight text-strata-cream">strata</span>
     </a>
 
     <!-- Center: primary navigation -->
     <ul class="hidden items-center gap-1 md:flex">
       <li class="group relative">
         <button
-          class="flex items-center gap-1 rounded px-3 py-2 text-sm font-medium text-strata-cream/80 hover:text-strata-cream"
+          class="flex items-center gap-1 rounded px-3 py-2 text-base font-semibold text-strata-cream hover:text-white"
           aria-haspopup="true"
         >
           Product
@@ -30,24 +31,27 @@ const features = (await getCollection('features', ({ data }) => !data.draft)).so
           </svg>
         </button>
         <!-- Dropdown -->
-        <div class="invisible absolute left-1/2 top-full -translate-x-1/2 pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-          <ul class="w-72 rounded-lg border border-border bg-surface p-2 shadow-lg">
+        <div class="invisible absolute left-1/2 top-full -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+          <div class="grid w-[34rem] grid-cols-3 gap-1 rounded-lg border border-border bg-surface p-3 shadow-xl">
             {features.map((f) => (
-              <li>
-                <a href={`/features/${f.slug}/`} class="block rounded px-3 py-2 hover:bg-surface-2">
-                  <span class="block text-sm font-semibold text-foreground">{f.data.title}</span>
-                  <span class="block text-xs text-muted-foreground">{f.data.summary}</span>
-                </a>
-              </li>
+              <a
+                href={`/features/${f.slug}/`}
+                class="group/item flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-surface-2"
+              >
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-primary transition-colors group-hover/item:bg-primary group-hover/item:text-primary-foreground">
+                  <Icon name={f.data.icon ?? 'layers'} class="h-5 w-5" />
+                </span>
+                <span class="text-sm font-semibold leading-snug text-foreground">{f.data.title}</span>
+              </a>
             ))}
-          </ul>
+          </div>
         </div>
       </li>
       {nav.links.map((link) => (
         <li>
           <a
             href={link.href}
-            class="rounded px-3 py-2 text-sm font-medium text-strata-cream/80 hover:text-strata-cream"
+            class="rounded px-3 py-2 text-base font-semibold text-strata-cream hover:text-white"
             {...('external' in link && link.external ? { target: '_blank', rel: 'noopener' } : {})}
           >
             {link.label}

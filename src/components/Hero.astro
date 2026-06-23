@@ -14,9 +14,10 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
 
 <section class="hero-wrap relative overflow-hidden bg-strata-rust text-strata-cream">
   <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <div class="hero" data-hero data-reduced={undefined}>
+    <div class="hero" data-hero>
+      <div class="hero-stage" data-stage>
       <!-- SLIDE 1 -->
-      <div class="hero-slide" data-slide>
+      <div class="hero-slide is-active" data-slide>
         <div class="mx-auto flex min-h-[34rem] max-w-3xl flex-col items-center justify-center py-20 text-center">
           <h1 class="font-display text-2xl font-bold leading-snug tracking-tight sm:text-3xl lg:text-4xl">
             <span
@@ -39,7 +40,7 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       </div>
 
       <!-- SLIDE 2 -->
-      <div class="hero-slide" data-slide hidden>
+      <div class="hero-slide" data-slide>
         <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
             The most capable BI platform for the AI age
@@ -52,7 +53,7 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       </div>
 
       <!-- SLIDE 3 -->
-      <div class="hero-slide" data-slide hidden>
+      <div class="hero-slide" data-slide>
         <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
             Highest-performance AI turns,
@@ -68,6 +69,7 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
           </div>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- controls -->
@@ -76,8 +78,25 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
 </section>
 
 <style>
+  /* Slides are stacked absolutely so switching crossfades instead of jumping;
+     the stage height is animated by JS to the active slide's height. */
+  .hero-stage {
+    position: relative;
+    transition: height 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   .hero-slide {
-    animation: slide-in 0.6s ease both;
+    position: absolute;
+    inset: 0 0 auto 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.5s ease,
+      visibility 0.5s ease;
+  }
+  .hero-slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    position: relative; /* the active slide also defines fallback height before JS runs */
   }
 
   /* Live "typing" headline word: types in, holds, strikes through, clears,
@@ -143,17 +162,6 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       filter: drop-shadow(0 0 12px color-mix(in srgb, var(--strata-peach) 80%, transparent));
     }
   }
-  @keyframes slide-in {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .hero-slide {
       animation: none;
@@ -171,6 +179,7 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
   const hero = document.querySelector<HTMLElement>('[data-hero]');
   if (hero) {
     const slides = Array.from(hero.querySelectorAll<HTMLElement>('[data-slide]'));
+    const stage = hero.querySelector<HTMLElement>('[data-stage]');
     const dotsWrap = document.querySelector<HTMLElement>('[data-dots]');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const SLIDE_MS = 9000; // dwell for slides 2 & 3 (slide 1 is typer-driven)
@@ -254,10 +263,19 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       return b;
     });
 
+    // Animate the stage to the active slide's height so switching doesn't jump.
+    function setStageHeight() {
+      if (stage) stage.style.height = `${slides[current].offsetHeight}px`;
+    }
+
     function show(i: number) {
       typerToken++; // cancel any running typewriter
       if (timer) clearTimeout(timer);
-      slides.forEach((s, idx) => (s.hidden = idx !== i));
+      slides.forEach((s, idx) => {
+        const active = idx === i;
+        s.classList.toggle('is-active', active);
+        s.setAttribute('aria-hidden', String(!active));
+      });
       dots.forEach((d, idx) => {
         const active = idx === i;
         d.classList.toggle('bg-strata-cream', active);
@@ -265,6 +283,7 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
         d.classList.toggle('bg-strata-cream/40', !active);
       });
       current = i;
+      setStageHeight();
       schedule();
     }
 
@@ -283,6 +302,10 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
     }
 
     show(0);
+
+    // Re-measure on resize and after fonts/images settle so the height stays right.
+    window.addEventListener('resize', setStageHeight);
+    window.addEventListener('load', setStageHeight);
 
     // Pause on hover: cancel the timer + typewriter; resume on leave.
     hero.addEventListener('mouseenter', () => {
