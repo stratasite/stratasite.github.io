@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sync-assets": "node scripts/sync-assets.mjs",
+    "predev": "node scripts/sync-assets.mjs",
+    "prebuild": "node scripts/sync-assets.mjs",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
