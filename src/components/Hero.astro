@@ -1,9 +1,10 @@
 ---
 // Hero: three auto-advancing slides.
-//  1. Animated headline with a "thrilling" rotating word (agents/humans/everyone).
+//  1. Headline whose last word is "typed" live, struck out, and retyped
+//     (agents -> humans -> everyone), with a blinking caret.
 //  2. Product showcase (animated stand-in for the product GIF).
 //  3. Animated federated Open OLAP routing diagram.
-// Carousel + rotator are vanilla JS; animation respects prefers-reduced-motion.
+// Carousel + typewriter are vanilla JS; animation respects prefers-reduced-motion.
 import CtaButton from './CtaButton.astro';
 import ProductShowcase from './ProductShowcase.astro';
 import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
@@ -11,25 +12,29 @@ import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
 const rotatingWords = ['Agents', 'Humans', 'Everyone'];
 ---
 
-<section class="hero-wrap relative overflow-hidden bg-background">
-  <!-- soft brand glow backdrop -->
-  <div class="hero-glow" aria-hidden="true"></div>
-
+<section class="hero-wrap relative overflow-hidden bg-strata-rust text-strata-cream">
   <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="hero" data-hero data-reduced={undefined}>
       <!-- SLIDE 1 -->
       <div class="hero-slide" data-slide>
         <div class="mx-auto flex min-h-[34rem] max-w-3xl flex-col items-center justify-center py-20 text-center">
-          <h1 class="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-            <span class="block text-foreground">Enterprise reporting for</span>
-            <span class="rotator" data-rotator data-words={JSON.stringify(rotatingWords)}>
-              <span class="rotator-word" data-word>{rotatingWords[0]}</span>
-            </span>
+          <h1 class="font-display text-2xl font-bold leading-snug tracking-tight sm:text-3xl lg:text-4xl">
+            <span
+              class="typer"
+              data-typer
+              data-prefix="Enterprise reporting for "
+              data-words={JSON.stringify(rotatingWords)}
+            ><span class="typer-prefix" data-prefix-el>Enterprise reporting for&nbsp;</span><span
+                class="typer-text"
+                data-text>{rotatingWords[rotatingWords.length - 1]}</span><span
+                class="typer-caret"
+                data-caret
+                aria-hidden="true"></span></span>
           </h1>
-          <p class="mt-6 max-w-xl text-lg text-muted-foreground">
+          <p class="mt-9 max-w-xl text-lg text-strata-cream/80">
             High-performance, AI-safe self-service analytics — one platform from warehouse to beautiful dashboard.
           </p>
-          <div class="mt-9"><CtaButton /></div>
+          <div class="mt-9"><CtaButton variant="inverse" /></div>
         </div>
       </div>
 
@@ -39,7 +44,7 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
             The most capable BI platform for the AI age
           </h2>
-          <p class="mt-5 max-w-xl text-lg text-muted-foreground">
+          <p class="mt-5 max-w-xl text-lg text-strata-cream/80">
             A governed semantic layer fused with beautiful-by-default dashboards.
           </p>
           <div class="mt-10 w-full"><ProductShowcase /></div>
@@ -51,12 +56,16 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
         <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
             Highest-performance AI turns,
-            <span class="text-primary">federated Open OLAP</span>
+            <span class="text-strata-peach">federated Open OLAP</span>
           </h2>
-          <p class="mt-5 max-w-xl text-lg text-muted-foreground">
+          <p class="mt-5 max-w-xl text-lg text-strata-cream/80">
             Partition-aware routing to fast hot tiers and aggregate tables — sub-second answers, lower warehouse spend.
           </p>
-          <div class="mt-10 w-full"><FederatedOlapDiagram /></div>
+          <div class="mt-10 w-full">
+            <div class="rounded-lg border border-border bg-surface p-6 shadow-2xl">
+              <FederatedOlapDiagram />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -67,64 +76,71 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
 </section>
 
 <style>
-  .hero-glow {
-    position: absolute;
-    inset: -20% -10% auto -10%;
-    height: 60%;
-    background: radial-gradient(
-      60% 80% at 50% 0%,
-      color-mix(in srgb, var(--strata-peach) 45%, transparent),
-      transparent 70%
-    );
-    pointer-events: none;
-  }
-
   .hero-slide {
     animation: slide-in 0.6s ease both;
   }
 
-  /* Rotating word: gradient text + a "thrilling" entrance per word. */
-  .rotator {
-    display: block;
-    min-height: 1.1em;
+  /* Live "typing" headline word: types in, holds, strikes through, clears,
+     then types the next. Caret blinks while idle; payoff word ("everyone")
+     holds longer with a glow flash. */
+  .typer {
+    display: inline;
   }
-  .rotator-word {
+  /* match the other slides: light lead-in + peach accent word */
+  .typer-prefix {
+    color: var(--strata-cream);
+  }
+  .typer-text {
     display: inline-block;
-    background: linear-gradient(
-      100deg,
-      var(--strata-rust) 0%,
-      var(--strata-orange) 40%,
-      var(--strata-peach) 55%,
-      var(--strata-orange) 70%,
-      var(--strata-rust) 100%
-    );
-    background-size: 200% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: shimmer 4s linear infinite;
+    position: relative;
+    white-space: nowrap;
+    color: var(--strata-peach);
   }
-  .rotator-word.enter {
-    animation:
-      shimmer 4s linear infinite,
-      word-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* strike-through line, drawn left-to-right when crossing a word out */
+  .typer-text::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0.58em;
+    height: 0.07em;
+    border-radius: 2px;
+    background: var(--strata-cream);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.22s ease;
+  }
+  .typer-text.strike::after {
+    transform: scaleX(1);
+  }
+  .typer-text.glow {
+    animation: glow-flash 0.9s ease;
+  }
+  .typer-caret {
+    display: inline-block;
+    width: 0.07em;
+    height: 0.9em;
+    margin-left: 0.06em;
+    border-radius: 1px;
+    background: var(--strata-peach);
+    transform: translateY(0.06em);
+  }
+  .typer-caret.blink {
+    animation: caret-blink 1s steps(1) infinite;
   }
 
-  @keyframes word-in {
-    0% {
+  @keyframes caret-blink {
+    50% {
       opacity: 0;
-      transform: translateY(0.5em) scale(0.96);
-      filter: blur(8px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      filter: blur(0);
     }
   }
-  @keyframes shimmer {
-    to {
-      background-position: 200% 0;
+  @keyframes glow-flash {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    40% {
+      filter: drop-shadow(0 0 12px color-mix(in srgb, var(--strata-peach) 80%, transparent));
     }
   }
   @keyframes slide-in {
@@ -139,16 +155,14 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero-slide,
-    .rotator-word,
-    .rotator-word.enter {
+    .hero-slide {
       animation: none;
     }
-    .rotator-word {
-      background: none;
-      -webkit-background-clip: border-box;
-      background-clip: border-box;
-      color: var(--primary);
+    .typer-text.glow {
+      animation: none;
+    }
+    .typer-caret {
+      display: none;
     }
   }
 </style>
@@ -159,59 +173,122 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
     const slides = Array.from(hero.querySelectorAll<HTMLElement>('[data-slide]'));
     const dotsWrap = document.querySelector<HTMLElement>('[data-dots]');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const SLIDE_MS = 9000; // dwell for slides 2 & 3 (slide 1 is typer-driven)
     let current = 0;
-    let timer: ReturnType<typeof setInterval> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let typerToken = 0; // bump to cancel an in-flight typewriter run
 
+    // --- Slide 1 typewriter: type a word, hold, strike out, clear, next.
+    // The last word is the payoff: it holds longer + glows, then hands control
+    // back to the carousel so the slide only advances once it has been shown.
+    const typer = hero.querySelector<HTMLElement>('[data-typer]');
+    const prefixEl = typer?.querySelector<HTMLElement>('[data-prefix-el]');
+    const textEl = typer?.querySelector<HTMLElement>('[data-text]');
+    const caretEl = typer?.querySelector<HTMLElement>('[data-caret]');
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    async function runTyper() {
+      if (!typer || !prefixEl || !textEl || !caretEl) return;
+      const token = ++typerToken;
+      const cancelled = () => token !== typerToken;
+      const prefix = typer.dataset.prefix || '';
+      const words: string[] = JSON.parse(typer.dataset.words || '[]');
+      const TYPE = 90; // ms per character for the changing word
+      const PREFIX_TYPE = 42; // faster lead-in for the static sentence
+      const HOLD = 1200;
+      const HOLD_PAYOFF = 2600;
+
+      // reset, then type the lead-in sentence once
+      caretEl.classList.remove('blink');
+      textEl.classList.remove('strike', 'glow');
+      textEl.textContent = '';
+      prefixEl.textContent = '';
+      for (let n = 1; n <= prefix.length; n++) {
+        if (cancelled()) return;
+        prefixEl.textContent = prefix.slice(0, n);
+        await sleep(PREFIX_TYPE + Math.random() * 30);
+      }
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const payoff = i === words.length - 1; // last word is the inclusive payoff
+
+        caretEl.classList.remove('blink');
+        for (let n = 1; n <= word.length; n++) {
+          if (cancelled()) return;
+          textEl.textContent = word.slice(0, n);
+          await sleep(TYPE + Math.random() * 60);
+        }
+
+        caretEl.classList.add('blink');
+        if (payoff) {
+          // hold the payoff with a glow, then advance the carousel
+          textEl.classList.add('glow');
+          await sleep(HOLD_PAYOFF);
+          if (cancelled()) return;
+          advance();
+          return;
+        }
+
+        // hold, strike out, clear, then on to the next word
+        await sleep(HOLD);
+        if (cancelled()) return;
+        caretEl.classList.remove('blink');
+        textEl.classList.add('strike');
+        await sleep(520);
+        if (cancelled()) return;
+        textEl.classList.remove('strike');
+        textEl.textContent = '';
+        await sleep(260);
+      }
+    }
+
+    // --- Carousel ---
     const dots = slides.map((_, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'h-2.5 w-2.5 rounded-full bg-border transition-all hover:bg-muted-foreground';
+      b.className = 'h-2.5 w-2.5 rounded-full bg-strata-cream/40 transition-all hover:bg-strata-cream/70';
       b.setAttribute('aria-label', `Show slide ${i + 1}`);
-      b.addEventListener('click', () => {
-        show(i);
-        restart();
-      });
+      b.addEventListener('click', () => show(i));
       dotsWrap?.appendChild(b);
       return b;
     });
 
     function show(i: number) {
+      typerToken++; // cancel any running typewriter
+      if (timer) clearTimeout(timer);
       slides.forEach((s, idx) => (s.hidden = idx !== i));
       dots.forEach((d, idx) => {
         const active = idx === i;
-        d.classList.toggle('bg-primary', active);
+        d.classList.toggle('bg-strata-cream', active);
         d.classList.toggle('w-6', active);
-        d.classList.toggle('bg-border', !active);
+        d.classList.toggle('bg-strata-cream/40', !active);
       });
       current = i;
+      schedule();
     }
 
-    function restart() {
-      if (timer) clearInterval(timer);
-      timer = setInterval(() => show((current + 1) % slides.length), 6500);
+    function advance() {
+      show((current + 1) % slides.length);
+    }
+
+    function schedule() {
+      if (timer) clearTimeout(timer);
+      if (reduced) return; // no auto-advance under reduced motion
+      if (current === 0 && textEl) {
+        runTyper(); // slide 1 advances when the payoff word finishes
+      } else {
+        timer = setTimeout(advance, SLIDE_MS);
+      }
     }
 
     show(0);
-    if (!reduced) restart();
 
-    // Pause auto-advance on hover/focus for accessibility.
-    hero.addEventListener('mouseenter', () => timer && clearInterval(timer));
-    hero.addEventListener('mouseleave', () => !reduced && restart());
-
-    // Rotating word on slide 1.
-    const rotator = hero.querySelector<HTMLElement>('[data-rotator]');
-    const wordEl = rotator?.querySelector<HTMLElement>('[data-word]');
-    if (rotator && wordEl && !reduced) {
-      const words: string[] = JSON.parse(rotator.dataset.words || '[]');
-      let w = 0;
-      setInterval(() => {
-        w = (w + 1) % words.length;
-        wordEl.classList.remove('enter');
-        // reflow to restart the animation
-        void wordEl.offsetWidth;
-        wordEl.textContent = words[w];
-        wordEl.classList.add('enter');
-      }, 2400);
-    }
+    // Pause on hover: cancel the timer + typewriter; resume on leave.
+    hero.addEventListener('mouseenter', () => {
+      typerToken++;
+      if (timer) clearTimeout(timer);
+    });
+    hero.addEventListener('mouseleave', () => schedule());
   }
 </script>
