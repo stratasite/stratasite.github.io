@@ -14,19 +14,19 @@
   --strata-ink:         #1C2B45;  /* cool accent: text, trend line, wordmark */
   --strata-ink-soft:    #243450;  /* secondary ink */
 
-  /* --- Semantic tokens (light theme) --- */
-  --background:          #FBF7F1;
-  --surface:            #FFFFFF;
-  --surface-2:          #FFF6EA;
-  --foreground:         #1C2B45;  /* body text = ink */
-  --muted-foreground:   #5B6472;
-  --border:             #ECE3D6;
+  /* --- Semantic tokens (rust theme — rust is the primary background) --- */
+  --background:          #BC3908;  /* rust */
+  --surface:            #AF3306;  /* card surface: a touch deeper than bg */
+  --surface-2:          #9C2A04;  /* deepest panel = rust-deep */
+  --foreground:         #FFF6EA;  /* headings / strong text = cream */
+  --muted-foreground:   #F7E8D6;  /* body/paragraph: solid warm off-white, AA-readable on rust */
+  --border:             rgba(255, 246, 234, 0.16);  /* subtle warm hairline */
 
-  --primary:            #BC3908;
-  --primary-foreground: #FFF6EA;
-  --accent:             #1C2B45;
-  --accent-foreground:  #FFF6EA;
-  --ring:               #BC3908;
+  --primary:            #FFC26E;  /* peach: the accent that pops on rust */
+  --primary-foreground: #9C2A04;  /* deep rust text on peach */
+  --accent:             #FFF6EA;
+  --accent-foreground:  #9C2A04;
+  --ring:               #FFC26E;
 
   /* --- Data-viz: categorical series (use in this order) --- */
   --chart-1: #BC3908;  /* rust */

@@ -17,6 +17,9 @@ Core rule: **never hardcode hex values in components** — reference tokens
 missing, add it to `brand/tokens.css` first.
 
 ## Conventions
+- Theme is **rust-primary**: rust `--background`, cream `--foreground`, peach
+  `--primary` accent, ink footer. Body copy uses `--muted-foreground` (warm
+  off-white). Use semantic tokens, not raw swatches.
 - Headings/wordmark use Space Grotesk (`font-display`); UI/body uses Inter (`font-sans`).
 - Product name is lowercase in UI and prose: "strata".
 - Charts are first-class: use the `--chart-*` series and `--ramp-*` sequential ramp.

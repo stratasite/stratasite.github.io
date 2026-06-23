@@ -9,13 +9,20 @@ consistently in all UI, marketing, and generated assets.
 - ALWAYS reference tokens: `var(--primary)`, `bg-primary`, `text-foreground`, `--chart-1`…
 - NEVER paste raw hex (e.g. `#BC3908`) into a component. If a needed color is
   missing, add it to `brand/tokens.css` first, then reference it.
-- Light/dark are handled by the `.dark` class on `<html>`; don't fork colors per theme in components.
+- The product ships a single **rust-primary** theme (semantic tokens in `brand/tokens.css`); don't fork colors per theme in components.
 
 ## Palette
-- Primary: rust `--strata-rust` (#BC3908). Deepest: `--strata-rust-deep` (#9C2A04).
+- Rust `--strata-rust` (#BC3908) — the primary **background**. Deepest: `--strata-rust-deep` (#9C2A04) for panels/cards.
 - Warm layers: orange `--strata-orange` (#E0641F), peach `--strata-peach` (#FFC26E).
-- Light field: cream `--strata-cream` (#FFF6EA).
-- Cool accent (text, lines, emphasis): ink `--strata-ink` (#1C2B45).
+- Cream `--strata-cream` (#FFF6EA) — the primary **text/foreground** on rust.
+- Ink `--strata-ink` (#1C2B45) — the footer background and the data-horizon trend line.
+
+## Theme — semantic roles (rust-primary)
+Reference these semantic tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, `bg-primary`…), never the raw swatches, in components:
+- `--background` rust; `--surface` / `--surface-2` deeper rust for cards/panels.
+- `--foreground` cream for headings/strong text; `--muted-foreground` `#F7E8D6` (solid warm off-white) for body copy — readable on rust, AA-contrast.
+- `--primary` peach for accents, links, and CTAs, on `--primary-foreground` deep rust.
+- `--border` a subtle warm hairline; the footer uses ink (`--strata-ink`).
 
 ## Typography
 - Display / headings / wordmark: **Space Grotesk** (`font-display`).

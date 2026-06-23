@@ -11,12 +11,11 @@ const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).
 const year = new Date().getFullYear();
 ---
 
-<footer class="border-t border-border bg-surface-2">
+<footer class="bg-strata-ink text-strata-cream">
   <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8">
     <div class="md:col-span-1">
       <div class="flex items-center gap-2.5">
-        <img src="/brand/assets/strata_mark.svg" alt="" class="h-7 w-auto dark:hidden" />
-        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="hidden h-7 w-auto dark:block" />
+        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="h-7 w-auto" />
         <span class="font-display text-lg font-bold tracking-tight">strata</span>
       </div>
       <p class="mt-3 max-w-xs text-sm text-muted-foreground">{site.description}</p>
