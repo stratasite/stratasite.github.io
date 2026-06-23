@@ -1,162 +1,175 @@
 ---
-// Animated SVG explaining the federated Open OLAP query engine for hero slide 3.
-// A query from humans/agents enters the strata semantic layer, which routes
-// partition-aware: preferentially to fast hot tiers / aggregate tables, falling
-// back to the warehouse of record. Flow is animated with stroke-dashoffset
-// (disabled under prefers-reduced-motion). All color comes from brand tokens.
+// Federated Open OLAP routing diagram. Lives directly on the hero (no card /
+// shadow / fill). Clients (icons) -> strata semantic layer -> temperature tiers.
+// Aggregate-awareness is shown as a property of strata's routing, not as a
+// separate destination (aggregate tables are sub-selections within a warehouse).
+const icons = {
+  user: `<circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.5 8.5 0 0 1 13 0"/>`,
+  bot: `<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><path d="M9 13v1.5"/><path d="M15 13v1.5"/>`,
+  plug: `<path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0Z"/><path d="M12 17v5"/>`,
+  braces: `<path d="M7 3a2 2 0 0 0-2 2v3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3a2 2 0 0 0 2 2"/><path d="M17 3a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3a2 2 0 0 1-2 2"/>`,
+  database: `<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.6 3.6 3 8 3s8-1.4 8-3V5"/><path d="M4 12c0 1.6 3.6 3 8 3s8-1.4 8-3"/>`,
+};
+
+const clients = [
+  { icon: 'user', label: 'Humans', y: 69 },
+  { icon: 'bot', label: 'Agents', y: 143 },
+  { icon: 'plug', label: 'MCP', y: 217 },
+  { icon: 'braces', label: 'API', y: 291 },
+];
+
+const tiers = [
+  { key: 'hot', name: 'Hot tier', engine: 'ClickHouse · Druid', y: 92 },
+  { key: 'warm', name: 'Warm tier', engine: 'Snowflake', y: 180 },
+  { key: 'cold', name: 'Cold tier', engine: 'AWS Athena', y: 268 },
+];
 ---
 
-<figure class="olap mx-auto w-full max-w-3xl" aria-label="Federated Open OLAP query routing diagram">
-  <svg viewBox="0 0 820 360" role="img" class="h-auto w-full">
-    <title>Strata routes queries to fast hot tiers and aggregate tables, falling back to the warehouse</title>
+<figure class="olap mx-auto w-full max-w-3xl" aria-label="Federated Open OLAP query routing">
+  <svg viewBox="0 0 888 360" role="img" class="h-auto w-full">
+    <title>Clients route through the strata semantic layer to hot, warm, and cold tiers</title>
 
-    <!-- Flow paths (drawn first so nodes sit on top) -->
-    <g class="flow" fill="none" stroke-width="2">
-      <!-- sources -> strata -->
-      <path class="line line-in" d="M150 90 C 250 90, 250 160, 360 170" />
-      <path class="line line-in" d="M150 270 C 250 270, 250 200, 360 190" />
-      <!-- strata -> destinations -->
-      <path class="line line-hot" d="M540 150 C 620 130, 640 80, 690 70" />
-      <path class="line line-hot" d="M540 170 C 620 160, 640 140, 690 135" />
-      <path class="line line-agg" d="M540 190 C 620 200, 640 200, 690 200" />
-      <path class="line line-cold" d="M540 210 C 620 240, 640 290, 690 300" />
+    <!-- links (behind nodes) -->
+    <g>
+      {clients.map((c) => (
+        <path class="link-in" d={`M196 ${c.y} C 272 ${c.y}, 300 180, 360 180`} />
+      ))}
+      {tiers.map((t) => (
+        <path class={`link link-${t.key}`} d={`M520 180 C 600 180, 622 ${t.y}, 690 ${t.y}`} />
+      ))}
     </g>
 
-    <!-- Inputs -->
-    <g class="node node-in">
-      <rect x="40" y="64" width="110" height="52" rx="10" />
-      <text x="95" y="95">Humans</text>
-    </g>
-    <g class="node node-in">
-      <rect x="40" y="244" width="110" height="52" rx="10" />
-      <text x="95" y="275">Agents</text>
-    </g>
+    <!-- clients -->
+    {
+      clients.map((c) => (
+        <g>
+          <rect x="24" y={c.y - 29} width="172" height="58" rx="12" class="node" />
+          <svg x="42" y={c.y - 12} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ic" set:html={icons[c.icon]} />
+          <text x="80" y={c.y} class="lbl" dominant-baseline="middle">{c.label}</text>
+        </g>
+      ))
+    }
 
-    <!-- Strata semantic layer -->
-    <g class="node node-strata">
-      <rect x="360" y="140" width="180" height="80" rx="14" />
-      <text x="450" y="172" class="t-title">strata</text>
-      <text x="450" y="196" class="t-sub">semantic layer</text>
+    <!-- strata hub -->
+    <g>
+      <rect x="360" y="138" width="160" height="84" rx="16" class="hub" />
+      <text x="440" y="174" class="hub-title" text-anchor="middle">strata</text>
+      <text x="440" y="198" class="hub-sub" text-anchor="middle">semantic layer</text>
     </g>
-    <text x="450" y="252" class="route-label">partition-aware routing</text>
+    <text x="440" y="248" class="route" text-anchor="middle">
+      <tspan x="440">Partition and Aggregate Aware</tspan>
+      <tspan x="440" dy="16">Semantic Routing</tspan>
+    </text>
 
-    <!-- Destinations -->
-    <g class="node node-hot">
-      <rect x="690" y="44" width="120" height="52" rx="10" />
-      <text x="750" y="68" class="t-dest">hot tier</text>
-      <text x="750" y="86" class="t-destsub">ClickHouse · Druid</text>
-    </g>
-    <g class="node node-agg">
-      <rect x="690" y="174" width="120" height="52" rx="10" />
-      <text x="750" y="198" class="t-dest">aggregate</text>
-      <text x="750" y="216" class="t-destsub">pre-agg tables</text>
-    </g>
-    <g class="node node-cold">
-      <rect x="690" y="276" width="120" height="52" rx="10" />
-      <text x="750" y="300" class="t-dest">warehouse</text>
-      <text x="750" y="318" class="t-destsub">Snowflake</text>
-    </g>
+    <!-- tiers -->
+    {
+      tiers.map((t) => (
+        <g>
+          <rect x="690" y={t.y - 30} width="174" height="60" rx="12" class="node" />
+          <svg x="706" y={t.y - 12} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class={`ic ic-${t.key}`} set:html={icons.database} />
+          <text x="742" y={t.y - 7} class="lbl" dominant-baseline="middle">{t.name}</text>
+          <text x="742" y={t.y + 11} class="sub" dominant-baseline="middle">{t.engine}</text>
+        </g>
+      ))
+    }
   </svg>
 </figure>
 
 <style>
-  .olap text {
+  .olap .node {
+    fill: color-mix(in srgb, var(--strata-cream) 5%, transparent);
+    stroke: color-mix(in srgb, var(--strata-cream) 22%, transparent);
+    stroke-width: 1.2;
+  }
+  .olap .lbl {
+    fill: var(--strata-cream);
     font-family: var(--font-sans);
-    fill: var(--foreground);
-    text-anchor: middle;
-    dominant-baseline: middle;
     font-size: 15px;
     font-weight: 600;
   }
-  .olap .t-title {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 700;
-    fill: var(--primary-foreground);
-  }
-  .olap .t-sub {
+  .olap .sub {
+    fill: color-mix(in srgb, var(--strata-cream) 70%, transparent);
+    font-family: var(--font-sans);
     font-size: 12px;
     font-weight: 500;
-    fill: var(--primary-foreground);
-    opacity: 0.85;
   }
-  .olap .t-dest {
-    font-size: 14px;
+  .olap .ic {
+    stroke: var(--strata-peach);
   }
-  .olap .t-destsub {
+  .olap .ic-hot {
+    stroke: var(--strata-peach);
+  }
+  .olap .ic-warm {
+    stroke: var(--strata-orange);
+  }
+  .olap .ic-cold {
+    stroke: var(--chart-7);
+  }
+
+  .olap .hub {
+    fill: var(--strata-peach);
+  }
+  .olap .hub-title {
+    fill: var(--strata-rust-deep);
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .olap .hub-sub {
+    fill: var(--strata-rust-deep);
+    font-family: var(--font-display);
     font-size: 11px;
-    font-weight: 500;
-    fill: var(--muted-foreground);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
-  .olap .route-label {
+  .olap .route {
+    fill: color-mix(in srgb, var(--strata-cream) 70%, transparent);
+    font-family: var(--font-sans);
     font-size: 11px;
     font-weight: 600;
-    fill: var(--muted-foreground);
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
-  .olap .node rect {
-    fill: var(--surface);
-    stroke: var(--border);
-    stroke-width: 1.5;
+  .olap .link-in,
+  .olap .link {
+    fill: none;
+    stroke-dasharray: 6 6;
   }
-  .olap .node-strata rect {
-    fill: var(--primary);
-    stroke: var(--primary);
-  }
-  /* Hot tier is the preferred path — emphasize it. */
-  .olap .node-hot rect {
-    stroke: var(--primary);
+  .olap .link-in {
+    stroke: color-mix(in srgb, var(--strata-cream) 32%, transparent);
     stroke-width: 2;
+    animation: flow 1.9s linear infinite;
   }
-
-  .olap .line {
-    stroke: var(--border);
-    stroke-dasharray: 7 7;
+  /* hot path is preferred: brighter, thicker, faster */
+  .olap .link-hot {
+    stroke: var(--strata-peach);
+    stroke-width: 3;
+    animation: flow 1.1s linear infinite;
   }
-  .olap .line-in {
-    stroke: var(--chart-7, var(--muted-foreground));
-    animation: flow 1.6s linear infinite;
+  .olap .link-warm {
+    stroke: var(--strata-orange);
+    stroke-width: 2;
+    animation: flow 1.7s linear infinite;
   }
-  .olap .line-hot {
-    stroke: var(--primary);
-    stroke-width: 2.5;
-    animation: flow 1s linear infinite;
-  }
-  .olap .line-agg {
-    stroke: var(--strata-orange, var(--primary));
-    animation: flow 1.4s linear infinite;
-  }
-  .olap .line-cold {
-    stroke: var(--border);
-    animation: flow 2.6s linear infinite;
+  .olap .link-cold {
+    stroke: var(--chart-7);
+    stroke-width: 2;
     opacity: 0.7;
-  }
-
-  /* Pulse the preferred destination. */
-  .olap .node-hot rect {
-    animation: pulse 2s ease-in-out infinite;
+    animation: flow 2.7s linear infinite;
   }
 
   @keyframes flow {
     to {
-      stroke-dashoffset: -28;
-    }
-  }
-  @keyframes pulse {
-    0%, 100% {
-      filter: none;
-    }
-    50% {
-      filter: drop-shadow(0 0 6px var(--primary));
+      stroke-dashoffset: -24;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .olap .line,
-    .olap .node-hot rect {
-      animation: none !important;
+    .olap .link-in,
+    .olap .link {
+      animation: none;
     }
   }
 </style>

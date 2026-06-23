@@ -3,10 +3,10 @@ import { site } from '../config/site';
 
 interface Props {
   /**
-   * Visual style. `primary` = filled rust; `ghost` = outlined for dark/hero;
-   * `inverse` = cream-on-rust, for use over the rust hero.
+   * Visual style. `primary` = filled peach (the demo CTA, used site-wide);
+   * `ghost` = outlined/subtle.
    */
-  variant?: 'primary' | 'ghost' | 'inverse';
+  variant?: 'primary' | 'ghost';
   label?: string;
   class?: string;
 }
@@ -14,13 +14,14 @@ interface Props {
 const { variant = 'primary', label = site.demoLabel, class: className = '' } = Astro.props;
 
 const base =
-  'inline-flex items-center justify-center rounded-sm shadow-sm font-display font-semibold tracking-tight px-6 py-3 transition-[background-color,box-shadow] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+  'cta inline-flex items-center justify-center rounded-sm no-underline shadow-sm font-display font-bold uppercase tracking-wide px-6 py-3 transition-[box-shadow,transform,filter] duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const variants = {
-  primary: 'bg-primary text-primary-foreground hover:bg-strata-rust-deep',
+  // Peach (primary) background with deep-rust text, site-wide. Hover flair comes
+  // from the base (lift + shadow + slight brightness), so the text stays crisp.
+  primary: 'bg-primary text-primary-foreground',
   ghost:
     'border border-border bg-surface/60 text-foreground hover:bg-surface backdrop-blur',
-  inverse: 'bg-strata-cream text-strata-rust hover:bg-white',
 };
 ---
 

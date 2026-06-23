@@ -49,7 +49,7 @@
   .prose-strata ol {
     @apply mt-4 list-decimal space-y-2 pl-6;
   }
-  .prose-strata a {
+  .prose-strata a:not(.cta) {
     @apply font-medium text-primary underline underline-offset-2 hover:text-strata-rust-deep;
   }
   .prose-strata img,
