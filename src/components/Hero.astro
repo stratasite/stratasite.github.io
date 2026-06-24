@@ -6,7 +6,6 @@
 //  3. Animated federated Open OLAP routing diagram.
 // Carousel + typewriter are vanilla JS; animation respects prefers-reduced-motion.
 import CtaButton from './CtaButton.astro';
-import ProductShowcase from './ProductShowcase.astro';
 import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
 
 const rotatingWords = ['Agents', 'Humans', 'Everyone'];
@@ -58,12 +57,20 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       <div class="hero-slide" data-slide>
         <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-            The most capable BI platform for the AI age
+            The most capable <span class="text-primary">Business Intelligence</span> platform for the AI age
           </h2>
-          <p class="mt-5 max-w-xl text-lg text-muted-foreground">
-            A governed semantic layer fused with beautiful-by-default dashboards.
-          </p>
-          <div class="mt-10 w-full"><ProductShowcase /></div>
+          <div class="hero-video mt-10 w-full">
+            <video
+              class="hero-video-el w-full rounded-xl"
+              src="/strata_hero.mp4"
+              autoplay
+              loop
+              muted
+              playsinline
+              preload="metadata"
+              aria-label="strata product walkthrough"
+            ></video>
+          </div>
         </div>
       </div>
 
@@ -71,8 +78,8 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       <div class="hero-slide" data-slide>
         <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
           <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-            Highest-performance AI turns,
-            <span class="text-strata-peach">federated Open OLAP</span>
+            High performance AI turns on
+            <span class="text-strata-peach">federated Open OLAP engines</span>
           </h2>
           <p class="mt-5 max-w-xl text-lg text-muted-foreground">
             Partition-aware routing to fast hot tiers and aggregate tables — sub-second answers, lower warehouse spend.
@@ -146,6 +153,13 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       transform: none;
       transition: none;
     }
+  }
+
+  /* Hero product video: sits flat on the rust background (no frame/card),
+     with a soft peach glow pooled only beneath it. */
+  .hero-video-el {
+    display: block;
+    box-shadow: 0 44px 70px -24px color-mix(in srgb, var(--strata-peach) 60%, transparent);
   }
 
   /* Live "typing" headline word: types in, holds, strikes through, clears,
