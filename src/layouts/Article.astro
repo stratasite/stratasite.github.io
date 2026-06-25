@@ -9,9 +9,13 @@ interface Props {
   eyebrow?: string;
   sections?: { id: string; label: string }[];
   description?: string;
+  // Optional lead media shown full-width under the header (video wins over image).
+  // The summary above acts as its caption.
+  video?: string;
+  image?: string;
 }
 
-const { title, summary, eyebrow, sections = [], description } = Astro.props;
+const { title, summary, eyebrow, sections = [], description, video, image } = Astro.props;
 ---
 
 <Base title={`${title} — strata`} description={description ?? summary}>
@@ -23,6 +27,25 @@ const { title, summary, eyebrow, sections = [], description } = Astro.props;
       <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
       {summary && <p class="mt-5 text-lg text-muted-foreground">{summary}</p>}
     </header>
+
+    {(video || image) && (
+      <figure class="article-lead mx-auto mt-12 max-w-4xl">
+        {video ? (
+          <video
+            class="article-lead-media w-full rounded-2xl"
+            src={video}
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="metadata"
+            aria-label={`${title} product demo`}
+          />
+        ) : (
+          <img src={image} alt="" class="article-lead-media w-full rounded-2xl" loading="eager" />
+        )}
+      </figure>
+    )}
 
     <div class="mt-14 lg:grid lg:grid-cols-[1fr_15rem] lg:gap-12">
       <!-- Content: MDX renders prose here; `.prose-strata` styles it. -->
@@ -45,3 +68,14 @@ const { title, summary, eyebrow, sections = [], description } = Astro.props;
     </div>
   </article>
 </Base>
+
+<style>
+  /* Lead media floats on the rust page with a soft peach glow + depth shadow,
+     matching the homepage feature row. */
+  .article-lead-media {
+    display: block;
+    box-shadow:
+      0 24px 50px -18px rgba(0, 0, 0, 0.5),
+      0 0 90px 6px color-mix(in srgb, var(--strata-peach) 32%, transparent);
+  }
+</style>

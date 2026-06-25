@@ -1,34 +1,46 @@
 ---
-title: Automatic grain-safe blending
-summary: Blend measures across fact domains by naming, not configuration — never a silent wrong number.
+title: Automatic Cross Domain Blending
+summary: Blend measures across fact domains by naming, not configuration. Reduce burden on data engineering with fewer customization requests.
 icon: layers
 order: 10
 sections:
-  - { id: the-problem, label: The problem }
-  - { id: how-it-works, label: How it works }
-  - { id: why-it-matters, label: Why it matters }
+  - { id: the-problem, label: The Problem }
+  - { id: how-strata-automatic-blending-works, label: How Strata Automatic Blending Works }
+  - { id: why-it-matters, label: Why it Matters }
 ---
 
-## The problem
+## The Problem
 
 Measures live at different granularities across fact domains. Naive tools either
-refuse valid cross-domain questions or silently join facts and double-count,
-producing confident wrong numbers — the #1 reason "AI agent over the warehouse"
-projects fail.
+refuse valid cross domain questions or require frequent involvment from data engineers. 
+These engineers are bogged down creating new explorers, cubes, or other artifacts to 
+enable novel analytics instead of building critical engineering infrastructure.
 
-## How it works
+End users are frusted not understanding why seemingly simple requests (i.e. Show me revenue
+and customer service contact volume by day) cannot be quickly resolved.
 
-For a valid multi-measure request across conformed dimensions, strata decomposes
+The core issues is that both measures originate from different fact tables at wildly different
+grains.  However, they also have overlapping granularities (i.e. date)!  You can see 
+the frustrations of engineers with simpleton Semantic Layers and users with the data.
+
+## How Strata Automatic Blending Works 
+
+For a valid multi-measure request across conformed dimensions, Strata decomposes
 into one subquery per fact, aggregates each fact independently to the common
 grain, then stitches results with a full outer join on the conformed dimension
-keys — never row-level fact-to-fact joins.
+keys. Strata will never force a fact to fact join.
 
 Compatibility is **derived, not configured**: each measure resolves to a source
-fact, that fact's grain, and reachable dimensions. Invalid combinations are
-refused before execution with an explanation and nearest-valid alternatives.
+fact, that fact's grain, and reachable dimensions. Invalid combinations are never even 
+reachable from the UI for users. And for agents, on each turn an explanation is given 
+so they can pursue an alternate course.
 
-## Why it matters
+This is all enabled by Strata's convention over configuration Semantic Modeling strategy where naming
+is strict.  This has the dual benefit of creating the simplest semantic model protocol
+while also enabling deep analytical self service.
+
+## Why it Matters
 
 The default failure mode is a *missed blend* (safe), never a *silent wrong
-answer* (dangerous). Users and agents never need to know grain details — the
-compiler makes it impossible to violate them.
+answer* (dangerous). Users and agents never need to know grain details, the
+Strata Semantic Layer makes it impossible to violate them.
