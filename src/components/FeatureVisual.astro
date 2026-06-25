@@ -1,13 +1,14 @@
 ---
 // Borderless, on-brand feature visual: the Strata "data horizon" — warm
 // stacked strata bands with a cool ink trend line. Varies per row via `index`.
-// Falls back to a real image if `image` is provided. No hard borders.
+// A looping product `video` wins, then a real `image`, else the generated graphic.
 interface Props {
   index: number;
   title: string;
   image?: string;
+  video?: string;
 }
-const { index, title, image } = Astro.props;
+const { index, title, image, video } = Astro.props;
 
 const trends = [
   { d: 'M16 168 L92 138 L168 182 L244 110 L320 132 L392 84', endY: 84 },
@@ -21,7 +22,18 @@ const t = trends[index % trends.length];
 ---
 
 {
-  image ? (
+  video ? (
+    <video
+      class="fv-video w-full rounded-2xl"
+      src={video}
+      autoplay
+      loop
+      muted
+      playsinline
+      preload="metadata"
+      aria-label={`${title} product demo`}
+    />
+  ) : image ? (
     <img src={image} alt="" class="w-full rounded-2xl object-cover shadow-sm" loading="lazy" />
   ) : (
     <div class="fv aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-sm">
@@ -38,6 +50,14 @@ const t = trends[index % trends.length];
 }
 
 <style>
+  /* Product video: a distinct app screen floating on the rust page, with a
+     soft peach glow + depth shadow so it reads as premium and clickable. */
+  .fv-video {
+    display: block;
+    box-shadow:
+      0 24px 50px -18px rgba(0, 0, 0, 0.5),
+      0 0 90px 6px color-mix(in srgb, var(--strata-peach) 32%, transparent);
+  }
   .fv {
     background: var(--strata-cream);
   }

@@ -20,6 +20,9 @@ const features = defineCollection({
     icon: z.string().optional(),
     // Optional hero/card image (path under /public or imported asset URL).
     image: z.string().optional(),
+    // Optional looping product video (path under /public). When set, the
+    // feature row shows this instead of the generated strata graphic.
+    video: z.string().optional(),
     // Display order on the homepage + dropdown (lower = earlier).
     order: z.number().default(100),
     draft: z.boolean().default(false),
