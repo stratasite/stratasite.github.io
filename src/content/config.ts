@@ -23,6 +23,9 @@ const features = defineCollection({
     // Optional looping product video (path under /public). When set, the
     // feature row shows this instead of the generated strata graphic.
     video: z.string().optional(),
+    // Optional named diagram component for the homepage row (e.g. 'blending').
+    // See src/components/FeatureVisual.astro for the registry.
+    diagram: z.string().optional(),
     // Display order on the homepage + dropdown (lower = earlier).
     order: z.number().default(100),
     draft: z.boolean().default(false),

@@ -19,7 +19,7 @@ const { features } = Astro.props;
       return (
         <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-16" data-reveal>
           <div class={flip ? 'lg:order-2' : ''}>
-            <FeatureVisual index={i} title={f.data.title} image={f.data.image} video={f.data.video} />
+            <FeatureVisual index={i} title={f.data.title} image={f.data.image} video={f.data.video} diagram={f.data.diagram} />
           </div>
 
           <div class={`relative ${flip ? 'lg:order-1' : ''}`}>

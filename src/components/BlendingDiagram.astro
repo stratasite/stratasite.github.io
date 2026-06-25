@@ -1,0 +1,284 @@
+---
+// Automatic grain-safe blending (drill-across) diagram. Borderless, on-brand.
+// Two facts at different grains share a *conformed* Date key (peach). Each fact
+// aggregates independently to that grain, then strata stitches them with a full
+// outer join on the shared key into one blended result — never a fact-to-fact
+// join. Each domain's measure keeps its color so it can be traced into the result.
+//   Date     -> peach (the conformed key / join)
+//   Revenue  -> teal  (--chart-5)
+//   Contacts -> gold  (--chart-6)
+// `mini` = a compact, label-stripped variant for the homepage feature row:
+// same cards/colors/join, re-laid-out top->down to fit a ~4:3 frame.
+interface Props {
+  mini?: boolean;
+}
+const { mini = false } = Astro.props;
+
+const facts = [
+  { name: 'Orders', grain: 'fact · per order line', measure: 'Revenue', cls: 'rev', y: 96 },
+  { name: 'Support', grain: 'fact · per ticket', measure: 'Contacts', cls: 'con', y: 264 },
+];
+---
+
+{
+  mini ? (
+    <figure class="blend blend-mini mx-auto w-full max-w-md" aria-label="Automatic grain-safe blending">
+      <svg viewBox="0 0 480 348" role="img" class="h-auto w-full">
+        <title>Two facts share a conformed Date key, joined into one blended result.</title>
+
+        {/* flows: each fact aggregates down to the join, then out to the result */}
+        <g>
+          <path class="flow" d="M120 112 C 150 144, 205 156, 240 160" />
+          <path class="flow" d="M360 112 C 330 144, 275 156, 240 160" />
+          <path class="flow flow-out" d="M240 228 L240 262" />
+        </g>
+
+        {/* fact cards (Orders left, Support right) */}
+        <g>
+          <rect class="card" x="12" y="16" width="216" height="96" rx="14" />
+          <text class="title" x="32" y="48">Orders</text>
+          <rect class="chip chip-date" x="32" y="66" width="78" height="30" rx="8" />
+          <text class="chip-lbl" x="71" y="86" text-anchor="middle">Date</text>
+          <rect class="chip chip-rev" x="118" y="66" width="92" height="30" rx="8" />
+          <text class="chip-lbl" x="164" y="86" text-anchor="middle">Revenue</text>
+        </g>
+        <g>
+          <rect class="card" x="252" y="16" width="216" height="96" rx="14" />
+          <text class="title" x="272" y="48">Support</text>
+          <rect class="chip chip-date" x="272" y="66" width="78" height="30" rx="8" />
+          <text class="chip-lbl" x="311" y="86" text-anchor="middle">Date</text>
+          <rect class="chip chip-con" x="358" y="66" width="92" height="30" rx="8" />
+          <text class="chip-lbl" x="404" y="86" text-anchor="middle">Contacts</text>
+        </g>
+
+        {/* join node = the shared Date key */}
+        <rect class="join" x="196" y="156" width="88" height="72" rx="16" />
+        <text class="join-glyph" x="240" y="198" text-anchor="middle">⋈</text>
+        <text class="join-key" x="240" y="217" text-anchor="middle">DATE</text>
+
+        {/* blended result */}
+        <g>
+          <rect class="card result" x="96" y="262" width="288" height="74" rx="14" />
+          <rect class="hcell hcell-date" x="116" y="290" width="66" height="26" rx="6" />
+          <text class="hlbl" x="149" y="307" text-anchor="middle">Date</text>
+          <rect class="hcell hcell-rev" x="190" y="290" width="80" height="26" rx="6" />
+          <text class="hlbl" x="230" y="307" text-anchor="middle">Revenue</text>
+          <rect class="hcell hcell-con" x="278" y="290" width="86" height="26" rx="6" />
+          <text class="hlbl" x="321" y="307" text-anchor="middle">Contacts</text>
+        </g>
+      </svg>
+    </figure>
+  ) : (
+<figure class="blend mx-auto w-full max-w-3xl" aria-label="Automatic grain-safe blending">
+  <svg viewBox="0 0 880 360" role="img" class="h-auto w-full">
+    <title>
+      Two facts at different grains share a conformed Date key; each aggregates to
+      that grain, then strata joins them on the shared key into one blended result.
+    </title>
+
+    <!-- flow links (behind nodes): each fact aggregates to Date, into the join -->
+    <g>
+      <path class="flow" d="M270 96 C 340 96, 360 180, 412 180" />
+      <path class="flow" d="M270 264 C 340 264, 360 180, 412 180" />
+      <path class="flow flow-out" d="M510 180 C 545 180, 545 188, 568 188" />
+    </g>
+
+    <!-- conformed-key bracket linking the two Date columns -->
+    <path class="conform" d="M64 110 C 30 138, 30 222, 64 250" />
+    <text class="conform-lbl" x="20" y="184" text-anchor="middle" transform="rotate(-90 20 184)">
+      same name → conformed
+    </text>
+
+    <!-- fact cards -->
+    {
+      facts.map((f) => (
+        <g>
+          <rect class="card" x="56" y={f.y - 56} width="214" height="112" rx="14" />
+          <text class="title" x="80" y={f.y - 26}>{f.name}</text>
+          <text class="grain" x="80" y={f.y - 7}>{f.grain}</text>
+          <g>
+            <rect class="chip chip-date" x="78" y={f.y + 6} width="74" height="30" rx="8" />
+            <text class="chip-lbl" x="115" y={f.y + 22} text-anchor="middle">Date</text>
+          </g>
+          <g>
+            <rect class={`chip chip-${f.cls}`} x="160" y={f.y + 6} width="92" height="30" rx="8" />
+            <text class="chip-lbl" x="206" y={f.y + 22} text-anchor="middle">{f.measure}</text>
+          </g>
+        </g>
+      ))
+    }
+
+    <!-- join node: the shared Date key -->
+    <g>
+      <rect class="join" x="412" y="136" width="96" height="88" rx="18" />
+      <text class="join-glyph" x="460" y="182" text-anchor="middle">⋈</text>
+      <text class="join-key" x="460" y="206" text-anchor="middle">DATE</text>
+    </g>
+    <text class="join-sub" x="460" y="250" text-anchor="middle">
+      <tspan x="460">full outer join</tspan>
+      <tspan x="460" dy="15">on the conformed key</tspan>
+    </text>
+
+    <!-- blended result table -->
+    <g>
+      <rect class="card result" x="568" y="92" width="288" height="176" rx="14" />
+      <text class="title" x="592" y="124">Blended result</text>
+      <text class="grain" x="592" y="143">one row per Date</text>
+
+      <!-- header -->
+      <rect class="hcell hcell-date" x="588" y="156" width="74" height="26" rx="6" />
+      <text class="hlbl" x="625" y="173" text-anchor="middle">Date</text>
+      <rect class="hcell hcell-rev" x="668" y="156" width="80" height="26" rx="6" />
+      <text class="hlbl" x="708" y="173" text-anchor="middle">Revenue</text>
+      <rect class="hcell hcell-con" x="754" y="156" width="84" height="26" rx="6" />
+      <text class="hlbl" x="796" y="173" text-anchor="middle">Contacts</text>
+
+      <!-- data rows: three blended rows, cells tinted by source domain -->
+      {[0, 1, 2].map((r) => {
+        const y = 192 + r * 24;
+        return (
+          <g class="drow">
+            <rect class="dcell dcell-date" x="588" y={y} width="74" height="16" rx="4" />
+            <rect class="dcell dcell-rev" x="668" y={y} width="80" height="16" rx="4" />
+            <rect class="dcell dcell-con" x="754" y={y} width="84" height="16" rx="4" />
+          </g>
+        );
+      })}
+    </g>
+  </svg>
+</figure>
+  )
+}
+
+<style>
+  .blend .card {
+    fill: color-mix(in srgb, var(--strata-cream) 5%, transparent);
+    stroke: color-mix(in srgb, var(--strata-cream) 22%, transparent);
+    stroke-width: 1.2;
+  }
+  .blend .title {
+    fill: var(--strata-cream);
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .blend .grain {
+    fill: color-mix(in srgb, var(--strata-cream) 62%, transparent);
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
+  /* column chips: tinted fill + colored border, cream label for contrast */
+  .blend .chip {
+    stroke-width: 1.4;
+  }
+  .blend .chip-lbl {
+    fill: var(--strata-cream);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .blend .chip-date {
+    fill: color-mix(in srgb, var(--strata-peach) 20%, transparent);
+    stroke: var(--strata-peach);
+  }
+  .blend .chip-rev {
+    fill: color-mix(in srgb, var(--chart-5) 22%, transparent);
+    stroke: var(--chart-5);
+  }
+  .blend .chip-con {
+    fill: color-mix(in srgb, var(--chart-6) 24%, transparent);
+    stroke: var(--chart-6);
+  }
+
+  /* conformed-key bracket */
+  .blend .conform {
+    fill: none;
+    stroke: var(--strata-peach);
+    stroke-width: 1.6;
+    stroke-dasharray: 3 5;
+    opacity: 0.85;
+  }
+  .blend .conform-lbl {
+    fill: color-mix(in srgb, var(--strata-peach) 88%, var(--strata-cream));
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* join node = the shared Date key */
+  .blend .join {
+    fill: var(--strata-peach);
+  }
+  .blend .join-glyph {
+    fill: var(--strata-rust-deep);
+    font-family: var(--font-sans);
+    font-size: 30px;
+    font-weight: 700;
+  }
+  .blend .join-key {
+    fill: var(--strata-rust-deep);
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+  .blend .join-sub {
+    fill: color-mix(in srgb, var(--strata-cream) 70%, transparent);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* result header + data cells, color-coded by source domain */
+  .blend .hcell-date,
+  .blend .dcell-date {
+    fill: color-mix(in srgb, var(--strata-peach) 26%, transparent);
+  }
+  .blend .hcell-rev,
+  .blend .dcell-rev {
+    fill: color-mix(in srgb, var(--chart-5) 26%, transparent);
+  }
+  .blend .hcell-con,
+  .blend .dcell-con {
+    fill: color-mix(in srgb, var(--chart-6) 30%, transparent);
+  }
+  .blend .dcell-date,
+  .blend .dcell-rev,
+  .blend .dcell-con {
+    opacity: 0.55;
+  }
+  .blend .hlbl {
+    fill: var(--strata-cream);
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  /* animated flow: facts aggregate to the join, then out to the result */
+  .blend .flow {
+    fill: none;
+    stroke: var(--strata-peach);
+    stroke-width: 2.4;
+    stroke-dasharray: 6 7;
+    animation: blend-flow 1.6s linear infinite;
+  }
+  .blend .flow-out {
+    stroke-width: 3;
+  }
+  @keyframes blend-flow {
+    to {
+      stroke-dashoffset: -26;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blend .flow {
+      animation: none;
+    }
+  }
+</style>
