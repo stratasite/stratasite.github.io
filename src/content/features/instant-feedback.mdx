@@ -13,46 +13,47 @@ sections:
 
 ## Skip the Setup
 
-Every other tool makes you commit before you can ask anything: pick the right
-semantic view, choose an explorer, open the correct cube, select a datasource. You have to know how
-the model is carved up before you know what you want.
+Every other tool makes you commit before you can ask anything. Pick the right semantic view. Choose an explorer. 
+Open the correct cube. Select a datasource. You have to know how the model is carved up before you even know what you want.
 
-This step seems like a non issue when you first deploy a BI tool. But, you quickly end up 
-with thousands of choices. Which explorer had that flavor of revenue you were looking at
-last week?
+It feels like a non-issue the day you deploy a BI tool. Then the choices multiply into the thousands, and you're 
+left asking which explorer had that flavor of revenue you were looking at last week.
 
-Strata removes this step. Start with a rough idea. A measure or two you care
-about and go straight into building. There is no construct to select first.
+Strata deletes the step entirely. Start with a rough idea, a measure or two you care about, and go straight into building. 
+There's no construct to pick first, because the whole model is open to you at once.
 
-Furthermore, this ability to see the whole picture rather than a singular view or explorer
-at once, turns out to be a game changer for Agentic use cases as well.  Agents are 
-able to safely traverse the entire warehouse with great accuracy.
+That same property is what makes Strata safe for agents. Instead of being boxed into one explorer or cube, an agent can 
+traverse the entire warehouse, and Strata keeps every step accurate as it goes.
 
-## Feedback as you Build
+## Feedback as You Build
 
-As you assemble a view, Strata validates and previews **per keystroke**. Add a
-measure and you immediately see which dimensions it can be sliced by; add a
-dimension and incompatible measures are filtered out before you can pick a wrong
-combination. The answer takes shape live, so exploration is a conversation, not a
-configure, run, debug cycle.
+As you assemble a view, Strata validates and previews on every keystroke. Add a measure and you instantly see the dimensions 
+it can be sliced by. Add a dimension and incompatible measures disappear before you can pick a wrong combination. The answer
+takes shape live, so exploration becomes a conversation instead of a configure, run, debug cycle.
 
-This is something no traditional BI tool does and it's why a vague idea is
-enough to get started.
+No traditional BI tool works this way, and it's exactly why a Strata is loved by business users and agents.
 
 ## Guided to Valid Answers
 
-The same interactive loop that guides humans — validate a partial query, surface
-the compatible next steps, reject invalid combinations with an explanation — is
-structurally an **agent API**. Whether the builder is a person typing or an agent
-calling, Strata keeps every step grain-safe and steers toward answers that are
-both fast and correct.
+The same interactive loop that guides a human, validate a partial query, surface the compatible next steps, reject 
+invalid combinations with an explanation, is structurally an agent API. Whether the builder is a person typing or an agent
+calling, every step stays grain-safe, and Strata steers toward answers that are both fast and correct. 
 
-## How it Works
+The default failure mode is a missed option, never a silently wrong number.
 
-Strata deploys a convention over configuration Semantic Modeling strategy where naming
-is strict.  This has the dual benefit of creating the simplest semantic model protocol
-while also enabling deep analytical self service.
+## How It Works
 
-Using names, field types, and table relationships, Strata constructs a hyper graph that enables 
-extended relationship resolution. It was designed from day one to enable your non technical users to surf braodly across 
-the data warehouse.
+Strata uses a convention-over-configuration approach to semantic modeling, where naming does the heavy lifting. Give the 
+same business concept the same registered name across your facts and Strata treats them as conformed and blendable. Give 
+distinct concepts distinct names and they stay safely separate. That single discipline is the entire modeling protocol, and 
+it's the simplest semantic model protocol there is.
+
+From there, Strata reads your names, field types, and table relationships and compiles them into a refined hypergraph with 
+proprietary extensions that powers extended relationship resolution across the warehouse. This is what lets a non-technical user 
+surf broadly across the data: from a rough idea, Strata resolves which measures can be sliced by which dimensions and how facts 
+connect, automatically, without an engineer authoring every queryable combination in advance. It was designed from day one for 
+broad, accurate self-service over a messy warehouse.
+
+This is the dynamic universe: instead of a curated model you must select before you can ask, the queryable space assembles itself 
+around whatever you're trying to explore.
+
