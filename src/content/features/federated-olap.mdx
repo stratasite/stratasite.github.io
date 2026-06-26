@@ -1,12 +1,14 @@
 ---
-title: Federated Open OLAP & hot-tier routing
-summary: Route queries to pre-aggregated tables and fast OLAP hot tiers — sub-second answers, lower warehouse spend.
+title: Federated Smart OLAP Routing
+summary: Route queries to pre-aggregated tables on fast OLAP compute engines for sub-second responses. Lower warehouse spend.
 icon: gauge
+diagram: federation
 order: 20
 sections:
-  - { id: aggregate-aware, label: Aggregate-aware }
-  - { id: federation, label: Open federation }
-  - { id: partition-aware-routing, label: Partition-aware routing }
+  - { id: speed-is-all-you-need, label: Speed Is All You Need }
+  - { id: aggregate-aware, label: Aggregate Aware across Compute Engines }
+  - { id: open-olap, label: Open OLAP }
+  - { id: partition-aware-routing, label: Partition Aware Routing }
 ---
 
 import FederatedOlapDiagram from '../../components/FederatedOlapDiagram.astro';
@@ -14,26 +16,59 @@ import Callout from '../../components/Callout.astro';
 
 <FederatedOlapDiagram />
 
-## Aggregate-aware
+## Speed Is All You Need
 
-strata routes queries to pre-aggregated tables when they can satisfy the request,
-avoiding base-fact scans entirely.
+Attention got us the models. Speed is what decides whether they're usable on your data. Any conversation with an agent 
+can fan out into dozens of warehouse queries. Even a single prompt is often 3 or more queries, some just probing for 
+context. If your warehouse answers in 15 seconds on average, that's 45 seconds of query time for one prompt. Add reasoning 
+and network latency and you're looking at minutes per prompt.
 
-## Open federation
+That's fatal for agents on data, and unacceptable for interactive dashboards.
 
-Additional sources — ClickHouse, Druid, other fast OLAP DBs, Databricks — map
-into the same project. A source can be designated a **hot tier**, chosen
-preferentially. One measure definition serves every engine; no double modeling.
+The natural reaction is to "cube" your data into isolated OLAP tiers. But a cube only answers the questions you anticipated 
+when you built it, and the question space an LLM explores is open-ended. So stakeholders are constantly waiting on new cubes 
+or fixes to old ones. Data engineers end up maintaining thousands of them with divergent measure definitions, and neither 
+humans nor agents can self-serve the right measures without going through engineering.
 
-## Partition-aware routing
+Strata solves this with a semantic layer that spans compute engines. You tactically place hot, critical data in high-performance 
+OLAP engines while keeping deep access to rarely-touched data in cold storage, all under one measure model. 
+The result: far fewer redundant aggregates, self-service over rare data without burdening engineering, and sub-second latency on 
+the dashboards and queries that matter.
 
-Partition logic makes the semantic model aware of the data range each source
-holds, so strata routes to the hot tier only when user filters are compatible,
-and falls back to the warehouse of record otherwise. Net effect: sub-second
-dashboards and agent turns, plus reduced load and compute cost.
+## Aggregate Aware across Compute Engines
+
+Most tools that are "aggregate-aware" stop at one question: is there a pre-aggregated table that can satisfy this query? 
+Strata asks a second one. Of the tables that can, which lives on the fastest engine? Because Strata federates across
+multiple compute engines under a single measure model, it can hold the same aggregate in more than one place. 
+
+You might keep a hot-tier copy in ClickHouse and a cold-tier copy in another engine. When a query could be answered by 
+either, Strata preferentially routes to the faster source, then falls back automatically when filters 
+fall outside the hot tier's range. You get the speed of a purpose-built OLAP engine with the coverage of your warehouse, 
+and no one has to hand-pick the source.
+
+## Open OLAP 
+
+Strata brings a fundamentally open approach to OLAP for business intelligence. Traditionally, OLAP lives in proprietary, 
+closed tiers: you build a cube, and it's reachable only through that vendor's API. Open OLAP inverts this. You bring any 
+compute engine suited to the workload, whether that's a time-series engine like Druid or a generalist like ClickHouse, and 
+Strata models across all of them under one measure definition.
+
+The payoff is that your high-performance investments stay yours. The aggregate tables Strata builds live in open, SQL-native 
+engines, not behind a proprietary cube API, so the same hot-tier infrastructure can serve other workloads instead of sitting 
+locked to one tool. That frees you from vendor lock-in, cuts duplicate data and pipelines, and maximizes the return on the
+OLAP infrastructure you've already paid for.
+
+## Partition-Aware Routing
+
+A hot tier is only useful if you can trust it to answer the right questions. Push a query to ClickHouse for a date range it 
+doesn't hold, and you get a fast answer that's wrong, the worst outcome of all.
+
+Strata's partition logic makes the semantic model aware of the data range each source holds. It routes to the hot tier only 
+when the user's filters fall inside that range, and falls back to the warehouse of record otherwise. You get sub-second 
+dashboards and agent turns when the hot tier can serve the query, correct results when it can't, and reduced load and compute
+cost on the warehouse either way.
 
 <Callout type="tip" title="Sizing the savings">
-  Cost reduction is workload-dependent — strongest when a meaningful share of
-  traffic is repetitive queries over recent or aggregated data a hot tier can
-  absorb. Size it against your own query history.
+  Cost reduction is workload-dependent, strongest when a meaningful share of traffic is repetitive queries over recent or aggregated data a hot tier can absorb. Size it against your own query history.
 </Callout>
+

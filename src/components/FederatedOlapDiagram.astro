@@ -23,8 +23,69 @@ const tiers = [
   { key: 'warm', name: 'Warm tier', engine: 'Snowflake', y: 180 },
   { key: 'cold', name: 'Cold tier', engine: 'AWS Athena', y: 268 },
 ];
+
+// `mini` = compact, label-stripped variant for the homepage feature row:
+// a vertical funnel (clients -> strata hub -> hot/warm/cold tiers) in a ~4:3 frame.
+interface Props {
+  mini?: boolean;
+}
+const { mini = false } = Astro.props;
+
+const miniClients = [
+  { icon: 'user', label: 'Humans', x: 6 },
+  { icon: 'bot', label: 'Agents', x: 124 },
+  { icon: 'plug', label: 'MCP', x: 242 },
+  { icon: 'braces', label: 'API', x: 360 },
+];
+const miniTiers = [
+  { key: 'hot', name: 'Hot tier', engine: 'ClickHouse · Druid', x: 8 },
+  { key: 'warm', name: 'Warm tier', engine: 'Snowflake', x: 165 },
+  { key: 'cold', name: 'Cold tier', engine: 'AWS Athena', x: 322 },
+];
 ---
 
+{
+  mini ? (
+    <figure class="olap olap-mini mx-auto w-full max-w-md" aria-label="Federated Open OLAP routing">
+      <svg viewBox="0 0 480 356" role="img" class="h-auto w-full">
+        <title>Clients route through the strata semantic layer to hot, warm, and cold tiers.</title>
+
+        {/* flows behind nodes */}
+        <g>
+          {miniClients.map((c) => (
+            <path class="link-in" d={`M${c.x + 53} 64 C ${c.x + 53} 110, 240 110, 240 148`} />
+          ))}
+          {miniTiers.map((t) => (
+            <path class={`link link-${t.key}`} d={`M240 220 C 240 258, ${t.x + 75} 250, ${t.x + 75} 286`} />
+          ))}
+        </g>
+
+        {/* clients */}
+        {miniClients.map((c) => (
+          <g>
+            <rect class="node" x={c.x} y="24" width="106" height="40" rx="11" />
+            <svg x={c.x + 12} y="36" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ic" set:html={icons[c.icon]} />
+            <text x={c.x + 40} y="44" class="lbl" dominant-baseline="middle">{c.label}</text>
+          </g>
+        ))}
+
+        {/* strata hub */}
+        <rect class="hub" x="170" y="148" width="140" height="72" rx="16" />
+        <text x="240" y="184" class="hub-title" text-anchor="middle">strata</text>
+        <text x="240" y="204" class="hub-sub" text-anchor="middle">semantic layer</text>
+
+        {/* tiers */}
+        {miniTiers.map((t) => (
+          <g>
+            <rect class="node" x={t.x} y="286" width="150" height="58" rx="11" />
+            <svg x={t.x + 14} y="306" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class={`ic ic-${t.key}`} set:html={icons.database} />
+            <text x={t.x + 44} y="309" class="lbl" dominant-baseline="middle">{t.name}</text>
+            <text x={t.x + 44} y="327" class="sub" dominant-baseline="middle">{t.engine}</text>
+          </g>
+        ))}
+      </svg>
+    </figure>
+  ) : (
 <figure class="olap mx-auto w-full max-w-3xl" aria-label="Federated Open OLAP query routing">
   <svg viewBox="0 0 888 360" role="img" class="h-auto w-full">
     <title>Clients route through the strata semantic layer to hot, warm, and cold tiers</title>
@@ -74,12 +135,21 @@ const tiers = [
     }
   </svg>
 </figure>
+  )
+}
 
 <style>
   .olap .node {
     fill: color-mix(in srgb, var(--strata-cream) 5%, transparent);
     stroke: color-mix(in srgb, var(--strata-cream) 22%, transparent);
     stroke-width: 1.2;
+  }
+  /* mini: tighten label/engine type so longer engine lists fit the smaller cards */
+  .olap-mini .lbl {
+    font-size: 13px;
+  }
+  .olap-mini .sub {
+    font-size: 10px;
   }
   .olap .lbl {
     fill: var(--strata-cream);

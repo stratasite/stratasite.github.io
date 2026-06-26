@@ -3,6 +3,7 @@
 // stacked strata bands with a cool ink trend line. Varies per row via `index`.
 // Priority: product `video` > named `diagram` > real `image` > generated graphic.
 import BlendingDiagram from './BlendingDiagram.astro';
+import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
 
 interface Props {
   index: number;
@@ -14,7 +15,7 @@ interface Props {
 const { index, title, image, video, diagram } = Astro.props;
 
 // Registry of named mini diagrams usable as a row visual.
-const diagrams: Record<string, any> = { blending: BlendingDiagram };
+const diagrams: Record<string, any> = { blending: BlendingDiagram, federation: FederatedOlapDiagram };
 const Diagram = diagram ? diagrams[diagram] : undefined;
 
 const trends = [
