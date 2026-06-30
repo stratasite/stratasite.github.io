@@ -5,7 +5,7 @@
  */
 
 export const site = {
-  name: 'strata',
+  name: 'Strata',
   domain: 'https://strata.do',
   description:
     'High-performance, AI-safe self-service analytics — a governed semantic layer fused with beautiful-by-default dashboards, for humans and agents.',

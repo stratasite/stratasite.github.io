@@ -1,0 +1,91 @@
+---
+title: Semantic Layer as Code, Simple by Convention
+summary: "The easiest semantic model there is: convention over configuration. Model by naming, version it in Git with branch deploys, and move fast with a CLI built for coding assistants."
+icon: braces
+video: /modeling_cli.mp4
+order: 30
+sections:
+  - { id: convention-over-configuration, label: Convention over Configuration }
+  - { id: managed-in-git, label: Managed in Git }
+  - { id: a-cli-built-for-speed, label: A CLI Built for Speed }
+  - { id: your-own-dev-setup, label: Your Own Dev Setup }
+---
+
+import Callout from '../../components/Callout.astro';
+
+## Convention over Configuration
+
+Most semantic layers make you author the model the most expensive way possible: an explore,
+a cube, or a view for every blendable combination — a matrix that grows faster than your team
+ever will, and that you, the data engineer, own and maintain forever. Strata inverts that with
+**convention over configuration** — the entire modeling protocol is **naming**. In fact, the
+Strata semantic model has just two major file types: table models and relationship models.
+Everything else is resolved by naming.
+
+Give the same business concept the same name across your table models, and Strata treats
+them as conformed and blendable. Give distinct concepts distinct names, and they stay safely
+separate. That single discipline is the whole protocol, and the model emerges from it
+instead of being configured combination by combination.
+
+Less to write on day one, and far less to maintain on day one-thousand. A registered
+name is the cheapest medium a model can live in.
+
+<Callout type="tip" title="Modeling by naming, not zero modeling">
+  Naming discipline still does real work: same concept, same name to blend; distinct
+  concepts, distinct names to stay safe. You're still modeling, just in the cheapest
+  medium instead of per-combination views. When entities should blend but can't share a
+  name, an explicit blending group (`extended_blending_refs`) unifies them under one
+  governed blend key.
+</Callout>
+
+## Managed in Git
+
+Your semantic model is plain text YAML files in your repository, so it lives the way the rest of
+your stack already does. Open a pull request to change a measure. Review the diff. Roll
+back a bad definition with a revert. Promote a model through dev, staging, and production
+as commits, not as clicks in someone else's console.
+
+Strata takes this further: **Git branches deploy to the server**. Point an environment at
+a branch and that branch's model is what it serves — so a reviewer can explore a proposed
+model on a real branch deployment before it ever merges, and any branch can be promoted to 
+production. No snapshots to export, no "who changed this measure last week" mystery. The 
+answer is in the log.
+
+And because every change is a commit, you can gate it like one. Wire `strata audit` into CI
+and every pull request is grain-checked against your warehouse before it can merge — the same
+validation that guards production runs on the proposed model first, so a broken measure never
+reaches a dashboard.
+
+![A feature branch of the semantic model deployed alongside main, ready to review against live data](/modeling-git-branches.png)
+
+## A CLI Built for Speed
+
+The Strata CLI is the front door to the whole workflow. Scaffold a project, register
+fields, validate the model against your warehouse, and deploy a branch — all from the
+terminal, all scriptable in CI.
+
+```bash
+strata init [PROJECT_NAME]  # Initializes a new Strata project
+strata audit                # Audit project configuration and models
+strata deploy               # Deploys the current branch to the server 
+```
+
+Because the model is just well-structured code, it's the perfect surface for a coding
+assistant. Point Claude or your editor's assistant at the model repo and it can draft new
+measures, rename fields consistently across facts to make them conform, and refactor whole
+domains in seconds. Then `strata audit` does a first pass model validation locally before deploy. 
+Modeling stops being a configuration chore and becomes a fast, assisted edit loop.
+
+![Generating and validating new measures with the Strata CLI and a coding assistant](/modeling-cli-diff.png)
+
+## Your Own Dev Setup
+
+All of this happens where you already work. Your editor, your Git workflow, your CI, your
+review process, your assistant. Strata doesn't pull modeling into a proprietary, constrained
+web UI — there's no separate console to context-switch into and learn, and no per-seat login
+just to touch the model. When a model lives in a vendor's web IDE, it's only as portable as
+their export button; here it's plain text you already own, with no lock-in to one vendor's idea
+of how a model should be edited.
+
+The model is yours, in your stack, in YAML files. That's what makes it fast to build, easy
+to review, and simple to manage as it grows.

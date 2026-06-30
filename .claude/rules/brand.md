@@ -46,4 +46,4 @@ Reference these semantic tokens (`bg-background`, `text-foreground`, `text-muted
   unless a 4th+ series is needed.
 
 ## Voice (microcopy)
-- Clear, precise, confident. Plain language over jargon. Lowercase product name in prose: "strata".
+- Clear, precise, confident. Plain language over jargon. Product name is "Strata" (capitalized) in prose; the lowercase **wordmark** (see Typography) is the one exception.

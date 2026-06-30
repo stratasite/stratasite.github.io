@@ -21,5 +21,5 @@ missing, add it to `brand/tokens.css` first.
   `--primary` accent, ink footer. Body copy uses `--muted-foreground` (warm
   off-white). Use semantic tokens, not raw swatches.
 - Headings/wordmark use Space Grotesk (`font-display`); UI/body uses Inter (`font-sans`).
-- Product name is lowercase in UI and prose: "strata".
+- Product name is "Strata" (capitalized) in UI copy and prose. The one exception is the **wordmark/logo**, which is always lowercase "strata" (a styled design element), and the `strata` CLI binary/commands in code.
 - Charts are first-class: use the `--chart-*` series and `--ramp-*` sequential ramp.

@@ -7,6 +7,10 @@ import rehypeSlug from 'rehype-slug';
 export default defineConfig({
   site: 'https://strata.do',
   markdown: {
+    // Disable Shiki's baked-in theme (inline dark bg + multicolor token styles)
+    // so fenced code blocks are styled purely from brand tokens in global.css
+    // (ink terminal surface, peach default text). See `.prose-strata pre`.
+    syntaxHighlight: false,
     // Add stable ids to headings so the Article scroll-spy jump nav can target
     // them. Inherited by MDX via Astro's extendMarkdownConfig (default).
     rehypePlugins: [rehypeSlug],

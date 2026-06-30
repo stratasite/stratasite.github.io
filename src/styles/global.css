@@ -59,8 +59,22 @@
   .prose-strata blockquote {
     @apply mt-6 border-l-2 border-primary pl-4 italic text-muted-foreground;
   }
-  .prose-strata code {
+  /* Inline code chip — scoped to NOT fenced blocks, so a <pre><code> block
+     doesn't get a second inner background boxed behind the code. */
+  .prose-strata :not(pre) > code {
     @apply rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.9em];
+  }
+  /* Fenced code blocks: a clean terminal — ink surface, peach (primary) default
+     text, a subtle hairline. No inner box, no per-token recoloring. */
+  .prose-strata pre {
+    @apply mt-6 overflow-x-auto rounded-xl p-5 font-mono text-[0.9em] leading-relaxed;
+    background-color: var(--strata-ink);
+    color: var(--primary);
+    border: 1px solid color-mix(in srgb, var(--strata-cream) 12%, transparent);
+  }
+  .prose-strata pre code {
+    @apply bg-transparent p-0 text-[1em] font-normal;
+    color: inherit;
   }
   .prose-strata .not-prose {
     @apply text-foreground;
