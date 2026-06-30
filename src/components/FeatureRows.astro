@@ -25,7 +25,9 @@ const { features } = Astro.props;
           <div class={`relative ${flip ? 'lg:order-1' : ''}`}>
             <span class="fr-num" aria-hidden="true">{n}</span>
             <h3 class="relative font-display text-2xl font-bold tracking-tight sm:text-3xl">
-              {f.data.title}
+              <a href={`/features/${f.slug}/`} class="transition-colors hover:text-primary focus-visible:text-primary">
+                {f.data.title}
+              </a>
             </h3>
             <p class="relative mt-3 text-[1.05rem] leading-relaxed text-muted-foreground">
               {f.data.summary}
