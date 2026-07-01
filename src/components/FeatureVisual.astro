@@ -4,6 +4,7 @@
 // Priority: product `video` > named `diagram` > real `image` > generated graphic.
 import BlendingDiagram from './BlendingDiagram.astro';
 import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
+import MeasureSpectrumDiagram from './MeasureSpectrumDiagram.astro';
 
 interface Props {
   index: number;
@@ -15,7 +16,7 @@ interface Props {
 const { index, title, image, video, diagram } = Astro.props;
 
 // Registry of named mini diagrams usable as a row visual.
-const diagrams: Record<string, any> = { blending: BlendingDiagram, federation: FederatedOlapDiagram };
+const diagrams: Record<string, any> = { blending: BlendingDiagram, federation: FederatedOlapDiagram, measures: MeasureSpectrumDiagram };
 const Diagram = diagram ? diagrams[diagram] : undefined;
 
 const trends = [
