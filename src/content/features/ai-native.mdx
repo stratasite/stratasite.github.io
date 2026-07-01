@@ -1,22 +1,95 @@
 ---
-title: AI-native & agent-ready
-summary: Natural-language field resolution in the editor, per-keystroke validation that doubles as a structured agent API, and grain-safe retrieval.
+title: AI ready analytics that agents can actually trust
+summary: Point an agent at a raw warehouse and it returns confident wrong answers. Strata makes correctness structural, then lets your team build purpose built agents on the same governed model, grounded in live entities and real data.
 icon: sparkles
+diagram: agentloop
 order: 60
 sections:
-  - { id: ai-in-the-editor, label: AI in the editor }
-  - { id: an-agent-api, label: An agent API }
+  - { id: why-agents-fail-on-the-warehouse, label: Why agents fail }
+  - { id: correctness-by-construction, label: Correctness by construction }
+  - { id: the-interface-is-the-agent-api, label: The agent API }
+  - { id: build-an-agent-the-way-you-build-a-report, label: Build an agent }
+  - { id: fast-enough-for-agents, label: Speed for agents }
+  - { id: agents-inherit-your-governance, label: Governance }
 ---
 
-## AI in the editor
+import Callout from '../../components/Callout.astro';
+import AgentLoopDiagram from '../../components/AgentLoopDiagram.astro';
 
-Type a sentence in the filter drop zone instead of hunting for a field, and ask
-for AI resolution to the right field or filter. AI is sprinkled throughout the
-view editor to improve usability.
+The hard part of putting AI on your data was never the model. It is the layer underneath. Point an
+agent at a raw warehouse and ask it to write SQL across a hundred inconsistent tables, and it returns
+answers that are fluent, confident, and quietly wrong. Strata is the layer that makes AI analytics
+safe, by turning correctness, speed, and governance into properties of the system instead of things
+you hope the model gets right.
 
-## An agent API
+## Why Agents Fail on the Warehouse
 
-The same interactive interface that validates a partial query per keystroke —
-compatible next steps, structured rejections — is structurally an agent API.
-That's why Strata suits AI agents as well as humans, with grain-safe retrieval
-throughout.
+An LLM guessing joins and grains over a messy schema is the single biggest reason agents on data
+stall. The failure is not a crash you can catch. It is a plausible number that is wrong because two
+facts were joined at the wrong grain and silently double counted. No amount of prompt engineering
+fixes this, because the model has no way to know the join was invalid. The accuracy has to come from
+the system the agent queries, not from the agent.
+
+## Correctness by Construction
+
+Strata gives every measure a source fact, a grain, and the set of dimensions it can reach. From those
+it derives a compatibility matrix: exactly which measures can be sliced by which dimensions. When an
+agent asks for a combination that is not answerable, Strata refuses it before execution and returns an
+explanation with the nearest valid alternatives, rather than running a query that double counts.
+
+That inverts the default failure mode. Instead of a confident wrong number, the worst case is a missed
+answer the agent is told about and can route around. For an autonomous system making decisions on the
+results, that difference is everything.
+
+## The Interface Is the Agent API
+
+The same interactive loop that validates a person's query as they build it is, structurally, an agent
+API. Every step returns the same three things: whether the partial query is valid, the compatible next
+steps, and a structured reason when something is rejected. An agent does not guess SQL and hope. It
+navigates a typed, validated space where every move is checked, over the exact same contract as the
+human editor.
+
+This is why Strata was agent-ready before agents were the point. The feedback UX that makes the
+product pleasant for people is the same mechanism that makes it safe for machines.
+
+<AgentLoopDiagram />
+
+## Build an Agent the Way You Build a Report
+
+This is where Strata does something genuinely new. It gives your team an agent editor to build purpose
+built agents directly on the semantic model. You drop live semantic entities and real, valid data
+values straight into the agent's instructions, so its context is not a paragraph describing your
+business. It is the actual governed measures, dimensions, and values the agent will reason over, inline
+and always current. Describe what you want in plain language and Strata resolves it to those governed
+fields, never a column the model invented.
+
+Two things change immediately. The agent understands your data in far richer detail, because the real
+definitions and examples sit right in its instructions. And it is scoped to the slice that matters,
+instead of thrashing across a hundred tables trying to rediscover what is relevant on every task. You
+hand it the important subset with the business context already attached.
+
+That makes building an agent a first class way to answer a business question, right alongside building
+a report. Open the report editor and assemble views until the answer is clear, or build an agent,
+armed with the correct data and context, to answer that entire class of questions on demand. Same
+governed model underneath, same trustworthy answers, two ways to get them.
+
+<Callout type="tip" title="A new question for every analysis">
+  It used to end at "should I build a report to answer this?" Now it extends to "or should I build an
+  agent?" In Strata both are built on the same governed semantic model, so either path returns the same
+  correct answer.
+</Callout>
+
+## Fast Enough for Agents
+
+Agents do not ask one question. A single task can fan out into dozens of queries, many of them just
+probing for context. At fifteen seconds per warehouse query that is minutes per task, and adoption
+dies. Strata routes to aggregate tables and federated OLAP hot tiers, so the turns that can be
+sub-second are, and the warehouse is spared the repetitive load. Speed stops being the reason your
+agent rollout stalls.
+
+## Agents Inherit Your Governance
+
+An agent is only as safe as what it is allowed to see. Because agents query through the same semantic
+layer as everyone else, they inherit the same row-level security, masking, and access rules
+automatically. An agent cannot read what its user could not, and you never maintain a second security
+model for the machines.
