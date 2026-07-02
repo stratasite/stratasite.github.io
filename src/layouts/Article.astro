@@ -47,7 +47,7 @@ const { title, summary, eyebrow, sections = [], description, video, image } = As
       </figure>
     )}
 
-    <div class="mt-14 lg:grid lg:grid-cols-[1fr_15rem] lg:gap-12">
+    <div class={`mt-14 ${sections.length ? 'lg:grid lg:grid-cols-[1fr_15rem] lg:gap-12' : ''}`}>
       <!-- Content: MDX renders prose here; `.prose-strata` styles it. -->
       <div class="prose-strata mx-auto w-full max-w-3xl">
         <slot />
@@ -62,9 +62,11 @@ const { title, summary, eyebrow, sections = [], description, video, image } = As
       </div>
 
       <!-- Optional right-side jump nav -->
-      <aside class="order-last">
-        <SectionScrollNav sections={sections} />
-      </aside>
+      {sections.length > 0 && (
+        <aside class="order-last">
+          <SectionScrollNav sections={sections} />
+        </aside>
+      )}
     </div>
   </article>
 </Base>

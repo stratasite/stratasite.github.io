@@ -1,0 +1,46 @@
+---
+// Focused head-to-head table for a compare page: {competitor} vs Strata across
+// the shared axes. Strata column is highlighted. Data in src/data/comparisons.ts.
+import { strataCells, competitorCells } from '../data/comparisons';
+
+interface Props {
+  slug: string;
+  competitor: string;
+}
+const { slug, competitor } = Astro.props;
+
+const them = competitorCells[slug] ?? [];
+const rows = strataCells.map((r, i) => ({
+  capability: r.capability,
+  them: them[i] ?? '—',
+  strata: r.strata,
+}));
+---
+
+<div class="overflow-x-auto rounded-xl border border-border">
+  <table class="w-full min-w-[44rem] border-collapse text-left text-sm">
+    <thead>
+      <tr class="bg-surface-2">
+        <th class="w-40 px-4 py-3 font-display font-semibold">Capability</th>
+        <th class="px-4 py-3 font-display font-semibold text-muted-foreground">{competitor}</th>
+        <th class="px-4 py-3 font-display font-semibold text-primary">Strata</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row, ri) => (
+        <tr class={ri % 2 ? 'bg-surface' : 'bg-background'}>
+          <th scope="row" class="px-4 py-3 align-top font-medium text-foreground">{row.capability}</th>
+          <td class="px-4 py-3 align-top text-muted-foreground">{row.them}</td>
+          <td class="strata-cell px-4 py-3 align-top font-medium text-foreground">{row.strata}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  /* Keep the Strata column visually elevated across all row stripes. */
+  .strata-cell {
+    background: color-mix(in srgb, var(--strata-peach) 12%, transparent);
+  }
+</style>

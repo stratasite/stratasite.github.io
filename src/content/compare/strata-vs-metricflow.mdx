@@ -1,0 +1,19 @@
+---
+title: Strata vs dbt Semantic Layer (MetricFlow)
+competitor: dbt Semantic Layer
+category: semantic-layer
+summary: The closest peer on the semantic side. Strata adds automatic blending, five measure types, federation, and a beautiful consumption layer MetricFlow does not have.
+order: 10
+---
+
+## Where MetricFlow is strong
+
+MetricFlow is the closest peer on the semantic side. It links entities by name, aggregates then joins
+across models, lives in version control, and fits a dbt centric stack naturally.
+
+## Where Strata pulls ahead
+
+MetricFlow asks for per-model YAML, is headless with no dashboards, and is bound to a single warehouse.
+Strata blends automatically and grain-safely by naming, ships five measure types, routes across
+federated hot tiers for sub-second answers, and is a beautiful self-service layer in its own right. The
+edge is the whole package working together, not any single feature.

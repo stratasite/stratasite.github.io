@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Article from '../../layouts/Article.astro';
+import VersusTable from '../../components/VersusTable.astro';
 
 export async function getStaticPaths() {
   const entries = await getCollection('compare', ({ data }) => !data.draft);
@@ -18,7 +19,12 @@ const { Content } = await entry.render();
   eyebrow={`Strata vs ${entry.data.competitor}`}
   title={entry.data.title}
   summary={entry.data.summary}
-  sections={entry.data.sections}
+  sections={[]}
 >
   <Content />
+
+  <h2>At a glance</h2>
+  <div class="not-prose mt-6">
+    <VersusTable slug={entry.slug} competitor={entry.data.competitor} />
+  </div>
 </Article>

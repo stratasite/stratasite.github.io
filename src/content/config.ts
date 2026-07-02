@@ -44,6 +44,9 @@ const compare = defineCollection({
     title: z.string(),
     competitor: z.string(),
     summary: z.string(),
+    // Which comparison tab this belongs under on the homepage "How we stack up"
+    // section (see src/components/StackUp.astro).
+    category: z.enum(['semantic-layer', 'bi-tool']),
     order: z.number().default(100),
     draft: z.boolean().default(false),
     sections: z.array(section).default([]),
