@@ -2,20 +2,45 @@
 title: Strata vs Metabase
 competitor: Metabase
 category: bi-tool
-summary: Metabase makes self-service easy. Strata keeps that ease but adds a governed grain-safe semantic layer, automatic blending, federated performance, and agent-safe AI.
+summary: Metabase is the fastest way to a first dashboard on a small warehouse. But its "modeling" is thin, its query builder leans on SQL, and it has no real semantic layer. Strata keeps self-service easy and puts a governed, grain-safe semantic layer underneath.
 order: 50
 ---
 
 ## Where Metabase is strong
 
-Metabase is beloved for how fast a team gets from a connected database to a first dashboard. The
-question builder is friendly, self-service is genuinely easy, and it is open-source and cost-effective
-to run.
+Metabase nails speed to first visualization. A single `docker run` gets you a local instance,
+production deploys are nearly as simple, and the initial setup is genuinely delightful: basic account
+info, connect a database, done. For a small team on a small warehouse it is an excellent, low-cost way
+to get essential analytics off the ground.
+
+Once you have a chart, adding it to a dashboard is quick, and layering a secondary series onto an
+existing visualization (a total trend line next to a breakdown by category) is compelling and easy.
+For technical users who are comfortable in SQL, Metabase is productive.
 
 ## Where Strata pulls ahead
 
-Metabase gives you only a thin semantic layer, so blending and correctness are on you, and there is no
-federation or hot-tier routing. Measure expressiveness stays basic, and its AI is a bolt-on rather than
-grain-safe retrieval. Strata keeps the easy self-service but puts a governed grain-safe semantic layer
-underneath, with automatic blending by naming, five measure types, aggregate-aware federated
-performance, and agent-safe retrieval. It augments or replaces Metabase rather than connecting to it.
+**Metabase has no real semantic layer, and does not claim to.** What it calls "modeling" is a fixed set
+of joins and filters saved as a virtual table, plus some reusable custom columns. It behaves like a
+database view, with the same drawbacks: no join pruning, so every join in the model runs on every query
+even when none of its columns are used. Strata models by naming instead. Fields live in a governed
+registry, conformed by shared names, versioned in Git, with no per-combination configuration.
+
+**Sophisticated measures hit a wall.** In Metabase a metric is built on a single table or one joined
+query, so there is no clean way to combine measures across fact domains at different grains without a
+fragile fact-to-fact join. Snapshot, cross-domain, and level-of-detail measures are effectively out of
+reach; you can only approximate them with hand-written window functions. Strata ships five measure types
+(Standard, Complex, Snapshot, LOD, and ad-hoc) and aggregates each fact independently to a common grain,
+so blends stay grain-safe by construction.
+
+**The query builder is the wrong starting point for non-technical users and agents.** Building a
+visualization starts by picking a model or table, then knowing which tables to join and what a legal
+join key is. That is a hard first step for a non-technical analyst and a hard first step for an agent.
+In practice, teams fall back to raw SQL, which makes the tool frustrating for the very technical users
+it was easiest for. Strata starts from a question, validates it per keystroke, and refuses invalid
+combinations with an explanation, so humans and agents self-serve safely.
+
+**The rest adds up.** Visualization types cover only the basics. Interactive dashboards take extensive
+configuration and manual layout. Caching is keyed on query execution duration rather than anything you
+can reason about, so it is hard to rely on. Google Sheets export is limited to Metabase Cloud. Strata is
+beautiful by default, aggregate-aware with federated hot-tier routing for sub-second refreshes, and
+agent-safe out of the box. It augments or replaces Metabase rather than connecting to it.

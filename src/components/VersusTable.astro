@@ -1,7 +1,7 @@
 ---
 // Focused head-to-head table for a compare page: {competitor} vs Strata across
 // the shared axes. Strata column is highlighted. Data in src/data/comparisons.ts.
-import { strataCells, competitorCells } from '../data/comparisons';
+import { strataCells, competitorCells, extraRows } from '../data/comparisons';
 
 interface Props {
   slug: string;
@@ -10,11 +10,14 @@ interface Props {
 const { slug, competitor } = Astro.props;
 
 const them = competitorCells[slug] ?? [];
-const rows = strataCells.map((r, i) => ({
-  capability: r.capability,
-  them: them[i] ?? '—',
-  strata: r.strata,
-}));
+const rows = [
+  ...strataCells.map((r, i) => ({
+    capability: r.capability,
+    them: them[i] ?? '—',
+    strata: r.strata,
+  })),
+  ...(extraRows[slug] ?? []),
+];
 ---
 
 <div class="overflow-x-auto rounded-xl border border-border">

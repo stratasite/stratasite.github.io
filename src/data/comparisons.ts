@@ -78,14 +78,14 @@ export const competitorCells: Record<string, string[]> = {
     'Copilot bolt-on; not grain-safe retrieval',
   ],
   'strata-vs-metabase': [
-    'Lightweight models and metrics; thin semantics',
-    'Manual joins; no governed blending',
-    'On you; no grain guardrails',
-    'Basic aggregations; simple metrics only',
-    'Queries the source directly; result caching only',
+    'No semantic layer. "Models" are fixed join sets, no join pruning',
+    'Single table or one joined query; no cross-grain blending',
+    'On you; snapshot and LOD only via hand-written window SQL',
+    'Basic aggregations on a fixed join; no snapshot, LOD, or complex',
+    'Queries the source directly; caching keyed on query duration',
     'Many connectors, one source per question',
-    'Friendly, easy self-service (its calling card)',
-    'Metabot bolt-on; not agent-native',
+    'Fast first dashboard, but limited viz and manual layout',
+    'Metabot bolt-on; model-table selection blocks agents',
   ],
   'strata-vs-superset': [
     'Thin semantic layer; SQL-first',
@@ -96,5 +96,36 @@ export const competitorCells: Record<string, string[]> = {
     'Many SQL dialects',
     'Open-source BI; real effort to polish',
     'None native; bolt-on only',
+  ],
+};
+
+// Optional competitor-specific rows, appended after the shared axes. Use these
+// for axes that only matter against one kind of tool (e.g. BI-tool ergonomics),
+// so the shared matrix stays clean for headless semantic layers.
+export const extraRows: Record<
+  string,
+  { capability: string; them: string; strata: string }[]
+> = {
+  'strata-vs-metabase': [
+    {
+      capability: 'Query building',
+      them: 'Start by picking a model and its joins; hard for non-technical users, limiting for technical ones',
+      strata: 'Start from a question, validated per keystroke, no SQL or join keys required',
+    },
+    {
+      capability: 'Visualization',
+      them: 'Basic chart types only; no agent-built views',
+      strata: 'Beautiful by default, and agents can build views the same way people do',
+    },
+    {
+      capability: 'Dashboard layout',
+      them: 'Manual snap-to-grid; extensive config to make dashboards interactive',
+      strata: 'Auto layout engine; views arrange themselves, interactive by default',
+    },
+    {
+      capability: 'Export',
+      them: 'Google Sheets export only on Metabase Cloud',
+      strata: 'Export built into the product, no paid tier gate',
+    },
   ],
 };

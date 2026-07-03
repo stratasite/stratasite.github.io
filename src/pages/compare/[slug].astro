@@ -21,10 +21,10 @@ const { Content } = await entry.render();
   summary={entry.data.summary}
   sections={[]}
 >
-  <Content />
-
-  <h2>At a glance</h2>
-  <div class="not-prose mt-6">
+  <h2 class="sr-only">At a glance</h2>
+  <div class="not-prose mb-14">
     <VersusTable slug={entry.slug} competitor={entry.data.competitor} />
   </div>
+
+  <Content />
 </Article>
