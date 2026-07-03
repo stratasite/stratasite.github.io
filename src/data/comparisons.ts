@@ -5,6 +5,7 @@
 
 // The comparison axes and Strata's constant position on each.
 export const strataCells: { capability: string; strata: string }[] = [
+  { capability: 'Primary operator', strata: 'Non-technical users build reports, dashboards, agents, and exports; engineers set up and lightly maintain.' },
   { capability: 'Modeling approach', strata: 'Convention over configuration. Model by naming, versioned in Git.' },
   { capability: 'Cross-domain blending', strata: 'Automatic and grain-safe, conformed by shared names.' },
   { capability: 'Grain safety', strata: 'Guaranteed. Invalid combinations are refused before they run.' },
@@ -18,6 +19,7 @@ export const strataCells: { capability: string; strata: string }[] = [
 // Competitor cells, keyed by compare slug, in the same row order as strataCells.
 export const competitorCells: Record<string, string[]> = {
   'strata-vs-semantic-views': [
+    'Data engineers. Headless model; consumers need a separate BI tool',
     'Explicit relationships; AI-assisted autopilot modeling',
     'Join-based; two same-named dimensions break the view',
     'Relationship-based; correctness depends on the model',
@@ -28,6 +30,7 @@ export const competitorCells: Record<string, string[]> = {
     'Agent-native via Cortex, but Snowflake only',
   ],
   'strata-vs-metricflow': [
+    'Analytics engineers writing YAML; consumers need a BI tool on top',
     'Per-model YAML; entities linked by name',
     'Semi-automatic via entities',
     'Solid within a model; author-dependent across models',
@@ -38,6 +41,7 @@ export const competitorCells: Record<string, string[]> = {
     'Growing, but you build the retrieval',
   ],
   'strata-vs-cube': [
+    'Developers. Headless; end users consume through another tool',
     'Authored cubes and views; high config burden',
     'Only through authored views',
     'Depends on cube and view design',
@@ -48,6 +52,7 @@ export const competitorCells: Record<string, string[]> = {
     'API-first; you build the agent logic',
   ],
   'strata-vs-looker': [
+    'LookML developers build; business users explore within prebuilt guardrails',
     'LookML; configure every explore',
     'Merged results across explores',
     'Manual; awkward multi-fact handling',
@@ -58,6 +63,7 @@ export const competitorCells: Record<string, string[]> = {
     'Bolt-on assistant; not grain-safe retrieval',
   ],
   'strata-vs-tableau': [
+    'Data analysts. Non-technical users mostly consume finished workbooks',
     'Per-workbook; no governed semantic layer',
     'Data blending; fragile across sources',
     'On you; LOD helps but stays manual',
@@ -68,6 +74,7 @@ export const competitorCells: Record<string, string[]> = {
     'Bolt-on chat; not agent-native',
   ],
   'strata-vs-power-bi': [
+    'Analysts fluent in DAX; non-technical users mostly consume reports',
     'DAX model; grows complex fast',
     'Model relationships; manual',
     'On you; easy to trip on DAX',
@@ -78,6 +85,7 @@ export const competitorCells: Record<string, string[]> = {
     'Copilot bolt-on; not grain-safe retrieval',
   ],
   'strata-vs-metabase': [
+    'Technical users. Non-technical users are passive, limited to consuming what others build',
     'No semantic layer. "Models" are fixed join sets, no join pruning',
     'Single table or one joined query; no cross-grain blending',
     'On you; snapshot and LOD only via hand-written window SQL',
@@ -88,6 +96,7 @@ export const competitorCells: Record<string, string[]> = {
     'Metabot bolt-on; model-table selection blocks agents',
   ],
   'strata-vs-superset': [
+    'Engineers and SQL-fluent analysts; non-technical users just view',
     'Thin semantic layer; SQL-first',
     'Manual, in SQL',
     'On you',
