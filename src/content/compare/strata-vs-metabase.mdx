@@ -2,26 +2,32 @@
 title: Strata vs Metabase
 competitor: Metabase
 category: bi-tool
-summary: Metabase is the fastest way to a first dashboard on a small warehouse. But its "modeling" is thin, its query builder leans on SQL, and it has no real semantic layer. Strata keeps self-service easy and puts a governed, grain-safe semantic layer underneath.
+summary: Metabase is a fast way to a first dashboard on a small warehouse. But non technical users can only passively consume the work of Engineers.
 order: 50
 ---
 
-## Who Is the Primary Operator?
-
-The primary operator is the person who can drive the full tool: build reports, dashboards, agents, and
-exports, not just view them. It is the first question to settle when choosing analytics, because it
-decides who you have to staff for.
-
-In Strata, the primary operator is the non-technical user. Engineers set the project up and keep it
-current as KPIs change and new tables land, but that upkeep is light. The day-to-day building is done by
-analysts and operators themselves, safely. In Metabase, the primary operator is technical. Non-technical
-users stay passive, consuming dashboards that SQL-fluent colleagues build and maintain for them.
+import Callout from '../../components/Callout.astro';
 
 ## Where Metabase Is Strong
 
 Metabase nails speed to first chart. One `docker run` and a two-minute setup, and you are querying. For
-a small team on a small warehouse it is an excellent, low-cost way to get essential analytics off the
-ground, and for anyone comfortable in SQL it is genuinely productive.
+a small **technical** team on a small warehouse it is an excellent, low-cost way to get essential analytics off the
+ground, and for anyone comfortable in SQL it is genuinely productive. The primary operator here are meant to 
+be technical: understands the data model, SQL, and some data engineering principles.
+
+<Callout type="tip" title="Who is the Primary Operator?">
+The primary operator is the person who can drive the full tool: build reports, dashboards, agents, and
+exports, not just view them. It is the first question to settle when choosing a BI platform.  
+
+**Who are you trying to enable?** 
+  1. Technical users who need a way to deliver dashboards? or,
+  2. Non technical users who need to self serve analtics
+
+In Strata, the primary operator is the non-technical user. Engineers set the project up and keep it
+current as KPIs change and new tables land, but that upkeep is light. The day to day building is done by
+non technical domain experts.
+</Callout>
+
 
 ## Where Strata Pulls Ahead
 
@@ -35,12 +41,13 @@ across fact domains at different grains means a fragile fact-to-fact join. Snaps
 level-of-detail measures are out of reach without hand-written window SQL. Strata ships five measure
 types and aggregates each fact to a common grain, so blends stay grain-safe by construction.
 
-**The query builder is the wrong starting point.** Every visualization starts by picking a model and its
+**Model selection is a challenging starting point.** Every visualization starts by picking a model and its
 joins, too hard for a non-technical analyst or an agent, so teams fall back to raw SQL, which frustrates
 the technical users it fit best. Strata starts from a question, validates per keystroke, and refuses
 invalid combinations with an explanation. Humans and agents self-serve safely.
 
 **The rest adds up.** Basic chart types only. Manual dashboard layout and heavy config for interactivity.
-Caching keyed on query duration, so you cannot rely on it. Sheets export gated behind Metabase Cloud.
+Performance by simple caching. Sheets export gated behind Metabase Cloud.
+
 Strata is beautiful by default, aggregate-aware with federated hot-tier routing for sub-second refreshes,
-and agent-safe out of the box. It augments or replaces Metabase rather than connecting to it.
+and agent-safe out of the box.

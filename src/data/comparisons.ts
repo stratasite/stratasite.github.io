@@ -5,9 +5,9 @@
 
 // The comparison axes and Strata's constant position on each.
 export const strataCells: { capability: string; strata: string }[] = [
-  { capability: 'Primary operator', strata: 'Non-technical users build reports, dashboards, agents, and exports; engineers set up and lightly maintain.' },
-  { capability: 'Modeling approach', strata: 'Convention over configuration. Model by naming, versioned in Git.' },
-  { capability: 'Cross-domain blending', strata: 'Automatic and grain-safe, conformed by shared names.' },
+  { capability: 'Primary operator', strata: 'Non-technical users build reports, dashboards, agents; engineers maintain semantic layer.' },
+  { capability: 'Modeling approach', strata: 'Comprehensive Semantic Layer; Convention over configuration, model by naming, versioned in Git.' },
+  { capability: 'Cross-domain blending', strata: 'Automatic and grain safe. Conformed by naming and extended groups' },
   { capability: 'Grain safety', strata: 'Guaranteed. Invalid combinations are refused before they run.' },
   { capability: 'Measure expressiveness', strata: 'Five measure types, plus one-click YoY, moving average, % of total.' },
   { capability: 'Performance', strata: 'Aggregate-aware, federated OLAP hot tiers, partition-aware routing.' },
@@ -85,12 +85,12 @@ export const competitorCells: Record<string, string[]> = {
     'Copilot bolt-on; not grain-safe retrieval',
   ],
   'strata-vs-metabase': [
-    'Technical users. Non-technical users are passive, limited to consuming what others build',
+    'Engineers and other technical users',
     'No semantic layer. "Models" are fixed join sets, no join pruning',
     'Single table or one joined query; no cross-grain blending',
     'On you; snapshot and LOD only via hand-written window SQL',
     'Basic aggregations on a fixed join; no snapshot, LOD, or complex',
-    'Queries the source directly; caching keyed on query duration',
+    'Simple caching but relies on warehouse performance',
     'Many connectors, one source per question',
     'Fast first dashboard, but limited viz and manual layout',
     'Metabot bolt-on; model-table selection blocks agents',
@@ -118,8 +118,8 @@ export const extraRows: Record<
   'strata-vs-metabase': [
     {
       capability: 'Query building',
-      them: 'Start by picking a model and its joins; hard for non-technical users, limiting for technical ones',
-      strata: 'Start from a question, validated per keystroke, no SQL or join keys required',
+      them: 'Choose table or model first. Knowledge of data model required',
+      strata: 'Start from a measure or dimension. Zero data model Knowledge required ',
     },
     {
       capability: 'Visualization',
@@ -129,12 +129,7 @@ export const extraRows: Record<
     {
       capability: 'Dashboard layout',
       them: 'Manual snap-to-grid; extensive config to make dashboards interactive',
-      strata: 'Auto layout engine; views arrange themselves, interactive by default',
-    },
-    {
-      capability: 'Export',
-      them: 'Google Sheets export only on Metabase Cloud',
-      strata: 'Export built into the product, no paid tier gate',
-    },
+      strata: 'Auto layout engine; views arrange themselves, one click interactivity',
+    }
   ],
 };
