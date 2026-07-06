@@ -28,6 +28,7 @@ export const nav = {
   // render time (see Nav.astro), so feature links never drift from the pages.
   links: [
     { label: 'Features', href: '/#features' },
+    { label: 'Pricing', href: '/pricing/' },
     { label: 'Docs', href: site.docsUrl, external: true },
     { label: 'Blog', href: site.blogUrl, external: true },
   ],
