@@ -7,7 +7,7 @@
 export const strataCells: { capability: string; strata: string }[] = [
   { capability: 'Primary operator', strata: 'Non-technical users build reports, dashboards, agents; engineers maintain semantic layer.' },
   { capability: 'Modeling approach', strata: 'Comprehensive Semantic Layer; Convention over configuration, model by naming, versioned in Git.' },
-  { capability: 'Cross-domain blending', strata: 'Automatic and grain safe. Conformed by naming and extended groups' },
+  { capability: 'Cross-domain blending', strata: 'Automatic and grain-safe. Conformed by naming and extended groups.' },
   { capability: 'Grain safety', strata: 'Guaranteed. Invalid combinations are refused before they run.' },
   { capability: 'Measure expressiveness', strata: 'Five measure types, plus one-click YoY, moving average, % of total.' },
   { capability: 'Performance', strata: 'Aggregate-aware, federated OLAP hot tiers, partition-aware routing.' },
@@ -74,15 +74,15 @@ export const competitorCells: Record<string, string[]> = {
     'Bolt-on chat; not agent-native',
   ],
   'strata-vs-power-bi': [
-    'Analysts fluent in DAX; non-technical users mostly consume reports',
-    'DAX model; grows complex fast',
-    'Model relationships; manual',
-    'On you; easy to trip on DAX',
-    'DAX measures; capable but complex',
-    'Import and refresh bound to the model',
-    'Many connectors; strong XMLA reach',
-    'Full BI, ubiquitous',
-    'Copilot bolt-on; not grain-safe retrieval',
+    'Technical experts who know the model and DAX; non-technical users get slicers only',
+    'Every source becomes a model; versioned, but not in Git; models proliferate',
+    'Conformed dims blend, but the model relies on you to make legal queries',
+    'On the author; nothing stops an invalid dimension',
+    'DAX: expressive but steep, and not one-to-one with SQL',
+    'Import, DirectQuery, or Composite; fast but locked in to Microsoft',
+    'Vast connectors; strong XMLA reach',
+    'Full BI, but pixel-perfect manual layout; pretty or ugly is on you',
+    'Copilot, not grain-safe retrieval',
   ],
   'strata-vs-metabase': [
     'Engineers and other technical users',
@@ -119,7 +119,7 @@ export const extraRows: Record<
     {
       capability: 'Query building',
       them: 'Choose table or model first. Knowledge of data model required',
-      strata: 'Start from a measure or dimension. Zero data model Knowledge required ',
+      strata: 'Start from a measure or dimension. Zero data model knowledge required.',
     },
     {
       capability: 'Visualization',
@@ -129,7 +129,7 @@ export const extraRows: Record<
     {
       capability: 'Dashboard layout',
       them: 'Manual snap-to-grid; extensive config to make dashboards interactive',
-      strata: 'Auto layout engine; views arrange themselves, one click interactivity',
+      strata: 'Auto layout engine; views arrange themselves, one-click interactivity',
     }
   ],
 };
