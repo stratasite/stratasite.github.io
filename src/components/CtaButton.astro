@@ -25,6 +25,11 @@ const variants = {
 };
 ---
 
-<a href={site.demoUrl} class={`${base} ${variants[variant]} ${className}`}>
+<a
+  href={site.demoUrl}
+  target="_blank"
+  rel="noopener"
+  class={`${base} ${variants[variant]} ${className}`}
+>
   {label}
 </a>

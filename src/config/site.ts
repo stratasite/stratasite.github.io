@@ -11,10 +11,10 @@ export const site = {
     'High-performance, AI-safe self-service analytics — a governed semantic layer fused with beautiful-by-default dashboards, for humans and agents.',
 
   /**
-   * Demo call-to-action. Phase 1 placeholder — swap this single value for the
-   * real Calendly/Cal.com URL later. `CtaButton` is the only consumer.
+   * Demo call-to-action. Single source of truth for every CTA (CtaButton) and
+   * the footer link — update here to swap schedulers.
    */
-  demoUrl: 'mailto:hello@strata.do?subject=Schedule%20a%20Strata%20demo',
+  demoUrl: 'https://calendar.app.google/KjU3TdPwfVNpfuSs5',
   demoLabel: 'Schedule a demo',
 
   // Outbound destinations (live on other domains/paths today).
