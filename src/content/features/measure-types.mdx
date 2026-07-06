@@ -1,0 +1,179 @@
+---
+title: The most comprehensive suite of measure types, built for non technical users and agents
+summary: Standard, Complex, Snapshot, Exclusion LOD, and Inclusion LOD measures. Plus derived custom calculations and one click YoY, Moving Averages, and Percent of Total transforms.
+icon: sigma
+diagram: measures
+order: 50
+sections:
+  - { id: standard, label: Standard }
+  - { id: complex, label: Complex }
+  - { id: snapshot, label: Snapshot }
+  - { id: exclusion-level-of-detail-lod, label: Exclusion LOD }
+  - { id: inclusion-level-of-detail-lod, label: Inclusion LOD }
+  - { id: derived-calculations, label: Derived calculations }
+  - { id: transforms, label: Transforms }
+---
+
+import MeasureSpectrumDiagram from '../../components/MeasureSpectrumDiagram.astro';
+import SnapshotGridDiagram from '../../components/SnapshotGridDiagram.astro';
+
+<MeasureSpectrumDiagram />
+
+Every real analysis eventually needs more than a sum. Share, ratios, running balances, subtotals,
+fixed denominators. In most tools each of these is a workaround, a self join, or a ticket to data
+engineering. Strata makes them first class. A governed suite of measure types covers the calculations
+your business actually asks for, so analysts and agents self serve without you writing one off SQL.
+Each type is defined once in the semantic layer and reused everywhere, always at the right grain.
+
+## Standard
+
+The workhorse. A Standard measure is a simple aggregation like `sum(revenue)`, `sum(revenue) - sum(price)`,
+`case when product = 'a' then count(orders) else 0 end`, or `avg(price)`. There is no proprietary
+expression language to fight and no capability to give up. Strata supports any aggregation SQL your
+datasource does, so if the warehouse can compute it, you can model it.
+
+Define it once and it is available across every report and every dimension the fact can reach.
+
+## Complex
+
+A Complex measure is a formula built on other measures and dimensions, like `[Revenue]@m / [Orders]` for average order
+value. Because it references semantic fields rather than raw columns, it stays correct however the query is
+sliced, and you never re-derive it per report. Update the underlying measure once and every Complex measure that uses it follows.
+
+You can go further and reference dimensions inside the formula, like 
+`case when [Category Name]@d in ('men') then sum(revenue_col) else [Weighted Revenue]@m end`. 
+Those dimensions can live anywhere in the join path of the mapped table. That is expressiveness most semantic
+layers cannot match, and it means the gnarly measure requests stop coming back to you as bespoke SQL.
+
+## Snapshot
+
+Some measures cannot be added up across time. Inventory on hand, account balances, and headcount are
+point in time values. Sum them over three months and you triple count. This is exactly where hand rolled
+semantic models quietly go wrong. Snapshot measures are semi-additive by declaration: Strata adds them
+across regions or products, but across time it takes the beginning or ending value you set. You get a
+correct running balance with no window functions to write and no "do not sum this" note buried in a wiki.
+
+<SnapshotGridDiagram />
+
+Declaring one is two lines: a snapshot date on the table, and `snapshot: ending` on the measure.
+
+```yaml
+# models/inventory/tbl.inventory.yml 
+
+name: Inventory
+physical_name: inventory
+datasource: tpcds
+cost: 100
+
+snapshot: Date
+
+fields:
+  - type: measure
+    name: Inventory Quantity On Hand
+    description: Quantity of inventory on hand
+    data_type: integer
+    snapshot: ending
+    expression:
+      sql: sum(inv_quantity_on_hand)
+
+```
+
+## Exclusion Level of Detail (LOD) 
+
+An Exclusion measure drops dimensions from the group by, the filter, or both. Show revenue by product, exclude product
+from one measure, and its category subtotal sits right next to each product row. It is the easiest 
+way to compute selective subtotals for advanced KPIs. In raw SQL that is a self join or a windowed
+subquery per KPI. Here it is one field.
+
+```yaml
+fields:
+  type: measure
+  name: Total Sales Trend
+  description: Calculates total sales ignoring non-date dimensions. 
+  data_type: decimal
+  expression: sum(sales)
+  exclusion_type: exclude_all_except
+  exclusions:
+    - type: table
+      filter: apply 
+      entities:
+        - date_dim
+```
+
+Strata gives the most comprehensive control over what to exclude:
+1. Exclude all (always calculate the measure without any group by)
+2. Exclude all dimensions from a specific table 
+3. Exclude all dimensions from all tables on a join path (Universe) (i.e. geography hierarchy - country_dim, region_dim, market_dim etc)
+4. Inverse of specific exclusion: Exclude all except the listed tables, universes, or dimensions
+
+## Inclusion Level of Detail (LOD)
+
+An Inclusion measure computes at a lower grain first, then rolls the result up to the view level. Say you
+run a fast food chain and want Median Ticket Size by region. You have to sum line items to a ticket total
+first, then take the median of those totals by region. That is a two pass aggregation, the kind most
+semantic layers cannot express at all and that you would otherwise hand write and maintain per report.
+
+  - Step 1: region, ticket_id, sum(sales) 
+  - Step 2: region, median(sales from step 1)
+
+```yaml
+fields:
+  type: measure
+  name: Median Ticket Size
+  description: Calculates the median ticket size across any dimension
+  data_type: decimal
+  expression: sum(item_sales_amount)
+  inclusions:
+    filter: apply
+    aggregation: percentile_cont(0.5) WITHIN GROUP (ORDER BY @exp)
+    dimensions:
+      - Ticket Number 
+```
+
+## Derived Calculations
+
+The types above are authored by a modeler, but self service should not stop there. Derived
+calculations let any user create brand new measures and dimensions on top of the semantic layer, on
+the fly, with no engineering. The ad hoc request that used to become a ticket never reaches your queue.
+
+Because they build on governed fields, a derived calculation inherits
+the same grain safety and blending rules as everything else. The calculation editor only offers the measures
+and dimensions that are valid in a given formula, so users move fast and still cannot build something wrong.
+It is powerful, and it stays correct.
+
+<video
+  class="w-full"
+  src="/derived_calculations.mp4"
+  autoplay
+  loop
+  muted
+  playsinline
+  preload="metadata"
+  aria-label="Creating custom measures and derived calculations from the semantic layer"
+></video>
+
+## Transforms
+
+From any measure, generate the variations analysts reach for most in a single click: year over year,
+moving averages, and percent of total. No formula to write, no new model to ship. Strata derives the
+transform from the base measure at query time.
+
+Many competing semantic layers require every runtime transformation to be encoded into the model up front.
+That makes no sense if productivity for both analysts and data engineers is the goal. Picture hand coding
+partition logic for every moving average window on every measure, then maintaining it forever.
+
+It does not scale. Strata does the transform at runtime, so there is nothing to pre build and nothing to keep in sync.
+
+Watch an analyst do it in Strata:
+
+<video
+  class="w-full"
+  src="/transformations.mp4"
+  autoplay
+  loop
+  muted
+  playsinline
+  preload="metadata"
+  aria-label="Easily one click apply common measure transformations"
+></video>
+

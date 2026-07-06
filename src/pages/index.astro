@@ -1,0 +1,78 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import FeatureRows from '../components/FeatureRows.astro';
+import StackUp from '../components/StackUp.astro';
+import CtaButton from '../components/CtaButton.astro';
+import { site } from '../config/site';
+
+const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+---
+
+<Base>
+  <!-- HERO -->
+  <Hero />
+
+  <!-- SOCIAL PROOF -->
+  <section class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-8 text-center sm:px-6 lg:px-8">
+      <p class="text-xs font-medium uppercase tracking-[0.2em] text-primary sm:text-sm">
+        Born at Netflix, ready for the world
+      </p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="scroll-mt-20">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          World class <span class="text-primary">Semantic Engine</span> designed for
+          <span class="text-primary">Non-technical Users</span> and <span class="text-primary">Agents</span>
+        </h2>
+        <p class="mt-4 text-muted-foreground">A governed semantic layer fused with beautiful-by-default dashboards.</p>
+      </div>
+      <div class="mt-16">
+        <FeatureRows features={features} />
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW WE STACK UP -->
+  <section id="compare" class="scroll-mt-20 border-t border-border bg-surface-2">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">How we stack up</h2>
+        <p class="mt-4 text-muted-foreground">The only product that is both a governed semantic layer and a beautiful self-service tool. Compare it to whatever you use today.</p>
+      </div>
+      <div class="mt-14"><StackUp comparisons={comparisons} /></div>
+    </div>
+  </section>
+
+  <!-- LATEST FROM THE BLOG (links out to blog.strata.do) -->
+  <section class="scroll-mt-20">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 text-center">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Latest from the blog</h2>
+      <p class="mt-4 text-muted-foreground">Deep dives on semantic modeling, federation, and analytics in the AI age.</p>
+      <a href={site.blogUrl} target="_blank" rel="noopener" class="mt-6 inline-flex items-center gap-1 font-semibold text-primary hover:gap-2 transition-all">
+        Read the blog
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- CLOSING CTA -->
+  <section class="border-t border-border bg-strata-ink">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">See Strata on your own data</h2>
+      <p class="mt-4 text-muted-foreground">Sub-second dashboards and agent turns, lower warehouse spend, beautiful by default.</p>
+      <CtaButton location="home-closing" class="mt-8" />
+    </div>
+  </section>
+</Base>

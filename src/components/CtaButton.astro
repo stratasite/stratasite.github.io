@@ -1,0 +1,57 @@
+---
+import { site } from '../config/site';
+
+interface Props {
+  /**
+   * Visual style. `primary` = filled peach (the demo CTA, used site-wide);
+   * `ghost` = outlined/subtle.
+   */
+  variant?: 'primary' | 'ghost';
+  label?: string;
+  class?: string;
+  /**
+   * Optional in-page placement (e.g. `hero`, `pricing-team`, `footer`), sent as
+   * the `cta_location` param on the GA4 `generate_lead` event so leads can be
+   * attributed to where the visitor clicked. Omit and the event still fires.
+   */
+  location?: string;
+}
+
+const { variant = 'primary', label = site.demoLabel, class: className = '', location } = Astro.props;
+
+const base =
+  'cta inline-flex items-center justify-center rounded-sm no-underline shadow-sm font-display font-bold uppercase tracking-wide px-6 py-3 transition-[box-shadow,transform,filter] duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+const variants = {
+  // Peach (primary) background with deep-rust text, site-wide. Hover flair comes
+  // from the base (lift + shadow + slight brightness), so the text stays crisp.
+  primary: 'bg-primary text-primary-foreground',
+  ghost:
+    'border border-border bg-surface/60 text-foreground hover:bg-surface backdrop-blur',
+};
+---
+
+<a
+  href={site.demoUrl}
+  target="_blank"
+  rel="noopener"
+  data-cta="demo"
+  data-cta-location={location}
+  class={`${base} ${variants[variant]} ${className}`}
+>
+  {label}
+</a>
+
+<script>
+  // Fire the GA4 lead-gen event on any demo CTA click. Delegated so a single
+  // listener covers every CtaButton on the page. `cta_location` is included only
+  // when the button set a placement. page_location etc. are added by gtag.
+  document.addEventListener('click', (e) => {
+    const el = (e.target as HTMLElement)?.closest<HTMLAnchorElement>('a[data-cta="demo"]');
+    if (!el) return;
+    const gtag = (window as any).gtag;
+    if (typeof gtag !== 'function') return;
+    const loc = el.dataset.ctaLocation;
+    gtag('event', 'generate_lead', loc ? { cta_location: loc } : {});
+  });
+</script>

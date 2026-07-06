@@ -1,0 +1,102 @@
+---
+// Borderless, on-brand feature visual: the Strata "data horizon" — warm
+// stacked strata bands with a cool ink trend line. Varies per row via `index`.
+// Priority: product `video` > named `diagram` > real `image` > generated graphic.
+import BlendingDiagram from './BlendingDiagram.astro';
+import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
+import MeasureSpectrumDiagram from './MeasureSpectrumDiagram.astro';
+import AgentLoopDiagram from './AgentLoopDiagram.astro';
+
+interface Props {
+  index: number;
+  title: string;
+  image?: string;
+  video?: string;
+  diagram?: string;
+}
+const { index, title, image, video, diagram } = Astro.props;
+
+// Registry of named mini diagrams usable as a row visual.
+const diagrams: Record<string, any> = { blending: BlendingDiagram, federation: FederatedOlapDiagram, measures: MeasureSpectrumDiagram, agentloop: AgentLoopDiagram };
+const Diagram = diagram ? diagrams[diagram] : undefined;
+
+const trends = [
+  { d: 'M16 168 L92 138 L168 182 L244 110 L320 132 L392 84', endY: 84 },
+  { d: 'M16 200 L92 150 L168 168 L244 120 L320 150 L392 92', endY: 92 },
+  { d: 'M16 150 L92 178 L168 120 L244 162 L320 102 L392 122', endY: 122 },
+  { d: 'M16 192 L92 122 L168 152 L244 100 L320 142 L392 72', endY: 72 },
+  { d: 'M16 160 L92 192 L168 130 L244 152 L320 110 L392 102', endY: 102 },
+  { d: 'M16 182 L92 130 L168 166 L244 116 L320 146 L392 86', endY: 86 },
+];
+const t = trends[index % trends.length];
+---
+
+{
+  video ? (
+    <video
+      class="fv-video w-full rounded-2xl"
+      src={video}
+      autoplay
+      loop
+      muted
+      playsinline
+      preload="metadata"
+      aria-label={`${title} product demo`}
+    />
+  ) : Diagram ? (
+    <div class="flex aspect-[4/3] w-full items-center justify-center">
+      <Diagram mini />
+    </div>
+  ) : image ? (
+    <img src={image} alt="" class="w-full rounded-2xl object-cover shadow-sm" loading="lazy" />
+  ) : (
+    <div class="fv aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-sm">
+      <svg viewBox="0 0 408 280" class="h-full w-full" role="img" aria-label={`${title} illustration`}>
+        <rect class="band-bg" x="0" y="0" width="408" height="280" />
+        <rect class="band-peach" x="0" y="118" width="408" height="162" />
+        <rect class="band-orange" x="0" y="172" width="408" height="108" />
+        <rect class="band-rust" x="0" y="222" width="408" height="58" />
+        <path class="trend" d={t.d} fill="none" />
+        <circle class="trend-dot" cx="392" cy={t.endY} r="6" />
+      </svg>
+    </div>
+  )
+}
+
+<style>
+  /* Product video: a distinct app screen floating on the rust page, with a
+     soft peach glow + depth shadow so it reads as premium and clickable. */
+  .fv-video {
+    display: block;
+    box-shadow:
+      0 24px 50px -18px rgba(0, 0, 0, 0.5),
+      0 0 90px 6px color-mix(in srgb, var(--strata-peach) 32%, transparent);
+  }
+  .fv {
+    background: var(--strata-cream);
+  }
+  .band-bg {
+    fill: var(--strata-cream);
+  }
+  .band-peach {
+    fill: var(--strata-peach);
+    opacity: 0.5;
+  }
+  .band-orange {
+    fill: var(--strata-orange);
+    opacity: 0.65;
+  }
+  .band-rust {
+    fill: var(--strata-rust);
+    opacity: 0.88;
+  }
+  .trend {
+    stroke: var(--strata-ink);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .trend-dot {
+    fill: var(--strata-ink);
+  }
+</style>

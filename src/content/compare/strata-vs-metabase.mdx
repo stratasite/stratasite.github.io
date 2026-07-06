@@ -1,0 +1,53 @@
+---
+title: Strata vs Metabase
+competitor: Metabase
+category: bi-tool
+summary: Metabase is a fast way to a first dashboard on a small warehouse. But non technical users can only passively consume the work of Engineers.
+order: 50
+---
+
+import Callout from '../../components/Callout.astro';
+
+## Where Metabase Is Strong
+
+Metabase nails speed to first chart. One `docker run` and a two-minute setup, and you are querying. For
+a small **technical** team on a small warehouse it is an excellent, low-cost way to get essential analytics off the
+ground, and for anyone comfortable in SQL it is genuinely productive. The primary operator here are meant to 
+be technical: understands the data model, SQL, and some data engineering principles.
+
+<Callout type="tip" title="Who is the Primary Operator?">
+The primary operator is the person who can drive the full tool: build reports, dashboards, agents, and
+exports, not just view them. It is the first question to settle when choosing a BI platform.  
+
+**Who are you trying to enable?** 
+  1. Technical users who need a way to deliver dashboards? or,
+  2. Non technical users who need to self serve analtics
+
+In Strata, the primary operator is the non-technical user. Engineers set the project up and keep it
+current as KPIs change and new tables land, but that upkeep is light. The day to day building is done by
+non technical domain experts.
+</Callout>
+
+
+## Where Strata Pulls Ahead
+
+**No real semantic layer.** What Metabase calls "modeling" is a saved set of joins and filters, a
+database view by another name, with the same cost: no join pruning, so every join runs on every query.
+Strata models by naming instead. Fields live in a governed registry, conformed by shared names and
+versioned in Git, with no per-combination setup.
+
+**Measures hit a wall.** A Metabase metric lives on one table or one joined query, so combining measures
+across fact domains at different grains means a fragile fact-to-fact join. Snapshot, cross-domain, and
+level-of-detail measures are out of reach without hand-written window SQL. Strata ships five measure
+types and aggregates each fact to a common grain, so blends stay grain-safe by construction.
+
+**Model selection is a challenging starting point.** Every visualization starts by picking a model and its
+joins, too hard for a non-technical analyst or an agent, so teams fall back to raw SQL, which frustrates
+the technical users it fit best. Strata starts from a question, validates per keystroke, and refuses
+invalid combinations with an explanation. Humans and agents self-serve safely.
+
+**The rest adds up.** Basic chart types only. Manual dashboard layout and heavy config for interactivity.
+Performance by simple caching. Sheets export gated behind Metabase Cloud.
+
+Strata is beautiful by default, aggregate-aware with federated hot-tier routing for sub-second refreshes,
+and agent-safe out of the box.

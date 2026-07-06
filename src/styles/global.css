@@ -1,0 +1,82 @@
+/* Brand tokens (CSS variables + light/dark) — source of truth. Import first so
+   Tailwind utilities and component styles can reference the custom properties. */
+@import '../../brand/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
+  /* Tabular figures for data/numerals, per brand rules. */
+  .tnum {
+    font-feature-settings: 'tnum' 1;
+  }
+}
+
+@layer components {
+  /* Article/MDX prose. Token-driven so it tracks light/dark automatically. */
+  .prose-strata {
+    @apply text-[1.0625rem] leading-relaxed text-foreground;
+  }
+  .prose-strata h2 {
+    @apply mt-12 scroll-mt-24 text-2xl font-bold tracking-tight;
+  }
+  .prose-strata h3 {
+    @apply mt-8 scroll-mt-24 text-xl font-semibold tracking-tight;
+  }
+  .prose-strata p {
+    @apply mt-4;
+  }
+  .prose-strata ul {
+    @apply mt-4 list-disc space-y-2 pl-6;
+  }
+  .prose-strata ol {
+    @apply mt-4 list-decimal space-y-2 pl-6;
+  }
+  .prose-strata a:not(.cta) {
+    @apply font-medium text-primary underline underline-offset-2 hover:text-strata-rust-deep;
+  }
+  .prose-strata img,
+  .prose-strata video {
+    @apply mt-6 rounded-lg border border-border;
+  }
+  .prose-strata blockquote {
+    @apply mt-6 border-l-2 border-primary pl-4 italic text-muted-foreground;
+  }
+  /* Inline code chip — scoped to NOT fenced blocks, so a <pre><code> block
+     doesn't get a second inner background boxed behind the code. */
+  .prose-strata :not(pre) > code {
+    @apply rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.9em];
+  }
+  /* Fenced code blocks: a clean terminal — ink surface, peach (primary) default
+     text, a subtle hairline. No inner box, no per-token recoloring. */
+  .prose-strata pre {
+    @apply mt-6 overflow-x-auto rounded-xl p-5 font-mono text-[0.9em] leading-relaxed;
+    background-color: var(--strata-ink);
+    color: var(--primary);
+    border: 1px solid color-mix(in srgb, var(--strata-cream) 12%, transparent);
+  }
+  .prose-strata pre code {
+    @apply bg-transparent p-0 text-[1em] font-normal;
+    color: inherit;
+  }
+  .prose-strata .not-prose {
+    @apply text-foreground;
+  }
+}

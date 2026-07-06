@@ -1,0 +1,18 @@
+# build output
+dist/
+# generated from brand/assets by scripts/sync-assets.mjs (single source = brand/)
+public/brand/
+public/favicon-16.png
+public/favicon-32.png
+public/favicon-64.png
+# generated types
+.astro/
+# dependencies
+node_modules/
+# logs
+npm-debug.log*
+# environment
+.env
+.env.production
+# os
+.DS_Store

@@ -1,0 +1,59 @@
+---
+title: Dynamic Universes Enable Deep Self Service 
+summary: No semantic view, explorer, or cube to choose first. Jump straight into building a report with a vague idea of the measures you want. Strata validates and previews every step as you type, guiding you to fast, correct answers.
+icon: zap
+video: /instant_feedback.mp4
+order: 5
+sections:
+  - { id: skip-the-setup, label: Skip the Setup }
+  - { id: feedback-as-you-build, label: Feedback as you Build }
+  - { id: guided-to-valid-answers, label: Guided to Valid Answers }
+  - { id: how-it-works, label: How it Works }
+---
+
+## Skip the Setup
+
+Every other tool makes you commit before you can ask anything. Pick the right semantic view. Choose an explorer. 
+Open the correct cube. Select a datasource. You have to know how the model is carved up before you even know what you want.
+
+It feels like a non-issue the day you deploy a BI tool. Then the choices multiply into the thousands, and you're 
+left asking which explorer had that flavor of revenue you were looking at last week.
+
+Strata deletes the step entirely. Start with a rough idea, a measure or two you care about, and go straight into building. 
+There's no construct to pick first, because the whole model is open to you at once.
+
+That same property is what makes Strata safe for agents. Instead of being boxed into one explorer or cube, an agent can 
+traverse the entire warehouse, and Strata keeps every step accurate as it goes.
+
+## Feedback as You Build
+
+As you assemble a view, Strata validates and previews on every keystroke. Add a measure and you instantly see the dimensions 
+it can be sliced by. Add a dimension and incompatible measures disappear before you can pick a wrong combination. The answer
+takes shape live, so exploration becomes a conversation instead of a configure, run, debug cycle.
+
+No traditional BI tool works this way, and it's exactly why a Strata is loved by business users and agents.
+
+## Guided to Valid Answers
+
+The same interactive loop that guides a human, validate a partial query, surface the compatible next steps, reject 
+invalid combinations with an explanation, is structurally an agent API. Whether the builder is a person typing or an agent
+calling, every step stays grain-safe, and Strata steers toward answers that are both fast and correct. 
+
+The default failure mode is a missed option, never a silently wrong number.
+
+## How It Works
+
+Strata uses a convention-over-configuration approach to semantic modeling, where naming does the heavy lifting. Give the 
+same business concept the same registered name across your facts and Strata treats them as conformed and blendable. Give 
+distinct concepts distinct names and they stay safely separate. That single discipline is the entire modeling protocol, and 
+it's the simplest semantic model protocol there is.
+
+From there, Strata reads your names, field types, and table relationships and compiles them into a refined hypergraph with 
+proprietary extensions that powers extended relationship resolution across the warehouse. This is what lets a non-technical user 
+surf broadly across the data: from a rough idea, Strata resolves which measures can be sliced by which dimensions and how facts 
+connect, automatically, without an engineer authoring every queryable combination in advance. It was designed from day one for 
+broad, accurate self-service over a messy warehouse.
+
+This is the dynamic universe: instead of a curated model you must select before you can ask, the queryable space assembles itself 
+around whatever you're trying to explore.
+

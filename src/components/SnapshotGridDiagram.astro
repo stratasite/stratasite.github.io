@@ -1,0 +1,191 @@
+---
+// Semi-additive explainer for Snapshot measures. A balance grid (warehouses x
+// months): summing down a column (across entities) is valid; summing across a
+// row (over time) triple-counts. Section aid for the Snapshot section only, so
+// no `mini` variant. All color from brand tokens.
+const months = ['Jan', 'Feb', 'Mar'];
+const rows = [
+  { label: 'WH-A', vals: [40, 55, 50] },
+  { label: 'WH-B', vals: [30, 25, 35] },
+  { label: 'WH-C', vals: [20, 30, 25] },
+];
+
+// Grid geometry (viewBox 780 x 384).
+const gx = 170;
+const gy = 92;
+const cw = 116;
+const rh = 54;
+const colCx = (j: number) => gx + j * cw + cw / 2;
+const rowCy = (i: number) => gy + i * rh + rh / 2;
+---
+
+<figure class="snap mx-auto w-full max-w-3xl" aria-label="Snapshot measures are semi-additive">
+  <svg viewBox="0 0 780 384" role="img" class="h-auto w-full">
+    <title>
+      A balance grid: adding across warehouses gives a valid total on hand, but adding a warehouse's
+      balance across months triple-counts. Snapshot measures take the beginning or ending value across
+      time.
+    </title>
+    <defs>
+      <marker id="snap-ok" markerWidth="9" markerHeight="9" refX="4.5" refY="7" orient="auto">
+        <path class="mk-ok" d="M0 0 L9 0 L4.5 7 Z" />
+      </marker>
+      <marker id="snap-no" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path class="mk-no" d="M0 0 L0 9 L7 4.5 Z" />
+      </marker>
+    </defs>
+
+    {/* column headers */}
+    {months.map((m, j) => (
+      <text class={`hdr${j === 2 ? ' hdr-end' : ''}`} x={colCx(j)} y="80" text-anchor="middle">{m}</text>
+    ))}
+    <text class="hdr-tag" x={colCx(2)} y="66" text-anchor="middle">ending</text>
+
+    {/* grid */}
+    <rect class="cell-box" x={gx} y={gy} width={cw * 3} height={rh * 3} rx="10" />
+    <line class="grid-line" x1={gx + cw} y1={gy} x2={gx + cw} y2={gy + rh * 3} />
+    <line class="grid-line" x1={gx + cw * 2} y1={gy} x2={gx + cw * 2} y2={gy + rh * 3} />
+    <line class="grid-line" x1={gx} y1={gy + rh} x2={gx + cw * 3} y2={gy + rh} />
+    <line class="grid-line" x1={gx} y1={gy + rh * 2} x2={gx + cw * 3} y2={gy + rh * 2} />
+
+    {/* row labels + values */}
+    {rows.map((r, i) => (
+      <g>
+        <text class="rowlbl" x="152" y={rowCy(i) + 5} text-anchor="end">{r.label}</text>
+        {r.vals.map((v, j) => (
+          <text class="val" x={colCx(j)} y={rowCy(i) + 6} text-anchor="middle">{v}</text>
+        ))}
+      </g>
+    ))}
+
+    {/* VALID: add down the Mar column (across warehouses) */}
+    <text class="plus-ok" x={colCx(2)} y={gy + rh} text-anchor="middle" dominant-baseline="middle">+</text>
+    <text class="plus-ok" x={colCx(2)} y={gy + rh * 2} text-anchor="middle" dominant-baseline="middle">+</text>
+    <line class="arr-ok" x1={colCx(2)} y1={gy + rh * 3 + 4} x2={colCx(2)} y2={gy + rh * 3 + 34} marker-end="url(#snap-ok)" />
+    <text class="res-ok" x={colCx(2)} y={gy + rh * 3 + 58} text-anchor="middle">= 110 on hand ✓</text>
+    <text class="cap-ok" x={colCx(2)} y={gy + rh * 3 + 78} text-anchor="middle">add across warehouses</text>
+
+    {/* INVALID: add across the WH-A row (over time) */}
+    <text class="plus-no" x={gx + cw} y={rowCy(0)} text-anchor="middle" dominant-baseline="middle">+</text>
+    <text class="plus-no" x={gx + cw * 2} y={rowCy(0)} text-anchor="middle" dominant-baseline="middle">+</text>
+    <line class="arr-no" x1={gx + cw * 3 + 4} y1={rowCy(0)} x2={gx + cw * 3 + 34} y2={rowCy(0)} marker-end="url(#snap-no)" />
+    <text class="res-no" x={gx + cw * 3 + 44} y={rowCy(0) - 4}>= 145 ✗</text>
+    <text class="cap-no" x={gx + cw * 3 + 44} y={rowCy(0) + 14}>overcounts stock</text>
+
+    {/* takeaway */}
+    <rect class="note-box" x="120" y="338" width="540" height="36" rx="9" />
+    <text class="note" x="390" y="361" text-anchor="middle">
+      Snapshot is semi-additive: across time, Strata takes the beginning or ending balance.
+    </text>
+  </svg>
+</figure>
+
+<style>
+  .snap .cell-box {
+    fill: color-mix(in srgb, var(--strata-cream) 5%, transparent);
+    stroke: color-mix(in srgb, var(--strata-cream) 22%, transparent);
+    stroke-width: 1.2;
+  }
+  .snap .grid-line {
+    stroke: color-mix(in srgb, var(--strata-cream) 16%, transparent);
+    stroke-width: 1;
+  }
+  .snap .hdr {
+    fill: var(--strata-cream);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .snap .hdr-end {
+    fill: var(--strata-peach);
+  }
+  .snap .hdr-tag {
+    fill: var(--strata-peach);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .snap .rowlbl {
+    fill: color-mix(in srgb, var(--strata-cream) 65%, transparent);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .snap .val {
+    fill: var(--strata-cream);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* valid (teal) */
+  .snap .mk-ok,
+  .snap .plus-ok {
+    fill: var(--strata-peach);
+  }
+  .snap .arr-ok {
+    stroke: var(--strata-peach);
+    stroke-width: 2;
+  }
+  .snap .plus-ok {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .snap .res-ok {
+    fill: var(--strata-peach);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .snap .cap-ok {
+    fill: color-mix(in srgb, var(--strata-peach) 85%, var(--strata-cream));
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* invalid (muted) */
+  .snap .mk-no,
+  .snap .plus-no {
+    fill: var(--muted-foreground);
+  }
+  .snap .arr-no {
+    stroke: var(--muted-foreground);
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+  }
+  .snap .plus-no {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    opacity: 0.7;
+  }
+  .snap .res-no {
+    fill: var(--muted-foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: line-through;
+  }
+  .snap .cap-no {
+    fill: color-mix(in srgb, var(--muted-foreground) 85%, transparent);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .snap .note-box {
+    fill: color-mix(in srgb, var(--strata-peach) 9%, transparent);
+    stroke: color-mix(in srgb, var(--strata-peach) 30%, transparent);
+    stroke-width: 1;
+  }
+  .snap .note {
+    fill: color-mix(in srgb, var(--strata-cream) 88%, transparent);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+  }
+</style>

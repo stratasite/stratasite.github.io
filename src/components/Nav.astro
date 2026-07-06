@@ -1,0 +1,68 @@
+---
+import { getCollection } from 'astro:content';
+import { nav, site } from '../config/site';
+import CtaButton from './CtaButton.astro';
+import Icon from './Icon.astro';
+
+// Product dropdown is generated from the features collection so it never drifts.
+const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+---
+
+<header class="sticky top-0 z-50 bg-strata-rust">
+  <nav class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <!-- Left: logo + wordmark. Rust is a dark/busy field, so use the dark mark. -->
+    <a href="/" class="flex items-center gap-2.5 shrink-0">
+      <img src="/brand/assets/strata_mark_dark.svg" alt="" class="h-8 w-auto" />
+      <span class="font-display text-2xl font-bold tracking-tight text-strata-cream">strata</span>
+    </a>
+
+    <!-- Center: primary navigation -->
+    <ul class="hidden items-center gap-1 md:flex">
+      <li class="group relative">
+        <button
+          class="flex items-center gap-1 rounded px-3 py-2 text-base font-semibold text-strata-cream hover:text-white"
+          aria-haspopup="true"
+        >
+          Product
+          <svg class="h-3.5 w-3.5 opacity-60" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <!-- Dropdown -->
+        <div class="invisible absolute left-1/2 top-full -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+          <div class="grid w-[34rem] grid-cols-3 gap-1 rounded-lg border border-border bg-surface p-3 shadow-xl">
+            {features.map((f) => (
+              <a
+                href={`/features/${f.slug}/`}
+                class="group/item flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-surface-2"
+              >
+                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-primary transition-colors group-hover/item:bg-primary group-hover/item:text-primary-foreground">
+                  <Icon name={f.data.icon ?? 'layers'} class="h-5 w-5" />
+                </span>
+                <span class="text-sm font-semibold leading-snug text-foreground">{f.data.title}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </li>
+      {nav.links.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            class="rounded px-3 py-2 text-base font-semibold text-strata-cream hover:text-white"
+            {...('external' in link && link.external ? { target: '_blank', rel: 'noopener' } : {})}
+          >
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <!-- Right: CTA -->
+    <div class="flex items-center gap-3">
+      <CtaButton location="nav" class="hidden sm:inline-flex !px-4 !py-2 text-sm" />
+    </div>
+  </nav>
+</header>

@@ -1,0 +1,171 @@
+---
+// The measure-type spectrum: five governed measure types ordered simple ->
+// expressive, each with a micro-formula. Full version for the article; `mini`
+// (a compact vertical list) for the homepage feature row. All color via brand
+// tokens; animation is a staggered reveal + a flowing spine, with a
+// prefers-reduced-motion fallback.
+interface Props {
+  mini?: boolean;
+}
+const { mini = false } = Astro.props;
+
+const types = [
+  { n: '01', name: 'Standard', formula: 'sum(revenue)' },
+  { n: '02', name: 'Complex', formula: 'revenue / orders' },
+  { n: '03', name: 'Snapshot', formula: 'ending(balance)' },
+  { n: '04', name: 'Exclusion LOD', formula: 'exclude {Category}' },
+  { n: '05', name: 'Inclusion LOD', formula: 'fixed {Region}' },
+];
+
+// Full-version card geometry (viewBox 880 x 300).
+const cardW = 158;
+const step = 170.5;
+const cardX = (i: number) => 20 + i * step;
+const cardCx = (i: number) => cardX(i) + cardW / 2;
+
+// Mini-version pill geometry (viewBox 480 x 360).
+const pillY = (i: number) => 22 + i * 65;
+---
+
+{
+  mini ? (
+    <figure class="mspec mspec-mini mx-auto w-full max-w-md" aria-label="Five measure types from simple to expressive">
+      <svg viewBox="0 0 480 360" role="img" class="h-auto w-full">
+        <title>Five measure types, simple to expressive</title>
+        <defs>
+          <marker id="mspec-arrow-m" markerWidth="9" markerHeight="9" refX="4.5" refY="7" orient="auto">
+            <path class="arrowhead" d="M0 0 L9 0 L4.5 7 Z" />
+          </marker>
+        </defs>
+
+        {/* spine */}
+        <line class="axis" x1="44" y1="20" x2="44" y2="330" marker-end="url(#mspec-arrow-m)" />
+        <line class="axis-flow" x1="44" y1="20" x2="44" y2="326" />
+
+        {types.map((t, i) => (
+          <g class="type-card" style={`animation-delay:${(i * 0.14).toFixed(2)}s`}>
+            <circle class="tick" cx="44" cy={pillY(i) + 27} r="4" />
+            <line class="conn" x1="44" y1={pillY(i) + 27} x2="82" y2={pillY(i) + 27} />
+            <rect class="node" x="82" y={pillY(i)} width="380" height="54" rx="12" />
+            <text class="num" x="100" y={pillY(i) + 34}>{t.n}</text>
+            <text class="name" x="150" y={pillY(i) + 34}>{t.name}</text>
+          </g>
+        ))}
+      </svg>
+    </figure>
+  ) : (
+    <figure class="mspec mx-auto w-full max-w-3xl" aria-label="Five measure types from simple to expressive">
+      <svg viewBox="0 0 880 300" role="img" class="h-auto w-full">
+        <title>Five measure types, ordered simple to expressive</title>
+        <defs>
+          <marker id="mspec-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path class="arrowhead" d="M0 0 L0 9 L7 4.5 Z" />
+          </marker>
+        </defs>
+
+        {/* axis */}
+        <text class="lbl-end" x="24" y="40">simple</text>
+        <text class="lbl-end" x="856" y="40" text-anchor="end">expressive</text>
+        <line class="axis" x1="24" y1="62" x2="856" y2="62" marker-end="url(#mspec-arrow)" />
+        <line class="axis-flow" x1="24" y1="62" x2="850" y2="62" />
+
+        {types.map((t, i) => (
+          <g class="type-card" style={`animation-delay:${(i * 0.14).toFixed(2)}s`}>
+            <circle class="tick" cx={cardCx(i)} cy="62" r="4.5" />
+            <line class="conn" x1={cardCx(i)} y1="62" x2={cardCx(i)} y2="104" />
+            <rect class="node" x={cardX(i)} y="104" width={cardW} height="130" rx="14" />
+            <text class="num" x={cardX(i) + 18} y="150">{t.n}</text>
+            <text class="name" x={cardX(i) + 18} y="182">{t.name}</text>
+            <text class="formula" x={cardX(i) + 18} y="208">{t.formula}</text>
+          </g>
+        ))}
+      </svg>
+    </figure>
+  )
+}
+
+<style>
+  .mspec .arrowhead {
+    fill: var(--strata-peach);
+  }
+  .mspec .axis {
+    stroke: color-mix(in srgb, var(--strata-peach) 45%, transparent);
+    stroke-width: 2;
+  }
+  .mspec .axis-flow {
+    fill: none;
+    stroke: var(--strata-peach);
+    stroke-width: 2;
+    stroke-dasharray: 6 8;
+    animation: mspec-flow 2.2s linear infinite;
+  }
+  .mspec .tick {
+    fill: var(--strata-peach);
+  }
+  .mspec .conn {
+    stroke: color-mix(in srgb, var(--strata-cream) 22%, transparent);
+    stroke-width: 1.5;
+  }
+  .mspec .node {
+    fill: color-mix(in srgb, var(--strata-cream) 5%, transparent);
+    stroke: color-mix(in srgb, var(--strata-cream) 22%, transparent);
+    stroke-width: 1.2;
+  }
+  .mspec .num {
+    fill: var(--strata-peach);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+  }
+  .mspec .name {
+    fill: var(--strata-cream);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .mspec-mini .name {
+    font-size: 17px;
+  }
+  .mspec .formula {
+    fill: color-mix(in srgb, var(--strata-cream) 72%, transparent);
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px;
+  }
+  .mspec .lbl-end {
+    fill: color-mix(in srgb, var(--strata-cream) 70%, transparent);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mspec .type-card {
+    opacity: 0;
+    animation: mspec-in 0.5s ease forwards;
+  }
+
+  @keyframes mspec-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes mspec-flow {
+    to {
+      stroke-dashoffset: -28;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mspec .type-card {
+      opacity: 1;
+      animation: none;
+    }
+    .mspec .axis-flow {
+      animation: none;
+    }
+  }
+</style>

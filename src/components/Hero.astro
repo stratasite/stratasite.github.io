@@ -1,0 +1,380 @@
+---
+// Hero: three auto-advancing slides.
+//  1. Headline whose last word is "typed" live, struck out, and retyped
+//     (agents -> humans -> everyone), with a blinking caret.
+//  2. Product showcase (animated stand-in for the product GIF).
+//  3. Animated federated Open OLAP routing diagram.
+// Carousel + typewriter are vanilla JS; animation respects prefers-reduced-motion.
+import CtaButton from './CtaButton.astro';
+import FederatedOlapDiagram from './FederatedOlapDiagram.astro';
+
+const rotatingWords = ['Agents', 'Humans', 'Everyone'];
+---
+
+<section class="hero-wrap relative overflow-hidden bg-strata-rust text-strata-cream">
+  <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="hero" data-hero>
+      <div class="hero-stage" data-stage>
+      <!-- SLIDE 1 -->
+      <div class="hero-slide is-active" data-slide>
+        <div class="mx-auto grid min-h-[34rem] items-center gap-10 py-16 text-left lg:grid-cols-2 lg:gap-14">
+          <!-- column 1: text -->
+          <div>
+            <h1 class="font-display text-2xl font-bold leading-snug tracking-tight sm:text-3xl lg:text-4xl">
+              <span
+                class="typer"
+                data-typer
+                data-prefix="Enterprise reporting for "
+                data-words={JSON.stringify(rotatingWords)}
+              ><span class="typer-prefix" data-prefix-el>Enterprise reporting for&nbsp;</span><span
+                  class="typer-text"
+                  data-text>{rotatingWords[rotatingWords.length - 1]}</span><span
+                  class="typer-caret"
+                  data-caret
+                  aria-hidden="true"></span></span>
+            </h1>
+            <p class="mt-6 max-w-xl text-lg text-muted-foreground">
+              High-performance, AI-safe self-service analytics — one platform from warehouse to beautiful dashboard.
+            </p>
+            <div class="mt-8"><CtaButton location="hero" /></div>
+          </div>
+
+          <!-- column 2: product screenshot -->
+          <div class="hero-shot">
+            <img
+              src="/heading-app-dash.png"
+              alt="Strata dashboard"
+              width="1483"
+              height="1133"
+              loading="eager"
+              class="hero-shot-img w-full rounded-xl ring-1 ring-strata-cream/10"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- SLIDE 2 -->
+      <div class="hero-slide" data-slide>
+        <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
+          <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+            The most capable <span class="text-primary">Business Intelligence</span> platform for the AI age
+          </h2>
+          <div class="hero-video mt-10 w-full">
+            <video
+              class="hero-video-el w-full rounded-xl"
+              src="/strata_hero.mp4"
+              autoplay
+              loop
+              muted
+              playsinline
+              preload="metadata"
+              aria-label="Strata product walkthrough"
+            ></video>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLIDE 3 -->
+      <div class="hero-slide" data-slide>
+        <div class="mx-auto flex min-h-[34rem] max-w-4xl flex-col items-center justify-center py-20 text-center">
+          <h2 class="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+            High performance AI turns on
+            <span class="text-strata-peach">federated Open OLAP engines</span>
+          </h2>
+          <p class="mt-5 max-w-xl text-lg text-muted-foreground">
+            Partition-aware routing to fast hot tiers and aggregate tables — sub-second answers, lower warehouse spend.
+          </p>
+          <div class="mt-10 w-full">
+            <FederatedOlapDiagram />
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- controls -->
+    <div class="flex items-center justify-center gap-2 pb-10" data-dots aria-label="Hero slides"></div>
+  </div>
+</section>
+
+<style>
+  /* Slides are stacked absolutely so switching crossfades instead of jumping;
+     the stage height is animated by JS to the active slide's height. */
+  .hero-stage {
+    position: relative;
+    transition: height 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hero-slide {
+    position: absolute;
+    inset: 0 0 auto 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.5s ease,
+      visibility 0.5s ease;
+  }
+  .hero-slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    position: relative; /* the active slide also defines fallback height before JS runs */
+  }
+
+  /* Hero product screenshot: peach backlight glow + subtle 3D tilt that
+     straightens on hover. */
+  .hero-shot {
+    position: relative;
+    perspective: 1400px;
+  }
+  .hero-shot-img {
+    position: relative;
+    z-index: 1;
+    transform: rotateY(-8deg) rotateX(3deg) scale(0.97);
+    transform-origin: center;
+    transition:
+      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.6s ease;
+    will-change: transform;
+    /* depth shadow + peach backlight glow (the second layer is the glow) */
+    box-shadow:
+      0 30px 60px -20px rgba(0, 0, 0, 0.5),
+      0 0 120px 16px color-mix(in srgb, var(--strata-peach) 62%, transparent);
+  }
+  .hero-shot:hover .hero-shot-img {
+    box-shadow:
+      0 36px 70px -20px rgba(0, 0, 0, 0.55),
+      0 0 150px 26px color-mix(in srgb, var(--strata-peach) 72%, transparent);
+  }
+  .hero-shot:hover .hero-shot-img {
+    transform: rotateY(0deg) rotateX(0deg) scale(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-shot-img {
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* Hero product video: sits flat on the rust background (no frame/card),
+     with a soft peach glow pooled only beneath it. */
+  .hero-video-el {
+    display: block;
+    box-shadow: 0 44px 70px -24px color-mix(in srgb, var(--strata-peach) 60%, transparent);
+  }
+
+  /* Live "typing" headline word: types in, holds, strikes through, clears,
+     then types the next. Caret blinks while idle; payoff word ("everyone")
+     holds longer with a glow flash. */
+  .typer {
+    display: inline;
+  }
+  /* match the other slides: light lead-in + peach accent word */
+  .typer-prefix {
+    color: var(--strata-cream);
+  }
+  .typer-text {
+    display: inline-block;
+    position: relative;
+    white-space: nowrap;
+    color: var(--strata-peach);
+  }
+  /* strike-through line, drawn left-to-right when crossing a word out */
+  .typer-text::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0.58em;
+    height: 0.07em;
+    border-radius: 2px;
+    background: var(--strata-cream);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.22s ease;
+  }
+  .typer-text.strike::after {
+    transform: scaleX(1);
+  }
+  .typer-text.glow {
+    animation: glow-flash 0.9s ease;
+  }
+  .typer-caret {
+    display: inline-block;
+    width: 0.07em;
+    height: 0.9em;
+    margin-left: 0.06em;
+    border-radius: 1px;
+    background: var(--strata-peach);
+    transform: translateY(0.06em);
+  }
+  .typer-caret.blink {
+    animation: caret-blink 1s steps(1) infinite;
+  }
+
+  @keyframes caret-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes glow-flash {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    40% {
+      filter: drop-shadow(0 0 12px color-mix(in srgb, var(--strata-peach) 80%, transparent));
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-slide {
+      animation: none;
+    }
+    .typer-text.glow {
+      animation: none;
+    }
+    .typer-caret {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  if (hero) {
+    const slides = Array.from(hero.querySelectorAll<HTMLElement>('[data-slide]'));
+    const stage = hero.querySelector<HTMLElement>('[data-stage]');
+    const dotsWrap = document.querySelector<HTMLElement>('[data-dots]');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const SLIDE_MS = 9000; // dwell for slides 2 & 3 (slide 1 is typer-driven)
+    let current = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let typerToken = 0; // bump to cancel an in-flight typewriter run
+
+    // --- Slide 1 typewriter: type a word, hold, strike out, clear, next.
+    // The last word is the payoff: it holds longer + glows, then hands control
+    // back to the carousel so the slide only advances once it has been shown.
+    const typer = hero.querySelector<HTMLElement>('[data-typer]');
+    const prefixEl = typer?.querySelector<HTMLElement>('[data-prefix-el]');
+    const textEl = typer?.querySelector<HTMLElement>('[data-text]');
+    const caretEl = typer?.querySelector<HTMLElement>('[data-caret]');
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    async function runTyper() {
+      if (!typer || !prefixEl || !textEl || !caretEl) return;
+      const token = ++typerToken;
+      const cancelled = () => token !== typerToken;
+      const prefix = typer.dataset.prefix || '';
+      const words: string[] = JSON.parse(typer.dataset.words || '[]');
+      const TYPE = 90; // ms per character for the changing word
+      const PREFIX_TYPE = 42; // faster lead-in for the static sentence
+      const HOLD = 1200;
+      const HOLD_PAYOFF = 2600;
+
+      // reset, then type the lead-in sentence once
+      caretEl.classList.remove('blink');
+      textEl.classList.remove('strike', 'glow');
+      textEl.textContent = '';
+      prefixEl.textContent = '';
+      for (let n = 1; n <= prefix.length; n++) {
+        if (cancelled()) return;
+        prefixEl.textContent = prefix.slice(0, n);
+        await sleep(PREFIX_TYPE + Math.random() * 30);
+      }
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const payoff = i === words.length - 1; // last word is the inclusive payoff
+
+        caretEl.classList.remove('blink');
+        for (let n = 1; n <= word.length; n++) {
+          if (cancelled()) return;
+          textEl.textContent = word.slice(0, n);
+          await sleep(TYPE + Math.random() * 60);
+        }
+
+        caretEl.classList.add('blink');
+        if (payoff) {
+          // hold the payoff with a glow, then advance the carousel
+          textEl.classList.add('glow');
+          await sleep(HOLD_PAYOFF);
+          if (cancelled()) return;
+          advance();
+          return;
+        }
+
+        // hold, strike out, clear, then on to the next word
+        await sleep(HOLD);
+        if (cancelled()) return;
+        caretEl.classList.remove('blink');
+        textEl.classList.add('strike');
+        await sleep(520);
+        if (cancelled()) return;
+        textEl.classList.remove('strike');
+        textEl.textContent = '';
+        await sleep(260);
+      }
+    }
+
+    // --- Carousel ---
+    const dots = slides.map((_, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'h-2.5 w-2.5 rounded-full bg-strata-cream/40 transition-all hover:bg-strata-cream/70';
+      b.setAttribute('aria-label', `Show slide ${i + 1}`);
+      b.addEventListener('click', () => show(i));
+      dotsWrap?.appendChild(b);
+      return b;
+    });
+
+    // Animate the stage to the active slide's height so switching doesn't jump.
+    function setStageHeight() {
+      if (stage) stage.style.height = `${slides[current].offsetHeight}px`;
+    }
+
+    function show(i: number) {
+      typerToken++; // cancel any running typewriter
+      if (timer) clearTimeout(timer);
+      slides.forEach((s, idx) => {
+        const active = idx === i;
+        s.classList.toggle('is-active', active);
+        s.setAttribute('aria-hidden', String(!active));
+      });
+      dots.forEach((d, idx) => {
+        const active = idx === i;
+        d.classList.toggle('bg-strata-cream', active);
+        d.classList.toggle('w-6', active);
+        d.classList.toggle('bg-strata-cream/40', !active);
+      });
+      current = i;
+      setStageHeight();
+      schedule();
+    }
+
+    function advance() {
+      show((current + 1) % slides.length);
+    }
+
+    function schedule() {
+      if (timer) clearTimeout(timer);
+      if (reduced) return; // no auto-advance under reduced motion
+      if (current === 0 && textEl) {
+        runTyper(); // slide 1 advances when the payoff word finishes
+      } else {
+        timer = setTimeout(advance, SLIDE_MS);
+      }
+    }
+
+    show(0);
+
+    // Re-measure on resize and after fonts/images settle so the height stays right.
+    window.addEventListener('resize', setStageHeight);
+    window.addEventListener('load', setStageHeight);
+
+    // Pause on hover: cancel the timer + typewriter; resume on leave.
+    hero.addEventListener('mouseenter', () => {
+      typerToken++;
+      if (timer) clearTimeout(timer);
+    });
+    hero.addEventListener('mouseleave', () => schedule());
+  }
+</script>

@@ -1,0 +1,112 @@
+---
+import '../styles/global.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/space-grotesk/500.css';
+import '@fontsource/space-grotesk/600.css';
+import '@fontsource/space-grotesk/700.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../config/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Override the canonical/OG path (defaults to the current page path). */
+  path?: string;
+  image?: string;
+}
+
+const {
+  title = 'Strata — high-performance, AI-safe self-service analytics',
+  description = site.description,
+  path = Astro.url.pathname,
+  image = `${site.domain}/logo.png`,
+} = Astro.props;
+
+const canonical = new URL(path, site.domain).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+    <meta name="author" content="Strata" />
+    <link rel="canonical" href={canonical} />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/favicon-64.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta property="og:site_name" content="Strata" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonical} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={image} />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N28YLZN2KN"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+      gtag('config', 'G-N28YLZN2KN');
+    </script>
+
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'Strata',
+        applicationCategory: 'BusinessApplication',
+        description: site.description,
+        url: site.domain,
+        author: { '@type': 'Organization', name: 'Strata' },
+        offers: { '@type': 'Offer', category: 'Business Intelligence Software' },
+        operatingSystem: 'Web-based',
+      })}
+    />
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Strata',
+        url: site.domain,
+        logo: `${site.domain}/logo.png`,
+        sameAs: [site.docsUrl, site.blogUrl],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          email: 'hello@strata.do',
+          contactType: 'Customer Service',
+        },
+      })}
+    />
+  </head>
+  <body class="min-h-screen bg-background text-foreground antialiased">
+    <Nav />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

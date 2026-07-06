@@ -1,0 +1,44 @@
+---
+title: Strata vs Power BI
+competitor: Power BI
+category: bi-tool
+summary: Power BI gives technical authors enormous end-to-end power, but its primary operator is deeply technical and non-technical self-service tops out at slicers. Strata makes the non-technical user the primary operator, on a governed, grain-safe, federated semantic layer.
+order: 30
+---
+
+## Who Is the Primary Operator?
+
+The primary operator is the person who can drive the full tool, not just consume it. In Power BI that
+person is deeply technical: they master a complex UI, understand the data model, know some SQL, and
+usually learn DAX. Non-technical users stay passive, limited to the slicers a report author enabled. In
+Strata the primary operator is the non-technical user. They build reports, dashboards, agents, and
+exports themselves; engineers set up and lightly maintain.
+
+## Where Power BI Is Strong
+
+Power BI is genuinely powerful. Signup is frictionless, the connector list is vast,
+and data prep, semantic modeling, and report building all live in one desktop flow. Every source, even a
+CSV, becomes a semantic model, and DAX can express almost any measure. For a Microsoft shop with
+technical authors, it is a strong end-to-end tool.
+
+## Where Strata Pulls Ahead
+
+**DAX is the tax.** Power BI's expressiveness runs through DAX, which does not map cleanly to SQL and
+takes real time to master. Even a semi-additive closing balance needs a CALCULATE and ENDOFMONTH
+formula. Strata ships five measure types plus one-click YoY, moving average, and percent of total, with
+no new language to learn.
+
+**The model trusts you.** Put Store Sales and Web Sales in one model and Power BI will happily let you
+slice Web Sales by a Store dimension via **cross join**. Correctness rests on the author knowing every
+legal combination. Strata derives what is legal and refuses invalid combinations before they run, so
+blends stay grain-safe.
+
+**Models proliferate, outside Git.** Every use case tends to spawn another semantic model, and
+versioning is built in but not Git. Dozens accumulate with no shared source of truth. Strata models a
+whole domain comprehensively in a single semantic layer, all version controlled via Git.
+
+**The rest adds up.** Import, DirectQuery, and Composite are all fast, but lock you further into the
+Microsoft ecosystem. Strata federates with aggregate-aware, partition-aware hot-tier routing across
+popular OLAP and warehouse engines. Dashboard layout is pixel-perfect and manual, as pretty or as ugly
+as the author makes it. Strata is beautiful by default and agent-safe out of the box. It augments or
+replaces Power BI for generalized self-service needs.
