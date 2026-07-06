@@ -1,8 +1,10 @@
-# Strata — Product, Market & Competitive Brief
+# Strata — Product, Market & Competitive Brief (v2)
 
 > **Purpose of this document.** A reusable ground-truth context file for building the marketing site, generating sales decks, and seeding fresh AI conversations. It separates **confirmed product facts** from **strategic opinions** (clearly labeled), and ends with **claims to handle carefully** so nothing here becomes marketing copy that can't be defended. Capabilities reflect the competitive landscape as of mid-2026; competitor features evolve, so re-verify before publishing comparisons.
 >
 > **Terminology note:** Strata uses **"measure"** (never "metric"). This document follows that convention throughout.
+>
+> **v2 change summary:** Replaced the "no BI integration" absolute with the **owned-UX integration doctrine** (§3.8, §4, §5, §7, §8, §9.6, §10, §11): Strata embeds into other surfaces (e.g., a Google Sheets add-on) wherever Strata provides and controls the retrieval UX, but never exposes headless query-protocol access for external BI tools to drive with their own query builders. Added §5.4 on the universal semantic layer trend and OSI.
 
 ---
 
@@ -10,7 +12,7 @@
 
 **Strata is a high-performance, AI-safe self-service analytics platform** — a governed semantic layer fused with a beautiful-by-default dashboarding experience — that lets non-technical users and AI agents ask broad, cross-domain questions over a messy data warehouse and get fast, correct answers, while routing queries across multiple engines (Snowflake, ClickHouse, Druid, Databricks) and aggregate tables for speed and cost.
 
-**Elevator pitch.** Most semantic layers force data engineers to hand-configure every queryable combination, and most break or return silently wrong numbers when you blend measures from different fact domains at different grains. Strata makes the semantic model emerge from a registry of freely-named fields instead of heavy configuration, blends across fact domains automatically and safely, federates queries to fast OLAP "hot tiers" and aggregate tables, and ships its own opinionated, beautiful self-service dashboards — so users and agents self-serve without a BI tool in the middle. The architecture has run in production at Netflix scale for 4+ years.
+**Elevator pitch.** Most semantic layers force data engineers to hand-configure every queryable combination, and most break or return silently wrong numbers when you blend measures from different fact domains at different grains. Strata makes the semantic model emerge from a registry of freely-named fields instead of heavy configuration, blends across fact domains automatically and safely, federates queries to fast OLAP "hot tiers" and aggregate tables, and ships its own opinionated, beautiful self-service dashboards — so users and agents self-serve without a BI tool in the middle. Where Strata does integrate into other surfaces (e.g., Google Sheets), it brings its own retrieval UX with it, so its correctness guarantees travel with the data. The architecture has run in production at Netflix scale for 4+ years.
 
 ---
 
@@ -22,6 +24,7 @@
 4. **Performance & cost as AI adoption deepens.** Every dashboard refresh and every agent turn hits warehouse compute. Agents fire many queries per task, so multi-second query latency compounds and kills adoption — while warehouse credits burn on repetitive hot-data queries.
 5. **Messy warehouse onboarding.** Inconsistent dimensional modeling, partial conformed dimensions, ~100 tables in a core domain — expensive and slow to model by hand.
 6. **Self-service that's neither self-service nor beautiful.** Traditional BI either overwhelms users with configuration or produces inconsistent, ugly output. Strata makes good-looking, correct self-service the default.
+7. **Semantic guarantees leak at the tool boundary.** When a semantic layer is consumed headlessly through a foreign BI tool's query builder (SQL/JDBC/XMLA), expressiveness flattens, interactive validation is impossible, and refusals degrade into opaque errors or silently degraded results. Strata's answer: own the retrieval experience on every surface it appears on.
 
 ---
 
@@ -66,12 +69,13 @@ Aggregation is defined at the model/table level. Strata offers these kinds of me
 ### 3.7 Security
 - **Row-level security** with both **masking** and **auto-filtering** of data, built in.
 
-### 3.8 Self-service & dashboarding — "beautiful by default"
-- **Strata is the self-service powerhouse — used in addition to, or to replace, existing BI tools.** It is **not** a headless layer behind a BI tool. **Strata cannot and does not sit beneath a BI tool like Power BI/Tableau/Superset; there is no interface between Strata and those tools.** Strata *is* the consumption layer.
+### 3.8 Self-service, dashboarding & the owned-UX integration doctrine — "beautiful by default"
+- **Strata is the self-service powerhouse — used in addition to, or to replace, existing BI tools.** It is **not** a headless layer behind a BI tool. Strata does **not** sit beneath BI tools like Power BI/Tableau/Superset via SQL/JDBC/XMLA-style headless access; those tools cannot drive Strata's model with their own query builders. Strata *is* the consumption layer.
+- **Owned-UX embedding (the integration doctrine).** Strata is not against integration — only against integration where the data-retrieval UX is out of Strata's control. Strata **does** embed as a source into other surfaces where Strata provides and controls the retrieval experience. Example: a **Google Sheets add-on** giving users a UX equivalent to the Strata UI — same field resolution, same compatibility validation, same refuse-before-execution behavior — rendered inside the spreadsheet. The principle: *Strata integrates by extending its retrieval experience into other surfaces, never by exposing a raw query endpoint to someone else's interface.* This is how Strata's grain-safety and validation guarantees travel with the data.
 - **Convention over configuration, even for design.** Strata's dashboarding philosophy is *beautiful by default*: it deliberately limits flexibility (colors, layout) and gives only minimal options, so output is consistently good-looking without fiddling.
 - **Reports & views.** A user creates a **report** made of multiple **views**. Each view can render **auto, full width, half width, or 1/3 width**; the **layout engine handles the rest** of the arrangement.
 - **AI-native editor.** AI is sprinkled throughout the view editor to improve usability. Example: in the filter drop zone a user can **type a sentence in natural language instead of searching for a field**, and ask for **AI resolution** to the right field/filter.
-- **Instant feedback** as a query/view is built (per-keystroke validation/preview) — something no traditional BI tool does. This same interactive-validation interface is structurally an **agent API** (validate partial query → compatible next steps → structured rejections), which is why Strata suits AI agents as well as humans.
+- **Instant feedback** as a query/view is built (per-keystroke validation/preview) — something no traditional BI tool does. This same interactive-validation interface is structurally an **agent API** (validate partial query → compatible next steps → structured rejections), which is why Strata suits AI agents as well as humans — and why owned-UX embeds (like the Sheets add-on) carry the full guarantee set into other surfaces.
 
 ### 3.9 Proven at scale
 - The architecture (a version of what's described here) has **run in production at Netflix for 4+ years**, battle-tested for performance at scale. Strata is an independent implementation built from that prior experience, with enhancements. (See "Claims to handle carefully" re: how to phrase this.)
@@ -84,6 +88,7 @@ Aggregation is defined at the model/table level. Strata offers these kinds of me
 - **Grain-safe by construction.** Users/agents never need to know grain details; the compiler and validator make it *impossible* to violate them. Default failure mode is a *missed blend* (safe), never a *silent wrong answer* (dangerous).
 - **Performance: aggregate-aware + federated multi-engine with partition-aware hot-tier routing.** Routes to pre-aggs and purpose-built OLAP engines, rather than managing rollups inside one tool.
 - **Full self-service + dashboarding, not headless.** Strata replaces/augments BI rather than feeding it — one product from warehouse to beautiful dashboard.
+- **Integration without abdication.** Strata goes where users work — Sheets and other owned-UX surfaces — but the retrieval experience is always Strata's. Correctness guarantees can't be enforced through a foreign query builder, so Strata never exposes one; it extends its own interface instead. (This is the principled contrast with headless "universal semantic layers," whose guarantees leak at the tool boundary.)
 - **AI-native throughout** — natural-language field/filter resolution in the editor, structured agent API, grain-safe retrieval.
 - **Expressiveness:** five measure types (Standard, Complex, Snapshot, LOD, ad-hoc) plus one-click YoY / moving average / percent-to-total transforms.
 
@@ -91,7 +96,7 @@ Aggregation is defined at the model/table level. Strata offers these kinds of me
 
 ## 5. Competitive landscape & comparison
 
-Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Snowflake semantic views, dbt Semantic Layer / MetricFlow, Cube) **and** a **self-service + dashboarding product** (vs Looker, Tableau, Power BI, Preset/Superset). It does not integrate with external BI tools — it augments or replaces them.
+Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Snowflake semantic views, dbt Semantic Layer / MetricFlow, Cube) **and** a **self-service + dashboarding product** (vs Looker, Tableau, Power BI, Preset/Superset). It does not offer headless access to external BI tools — it augments or replaces them, and extends into other surfaces only through owned-UX embeds (e.g., a Google Sheets add-on).
 
 ### 5.1 Capability comparison
 
@@ -105,7 +110,7 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 | Measure expressiveness (LOD + snapshot + complex + ad-hoc) | Leads (5 measure types) | Autopilot modeling; semi-additive native; LOD limited | Partial | Weak | Weak |
 | Built-in self-service & dashboards | Yes — beautiful by default | No (needs a BI tool) | No | No (headless) | Yes (full BI) |
 | Interactive query-build feedback | Per keystroke + AI-assisted | No | No | No | Partial (Explore UI) |
-| External BI integration | None — Strata is the self-service layer | Strong (XMLA → Power BI, Excel) | Growing | Broad | Self-contained |
+| External surface integration | Owned-UX embeds only (e.g., Sheets add-on); no headless BI protocol access | Strong headless (XMLA → Power BI, Excel) | Growing headless | Broad headless | Self-contained |
 | Battle-tested at scale | 4+ yrs, Netflix scale | GA 2026, new | Proven | Proven | Proven |
 
 ### 5.2 Notes per competitor
@@ -114,10 +119,16 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 - **dbt Semantic Layer / MetricFlow.** Closest in spirit on the semantic side — name-based entity linking and aggregate-then-join across models — but requires per-model YAML, is headless (no dashboards), and warehouse-bound. Most likely incumbent to drift toward Strata's modeling approach; durable edge is the *combination* (free-named registry + auto-blend + 5 measure types + federation + agg-awareness + built-in beautiful self-service + AI-native).
 - **Cube.** Strong managed pre-aggregation/caching; broad BI/API ecosystem; headless (no native dashboarding). High configuration burden (cubes + views), weak LOD/snapshot expressiveness. Strata also is aggregate-aware *and* federates *and* ships its own consumption layer.
 - **Looker.** The closest full-stack analogue (semantic layer + BI). Mature, self-contained, strong security; but LookML configuration fatigue, awkward multi-fact handling (merged results), weak LOD/snapshots, no multi-engine hot-tier federation, and a "configure everything" design philosophy vs Strata's beautiful-by-default.
-- **Preset / Superset, Tableau, Power BI** (BI/self-service incumbents). Strata competes for the self-service + dashboarding use case and does **not** connect to them; it is used alongside or in place of them.
+- **Preset / Superset, Tableau, Power BI** (BI/self-service incumbents). Strata competes for the self-service + dashboarding use case and does **not** connect to them; it is used alongside or in place of them. (Spreadsheets are the exception that proves the rule: Strata reaches Sheets — and potentially Excel — via its own add-on UX, not via a generic driver.)
 
 ### 5.3 The sharpest one-liner vs the key competitor
 > In Snowflake, two dimensions with the same name from different tables **break** the semantic view. In Strata, that same shared name **is** the signal that they're conformed and safely blendable. Opposite philosophies — and Strata's is built for messy, multi-domain, multi-engine reality.
+
+### 5.4 The "universal semantic layer" trend & OSI (context + counter-positioning)
+
+- **The trend.** Vendor-neutral "define once, consume everywhere" semantic layers (AtScale, Cube, dbt SL) are gaining enterprise mindshare, accelerated by AI-agent adoption and by the **Open Semantic Interchange (OSI)** initiative (launched Sept 2025 by Snowflake, Salesforce, dbt, et al.; v1.0 spec Jan 2026; broad working group excluding Microsoft/SAP as of early 2026). Gartner projects universal semantic layers as "critical infrastructure by 2030." Expect the objection *"why can't Strata feed our Power BI estate?"* in nearly every mid-to-large enterprise deal, and expect procurement to ask about OSI.
+- **The counter-position (Strata's argument).** The universal layer's structural weakness is the *interface*: serving every tool through SQL/JDBC/XMLA flattens expressiveness to a lowest common denominator (semi-additive, LOD, and complex time logic translate worst — exactly the hard 20% that motivated the layer), makes per-keystroke validation impossible, degrades the consumption UX, and turns refusals into opaque errors. Strata's guarantees exist *because* it owns both ends of the interaction — which is also why Strata's integration model is owned-UX embedding rather than headless protocol access. Third-party critique of dashboard-era layers "buckling under agentic workloads" is effectively Strata's pitch.
+- **OSI stance (open question, strategic).** Interchange formats move *definitions*; Strata's guarantees live in the *retrieval interaction*, which no interchange format carries. A future read-only **OSI export** (for catalogs/agents) could let Strata say "open, not headless" without becoming a layer behind BI tools. No commitment yet — do not claim OSI support in external copy; if asked, use the definitions-vs-retrieval distinction above.
 
 ---
 
@@ -127,16 +138,17 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 - Organizations **deepening AI/agent adoption** over their data, where query-tier latency and correctness are becoming adoption blockers.
 - **Snowflake-centric** shops feeling compute cost and dashboard/agent latency pressure (prime wedge: add a ClickHouse hot tier + aggregate awareness on top of their warehouse — Snowflake stays system of record — and give users a faster, more beautiful self-service experience than their current BI tool).
 - Teams wanting **self-service that's correct and beautiful by default**, and to **reduce data-engineering modeling and dashboard-building burden**.
+- **Spreadsheet-heavy last-mile cultures** (finance/ops teams living in Sheets/Excel) — reachable via owned-UX add-ons rather than forcing a new front door, and the surface where generic headless drivers historically deliver their most brittle results.
 
 ---
 
 ## 7. Market position & strategic thesis (strategic opinion)
 
-- **Position:** "The AI-safe, self-service analytics powerhouse" — a single product spanning governed semantic layer + beautiful self-service dashboards, for both humans and agents. Strata replaces or augments the BI tool rather than feeding it.
+- **Position:** "The AI-safe, self-service analytics powerhouse" — a single product spanning governed semantic layer + beautiful self-service dashboards, for both humans and agents. Strata replaces or augments the BI tool rather than feeding it, and extends into other work surfaces only via owned-UX embeds.
 - **Timing advantage:** the interactive-feedback + NL-resolution UX *is* an agent-ready interface. The 2026 agent moment makes a self-contained, agent-native consumption layer compelling, where a decade of headless-layer-feeding-BI was the norm. The window is real but narrowing as incumbents add agent interfaces.
-- **What to stop claiming:** anything Snowflake now does natively (basic governed measures for agents); and any framing that implies Strata plugs into Power BI/Tableau (it does not).
-- **What to lean into:** messy multi-source reality + aggregate-aware federation + auto-blend by convention + 5 measure types + beautiful-by-default self-service + AI-native UX.
-- **Defensible moat:** federation + the free-named-registry convention model + the full beautiful self-service experience are architecturally hard for a single-warehouse or headless product to copy. Build the moat there, not on closeable feature gaps.
+- **What to stop claiming:** anything Snowflake now does natively (basic governed measures for agents); any framing that implies Strata plugs into Power BI/Tableau headlessly (it does not); and the old blanket "no integrations" line (now inaccurate — the doctrine is owned-UX embedding, not zero integration).
+- **What to lean into:** messy multi-source reality + aggregate-aware federation + auto-blend by convention + 5 measure types + beautiful-by-default self-service + AI-native UX + "integration without abdication" (guarantees travel with the data into Sheets and future surfaces).
+- **Defensible moat:** federation + the free-named-registry convention model + the full beautiful self-service experience are architecturally hard for a single-warehouse or headless product to copy. Owned-UX embeds extend the moat: competitors serving spreadsheets through generic drivers can't carry validation/refusal semantics into the cell grid. Build the moat there, not on closeable feature gaps.
 
 ---
 
@@ -150,8 +162,11 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 **The single best line (use it)**
 > As AI adoption deepens, query-tier latency becomes an adoption problem. 5+ seconds per agent turn quietly kills usage. Strata takes that to sub-second — and lowers warehouse compute at the same time.
 
+**Integration doctrine line (for the inevitable "does it connect to X?" question)**
+> Strata integrates anywhere it can carry its correctness guarantees with it. That means owned experiences — Strata's own dashboards, its agent API, and add-ons like Google Sheets where Strata provides the retrieval UX — and never a raw query endpoint behind someone else's BI tool. The interface between a semantic layer and a foreign query builder is exactly where correctness and speed leak; Strata removes that interface.
+
 **Warehouse-complement framing (accurate version)**
-> Strata sits on top of your warehouse (Snowflake stays the system of record) and adds a fast OLAP hot tier plus aggregate awareness. It is your self-service + dashboarding layer — used alongside or in place of your existing BI tool. (Strata does not connect to or sit beneath BI tools like Power BI or Tableau; it replaces that layer.)
+> Strata sits on top of your warehouse (Snowflake stays the system of record) and adds a fast OLAP hot tier plus aggregate awareness. It is your self-service + dashboarding layer — used alongside or in place of your existing BI tool, and reaching into surfaces like Google Sheets through Strata's own add-on experience. (Strata does not sit beneath BI tools like Power BI or Tableau via headless access; it replaces that layer.)
 
 **Forward-friendly one-liner**
 > Strata is a federated, AI-safe self-service analytics platform that fronts your warehouse with a ClickHouse hot tier and aggregate awareness — sub-second dashboards and agent turns, lower warehouse compute, one measure model across engines, beautiful by default, proven at Netflix scale.
@@ -165,9 +180,11 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 1. **Netflix / prior-employer IP.** Strata is "architecturally similar, built from prior experience, with enhancements." **Get legal counsel** on clean-room independence and prior IP/invention agreements before publishing code or strong claims. Phrase the proof point as a **scale descriptor** ("production-proven at Netflix scale") rather than a claim about a specific employer's internal system. Note Netflix has its own OSS semantic-layer work (e.g. DataJunction) — be ready to articulate how Strata differs. *(Not legal advice.)*
 2. **Cost-savings claims ("lower warehouse bill").** Workload-dependent — only true when a meaningful share of traffic is repetitive queries over recent/aggregated data a hot tier or agg table can absorb. Frame as "size the savings against your query patterns," ideally proven live with their query history. Don't promise specific percentages.
 3. **"Never get a wrong number" / absolute correctness.** An absolute a technical evaluator will test. Prefer "grain-checked; refuses invalid combinations" / "grain-safe retrieval." Back it with a golden-query correctness suite as the real guarantee.
-4. **Competitor capabilities evolve.** Snowflake semantic views (esp. modeling/BI) and MetricFlow are improving quarterly. Re-verify the comparison table before each publish; build positioning on architecture (federation + agg-awareness + convention model + full self-service), not on closeable feature gaps.
+4. **Competitor capabilities evolve.** Snowflake semantic views (esp. modeling/BI) and MetricFlow are improving quarterly, and OSI adoption is moving fast (native platform support roadmapped through late 2026). Re-verify the comparison table and §5.4 before each publish; build positioning on architecture (federation + agg-awareness + convention model + full self-service + owned-UX doctrine), not on closeable feature gaps.
 5. **Convention quality is a human dependency.** Naming discipline matters: the modeler must give the same concept the same registered name to enable blending, and distinct concepts distinct names to keep them safe. Don't oversell "zero modeling" — it's "modeling by naming," with free choice of names.
-6. **No BI integration is intentional, not a gap.** Never imply Strata feeds or embeds into Power BI/Tableau/Superset. Strata is the consumption layer.
+6. **Headless BI integration is intentionally excluded; owned-UX embedding is the integration model.** Never imply Strata feeds or embeds into Power BI/Tableau/Superset via drivers or protocols — that exclusion is principled and permanent. But also never say "Strata has no integrations": the doctrine is that Strata embeds into other surfaces (Google Sheets first) wherever it controls the retrieval UX. Frame the exclusion as an engineering standard, not a gap: *"we integrate anywhere our guarantees can travel with the data."*
+7. **Don't pre-announce embed surfaces.** Do not name specific add-ons (Sheets, Excel, others) in external copy until they ship or are explicitly labeled roadmap. Internally, Sheets is the first owned-UX surface.
+8. **OSI.** Do not claim OSI support or membership. If asked, use §5.4's stance: interchange formats move definitions; Strata's guarantees live in the retrieval interaction. A read-only OSI export is a possible future "open, not headless" move, undecided.
 
 ---
 
@@ -187,6 +204,9 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 - **Partition-aware routing:** the layer knows each source's data range and routes to the hot tier only when filters are compatible, else falls back to the warehouse.
 - **Compatibility matrix:** derived map of which measures are answerable by which dimensions, used to validate/refuse queries before execution.
 - **Report / View:** a report is a collection of views; views render auto / full / half / 1/3 width and are arranged by the layout engine.
+- **Owned-UX embedding:** Strata's integration model — extending Strata's own retrieval experience (field resolution, per-keystroke validation, refuse-before-execution) into another surface (e.g., a Google Sheets add-on), as opposed to headless access where a foreign tool's query builder drives the model.
+- **Headless access (excluded):** exposing the semantic model through generic protocols (SQL/JDBC/XMLA) for external BI tools to query directly. Strata deliberately does not offer this; guarantees can't be enforced through an interface Strata doesn't control.
+- **Universal semantic layer / OSI:** the industry trend of vendor-neutral, define-once-consume-everywhere semantic layers and its interchange standard (Open Semantic Interchange). See §5.4 for Strata's counter-positioning and OSI stance.
 
 ---
 
@@ -194,8 +214,8 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 
 - **Product:** Strata — AI-safe, high-performance self-service analytics platform (governed semantic layer + beautiful-by-default dashboards).
 - **Category:** self-service analytics + governed semantic/retrieval layer for dashboards and AI agents.
-- **Core differentiators:** freely-named semantic field registry; automatic grain-safe cross-fact blending; aggregate-aware + federated OLAP with partition-aware hot-tier routing; five measure types (Standard, Complex, Snapshot, LOD, ad-hoc) + one-click YoY/moving-avg/percent-to-total; beautiful-by-default dashboards via a layout engine; AI-native editor (NL field/filter resolution); grain-safe agent API.
+- **Core differentiators:** freely-named semantic field registry; automatic grain-safe cross-fact blending; aggregate-aware + federated OLAP with partition-aware hot-tier routing; five measure types (Standard, Complex, Snapshot, LOD, ad-hoc) + one-click YoY/moving-avg/percent-to-total; beautiful-by-default dashboards via a layout engine; AI-native editor (NL field/filter resolution); grain-safe agent API; owned-UX embeds into work surfaces (Sheets add-on first).
 - **Engines:** Snowflake, ClickHouse, Druid, Databricks (extensible).
 - **Stage:** early-stage startup; architecture production-proven at Netflix scale 4+ years.
 - **Primary wedge:** add a ClickHouse hot tier + aggregate awareness on top of a Snowflake stack → faster dashboards/agents + lower Snowflake spend, with a more beautiful self-service experience.
-- **Deliberate non-goal:** integrating with external BI tools — Strata is the self-service/consumption layer; it augments or replaces them.
+- **Integration doctrine:** owned-UX embedding only — Strata extends its retrieval experience into other surfaces (e.g., Google Sheets add-on) but never exposes headless query access for external BI tools (Power BI/Tableau/Superset). Strata is the consumption layer; its correctness guarantees travel with the data.
