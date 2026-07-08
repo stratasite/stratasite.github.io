@@ -1,0 +1,97 @@
+---
+title: "Enabling Customer Service Analytics at Global Scale"
+eyebrow: Case study
+navLabel: "Case Study: Global Scale Customer Service Analytics"
+summary: How the customer service org at a large entertainment company turned a drowning request queue into true self-service for 200 internal users and 600 BPO partners, and invented Strata along the way.
+glance:
+  - label: Organization
+    value: Customer service org at a large global entertainment company
+  - label: Users
+    value: ~200 internal users, plus ~600 across global BPO partners
+  - label: Scale
+    value: ~100,000 support contacts per week; millions of help-center visits per day
+  - label: Before
+    value: ~5 self-serve users per week; a Slack channel drowning in custom data requests
+  - label: After
+    value: Hundreds of weekly self-serve users within weeks of launch
+  - label: Impact
+    value: 90% fewer ad-hoc data requests; partner onboarding down to a 10-minute video
+order: 10
+draft: false
+sections:
+  - id: the-setting
+    label: The Setting
+  - id: the-problem-a-great-bi-tool-buried-under-its-own-success
+    label: The Problem
+  - id: the-failed-fix-a-powerful-semantic-layer-nobody-would-use
+    label: The Failed Fix
+  - id: the-breakthrough-building-it-ourselves
+    label: The Breakthrough
+  - id: the-results-adoption-in-weeks-not-quarters
+    label: The Results
+  - id: the-road-to-strata
+    label: The Road to Strata
+---
+import Callout from '../../components/Callout.astro';
+
+<Callout type="tip" title="This is Strata's origin story">
+Before Strata was a product, its architecture was built and battle tested inside one of the world's largest entertainment companies, where our founding team spent years solving exactly the problem Strata now solves for everyone. The names have been thinned out. The numbers are real.
+</Callout>
+
+## The Setting
+ 
+Customer service (CS) orgs are exceptionally hungry data customers. They are the nexus point between the company and its customers. And like most enterprise CS departments, our case study company faced the twin problems of data breadth and data demand. Data flows in from CRM systems, app event streams, telephony, vendor invoices, agent workforce systems, and help center systems. And demand comes from every corner of the company, from the Customer Service org itself to IT, Finance, Product, and Marketing. Everyone wants to get a beat on the customer impact of their initiatives.
+ 
+To be effective, this CS org and its Data Science and Engineering (DSE) partners track every industry-standard KPI, from first contact resolution to average handle time, plus a deep bench of custom internal measures.
+ 
+And the people who need this data are not just analysts. They run the customer service organization: managing agent performance and staffing, writing help-center content, auditing partner billing, and helping product managers understand where customers are struggling, across everything from payments to ads to gaming. Other parts of the company use this data to update pricing plans, evaluate product changes, and review content strategy. It is a large, global community of non-technical users who genuinely need data with high specificity and fast turnarounds.
+ 
+## The Problem: A Great BI Tool, Buried Under Its Own Success
+ 
+The org's analytics ran on Tableau for years, supported by a dedicated analytics team within DSE. It worked, until growth in demand from across the company broke it in four ways at once.
+ 
+**Datasource proliferation.** Tableau's datasource-centric model meant every new question tended to spawn a new datasource. Redundant measures multiplied. Users needed a map just to find where to look, and the team drowned in custom data requests from a global user base, most of them landing in a Slack channel that became a permanent backlog.
+ 
+**Painful partner onboarding.** Because the company owned the data infrastructure, it delivered analytics to its BPO partners through the same Tableau estate, covering performance analysis, agent management, and billing audits. New partners onboarded regularly, most of them coming from other BI tools, and each one required extensive custom setup and training.
+ 
+**Privacy requirements colliding with the architecture.** Around 2022, GDPR obligations demanded per-partner data masking. In the Tableau model, that meant custom datasources per partner: roughly a **10x explosion** of an already unmanageable datasource estate.
+ 
+**A shrinking team.** Through reorganization, the dedicated DSE analytics team went from 10 people to 3, just as demand for custom datasets from internal users was exploding to support major product initiatives.
+ 
+## The Failed Fix: A Powerful Semantic Layer Nobody Would Use
+ 
+The first attempt at a solution was a traditional enterprise semantic layer, MicroStrategy, chosen for its genuinely strong governed model and row-level security. Over several months, the team built a project covering the full reporting needs of the internal audience.
+ 
+Adoption never exceeded **5 users per week**. Despite training and extensive manual development, users reported the interface was simply too intimidating. They went back to filing requests in Slack.
+ 
+The lesson became one of Strata's founding convictions: **a semantic layer is only as good as the experience sitting on top of it.** Correctness and governance mean nothing if the interface sends users back to the request queue.
+ 
+## The Breakthrough: Building It Ourselves
+ 
+The team decided to build its own tool, the direct precursor to Strata. The design goals were blunt:
+ 
+- Give a **global, non-technical audience deep access to data**, with onboarding so easy it needs almost no training.
+- Make adding a new BPO partner **low effort**, not a project.
+- Make privacy compliance a **built-in property**, with per-partner row-level masking and filtering as configuration rather than a new layer of maintenance.
+- Reuse the fast Druid OLAP cubes already powering other dashboards, while still allowing **drill-down into the full data warehouse**.
+Along the way, the team invented what became Strata's core idea: a semantic layer where the model emerges from a registry of consistently named fields, cross-domain questions blend safely and automatically, and queries route to fast OLAP tiers when they can, with the warehouse as the deep fallback. Users got speed *and* depth *and* governed privacy controls, through an interface simple enough that nobody needed a manual.
+ 
+## The Results: Adoption in Weeks, Not Quarters
+ 
+Within a few weeks of rollout, weekly self-serve usage went from **5 users to hundreds**. Ad-hoc data requests in the Slack channel dropped by **90%**.
+ 
+> "You took the complexity of Tableau and smashed it down to nothing."
+> — Customer Service Product Manager
+ 
+Given the reaction, the team stood up a second instance for the ~600 BPO users and got the same result. Analytics went from a major onboarding cost to a non-issue: a **10-minute video tutorial** was all a new partner needed.
+ 
+> "We got rid of all our slides on how to pull custom reports. It's so easy now."
+> — Product Support Manager
+ 
+The tool is still in production today, years later, covering both audiences. Other internal teams have since onboarded for their own self-service use cases.
+ 
+## The Road to Strata
+ 
+Strata is an independent, enhanced implementation of the ideas proven in that deployment: the freely named semantic field registry, automatic grain-safe blending across fact domains, aggregate-aware routing to fast OLAP hot tiers with warehouse fallback, built-in row-level masking and filtering, and, above all, a self-service experience simple enough that adoption takes care of itself.
+ 
+If your team is drowning in the request backlog, onboarding partners is a project every time, or a powerful-but-intimidating BI stack is sitting unused: this is the exact problem Strata was born to solve.

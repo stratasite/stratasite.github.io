@@ -53,4 +53,27 @@ const compare = defineCollection({
   }),
 });
 
-export const collections = { features, compare };
+/**
+ * Customer case studies — long-form proof stories. Linked from the footer
+ * Resources column and served at `/case-studies/[slug]`. Same article shell as
+ * features/compare, plus an "at a glance" facts grid driven by frontmatter.
+ */
+const casestudies = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    eyebrow: z.string().default('Case study'),
+    // Short label for compact link lists (e.g. the footer); falls back to title.
+    navLabel: z.string().optional(),
+    summary: z.string(),
+    // "At a glance" facts rendered as a stat grid above the narrative.
+    glance: z
+      .array(z.object({ label: z.string(), value: z.string() }))
+      .default([]),
+    order: z.number().default(100),
+    draft: z.boolean().default(false),
+    sections: z.array(section).default([]),
+  }),
+});
+
+export const collections = { features, compare, casestudies };

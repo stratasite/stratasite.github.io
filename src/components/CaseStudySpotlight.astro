@@ -1,0 +1,82 @@
+---
+// Homepage spotlight for the flagship customer case study. Sits after "How we
+// stack up". Left: the story + headline stats + a link into the full study.
+// Right: a customer service team photo (owned asset in /public).
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  study: CollectionEntry<'casestudies'>;
+}
+const { study } = Astro.props;
+const href = `/case-studies/${study.slug}/`;
+
+const stats = [
+  { value: '5 → 100+', label: 'weekly self-serve users' },
+  { value: '90%', label: 'fewer ad-hoc data requests' },
+  { value: '10 min', label: 'partner onboarding' },
+];
+---
+
+<section class="scroll-mt-20 border-t border-border">
+  <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <!-- Story -->
+      <div>
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">Customer story</p>
+        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          <a href={href} class="transition-colors hover:text-primary">
+            From a drowning request queue to true self-service
+          </a>
+        </h2>
+        <p class="mt-5 text-lg text-muted-foreground">
+          A customer service org at a global entertainment company gave 800 non-technical users, across internal teams and BPO partners, deep and governed access to their data. Self serve usage went from a handful a week to hundreds. The architecture became Strata.
+        </p>
+
+        <dl class="mt-8 grid grid-cols-3 gap-6">
+          {stats.map((s) => (
+            <div>
+              <dt class="font-display text-2xl font-bold tabular-nums text-primary sm:text-3xl">{s.value}</dt>
+              <dd class="mt-1 text-sm leading-snug text-muted-foreground">{s.label}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <figure class="mt-8 border-l-2 border-primary pl-4">
+          <blockquote class="text-foreground">
+            "You took the complexity of Tableau and smashed it down to nothing."
+          </blockquote>
+          <figcaption class="mt-1.5 text-sm text-muted-foreground">Customer Service Product Manager</figcaption>
+        </figure>
+
+        <a
+          href={href}
+          class="mt-8 inline-flex items-center gap-1 font-semibold text-primary transition-all hover:gap-2"
+        >
+          Read the case study
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+        </a>
+      </div>
+
+      <!-- Photo: customer service team (owned asset) -->
+      <figure class="cs-photo">
+        <img
+          src="/cs_case_study.jpg"
+          alt="Customer service team wearing headsets at their desks in a call center"
+          width="1024"
+          height="683"
+          loading="lazy"
+          class="h-auto w-full rounded-2xl border border-border"
+        />
+      </figure>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Match the article lead media: soft peach glow + depth shadow on the rust page. */
+  .cs-photo img {
+    box-shadow:
+      0 24px 50px -18px rgba(0, 0, 0, 0.5),
+      0 0 90px 6px color-mix(in srgb, var(--strata-peach) 28%, transparent);
+  }
+</style>

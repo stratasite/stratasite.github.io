@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
 import FeatureRows from '../components/FeatureRows.astro';
 import StackUp from '../components/StackUp.astro';
+import CaseStudySpotlight from '../components/CaseStudySpotlight.astro';
 import CtaButton from '../components/CtaButton.astro';
 import { site } from '../config/site';
 
@@ -13,6 +14,10 @@ const features = (await getCollection('features', ({ data }) => !data.draft)).so
 const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
 );
+const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const featuredStudy = caseStudies[0];
 ---
 
 <Base>
@@ -54,6 +59,9 @@ const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).
       <div class="mt-14"><StackUp comparisons={comparisons} /></div>
     </div>
   </section>
+
+  <!-- CASE STUDY SPOTLIGHT -->
+  {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
 
   <!-- LATEST FROM THE BLOG (links out to blog.strata.do) -->
   <section class="scroll-mt-20">
