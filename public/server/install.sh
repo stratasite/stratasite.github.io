@@ -9,10 +9,9 @@
 #
 # What this script does:
 #   1. Checks Docker and Docker Compose are installed and recent enough
-#   2. Authenticates with the Strata container registry
-#   3. Prompts for database connection and license key
-#   4. Writes docker-compose.yml and .env
-#   5. Pulls the Strata image and starts the containers
+#   2. Prompts for database connection details and port
+#   3. Writes docker-compose.yml and .env
+#   4. Pulls the Strata image and starts the containers
 #
 # On re-run (upgrade):
 #   - Keeps your existing .env (only prompts for missing keys)
@@ -33,11 +32,10 @@ DIM='\033[2m'
 RESET='\033[0m'
 
 INSTALL_DIR="${STRATA_INSTALL_DIR:-$(pwd)/strata}"
-REGISTRY="registry.gitlab.com"
 IMAGE="registry.gitlab.com/stratado/server"
 MIN_DOCKER_VERSION="24"
 MIN_COMPOSE_VERSION="2.20"
-LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web job"
+LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
 
 # ── Helpers ───────────────────────────────────────────────────────
 
@@ -234,80 +232,9 @@ else
 fi
 
 mkdir -p "$INSTALL_DIR"
-LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web job"
+LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
 
-
-# ── Step 4: Registry authentication ──────────────────────────────
-
-echo ""
-info "Registry authentication"
-
-if docker pull "$IMAGE:latest" --quiet &>/dev/null 2>&1; then
-  success "Already authenticated with $REGISTRY"
-else
-  echo -e "  ${DIM}You need your GitLab container registry credentials to pull the Strata image.${RESET}"
-  echo -e "  ${DIM}These were provided with your license purchase.${RESET}"
-  echo ""
-
-  registry_username=$(prompt "REGISTRY_USERNAME" "Your GitLab registry username (user or deploy token username)" "" "true")
-  registry_token=$(prompt_secret "REGISTRY_TOKEN" "Your GitLab registry token/password" "true")
-
-  echo "$registry_token" | docker login "$REGISTRY" -u "$registry_username" --password-stdin 2>/dev/null \
-    || fail "Authentication failed. Check your registry username/token and try again."
-
-  success "Authenticated with $REGISTRY"
-fi
-
-# ── Step 5: Write docker-compose.yml ─────────────────────────────
-
-info "Writing docker-compose.yml..."
-
-cat > "$INSTALL_DIR/docker-compose.yml" << 'COMPOSE_EOF'
-# Strata Enterprise - Docker Compose
-# Managed by the Strata installer. All configuration belongs in .env.
-
-services:
-  web:
-    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
-    ports:
-      - "${PORT:-3000}:${STRATA_CONTAINER_PORT:-80}"
-    env_file: .env
-    environment:
-      RAILS_ENV: production
-      STRATA_RUN_DB_PREPARE: "true"
-    volumes:
-      - strata_storage:/rails/storage
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:$${STRATA_CONTAINER_PORT:-80}/up || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 120s
-
-  job:
-    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
-    env_file: .env
-    environment:
-      RAILS_ENV: production
-      STRATA_RUN_DB_PREPARE: "false"
-      JOB_CONCURRENCY: "${JOB_CONCURRENCY:-4}"
-      JOB_THREADS: "${JOB_THREADS:-3}"
-    command: ["./bin/jobs"]
-    volumes:
-      - strata_storage:/rails/storage
-    restart: unless-stopped
-    depends_on:
-      web:
-        condition: service_healthy
-
-volumes:
-  strata_storage:
-COMPOSE_EOF
-
-success "docker-compose.yml written"
-
-# ── Step 6: Create / update .env ─────────────────────────────────
+# ── Step 4: Create / update .env ─────────────────────────────────
 
 ENV_FILE="$INSTALL_DIR/.env"
 
@@ -315,22 +242,23 @@ if [ ! -f "$ENV_FILE" ]; then
   touch "$ENV_FILE"
 fi
 
-# ── Step 7: Prompt for required values ────────────────────────────
+# ── Step 5: Prompt for required values ────────────────────────────
 #
 # Only essential config is prompted. Advanced settings (SSL, S3,
 # log level, etc.) are written with sensible defaults and can be edited
 # in .env later.
 
 echo ""
-info "Database & license configuration"
+info "Database configuration"
+echo -e "  ${DIM}Leave DB_HOST empty to use the bundled PostgreSQL (good for single-server installs).${RESET}"
 echo -e "  ${DIM}Press Enter to accept the default shown in [brackets].${RESET}"
 
 # Format: key|description|default|required|secret
 PROMPTS=(
-  "DB_HOST|PostgreSQL hostname or IP||true|"
-  "DB_PORT|PostgreSQL port|5432|true|"
-  "DB_USERNAME|PostgreSQL username||true|"
-  "DB_PASSWORD|PostgreSQL password||true|secret"
+  "DB_HOST|PostgreSQL hostname or IP (leave empty to use bundled Postgres)||false|"
+  "DB_PORT|PostgreSQL port|5432|false|"
+  "DB_USERNAME|PostgreSQL username (leave empty for bundled Postgres default)||false|"
+  "DB_PASSWORD|PostgreSQL password (leave empty for bundled Postgres default)||false|secret"
   "PORT|Port for the Strata web UI|3000|false|"
 )
 
@@ -420,7 +348,104 @@ else
   success "Configuration saved to .env"
 fi
 
-# ── Step 8: Pull image ───────────────────────────────────────────
+# ── Step 6: Write docker-compose.yml ─────────────────────────────
+# Generated after prompts so we know whether bundled or external Postgres is used.
+# Bundled (no DB_HOST): single web container handles jobs internally.
+# External DB: separate web + job containers.
+
+info "Writing docker-compose.yml..."
+
+db_host=$(resolve_config_value "DB_HOST" "$ENV_FILE")
+
+if [ -z "$db_host" ]; then
+  LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web"
+else
+  LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web job"
+fi
+
+if [ -z "$db_host" ]; then
+  # Bundled Postgres — single container, jobs run in web process
+  cat > "$INSTALL_DIR/docker-compose.yml" << 'COMPOSE_EOF'
+# Strata - Docker Compose (bundled Postgres mode)
+# Managed by the Strata installer. All configuration belongs in .env.
+
+services:
+  web:
+    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
+    ports:
+      - "${PORT:-3000}:${STRATA_CONTAINER_PORT:-80}"
+    env_file: .env
+    environment:
+      RAILS_ENV: production
+      STRATA_RUN_DB_PREPARE: "true"
+      HANDLE_JOBS_IN_WEB_SERVER: "true"
+    volumes:
+      - strata_storage:/rails/storage
+      - strata_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:$${STRATA_CONTAINER_PORT:-80}/up || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+
+volumes:
+  strata_storage:
+  strata_data:
+COMPOSE_EOF
+else
+  # External Postgres — separate web + job containers
+  cat > "$INSTALL_DIR/docker-compose.yml" << 'COMPOSE_EOF'
+# Strata - Docker Compose (external Postgres mode)
+# Managed by the Strata installer. All configuration belongs in .env.
+
+services:
+  web:
+    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
+    ports:
+      - "${PORT:-3000}:${STRATA_CONTAINER_PORT:-80}"
+    env_file: .env
+    environment:
+      RAILS_ENV: production
+      STRATA_RUN_DB_PREPARE: "true"
+    volumes:
+      - strata_storage:/rails/storage
+      - strata_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:$${STRATA_CONTAINER_PORT:-80}/up || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+
+  job:
+    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
+    env_file: .env
+    environment:
+      RAILS_ENV: production
+      STRATA_RUN_DB_PREPARE: "false"
+      JOB_CONCURRENCY: "${JOB_CONCURRENCY:-4}"
+      JOB_THREADS: "${JOB_THREADS:-3}"
+    command: ["./bin/jobs"]
+    volumes:
+      - strata_storage:/rails/storage
+      - strata_data:/data
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  strata_storage:
+  strata_data:
+COMPOSE_EOF
+fi
+
+success "docker-compose.yml written"
+
+# ── Step 7: Pull image ───────────────────────────────────────────
 
 echo ""
 info "Pulling Strata image..."
@@ -431,7 +456,7 @@ pull_tag="${strata_version:-latest}"
 docker pull "$IMAGE:$pull_tag" || fail "Failed to pull image. Check your network and registry access."
 success "Image pulled: $IMAGE:$pull_tag"
 
-# ── Step 9: Start containers ─────────────────────────────────────
+# ── Step 8: Start containers ─────────────────────────────────────
 
 echo ""
 if [ "$is_upgrade" = true ]; then
@@ -443,7 +468,7 @@ fi
 cd "$INSTALL_DIR"
 docker compose up -d || fail "Failed to start containers."
 
-# ── Step 10: Wait for health check ───────────────────────────────
+# ── Step 9: Wait for health check ────────────────────────────────
 
 port=$(resolve_config_value "PORT" "$ENV_FILE")
 port="${port:-3000}"
