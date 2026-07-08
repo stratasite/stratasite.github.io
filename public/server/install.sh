@@ -327,7 +327,6 @@ echo -e "  ${DIM}Press Enter to accept the default shown in [brackets].${RESET}"
 
 # Format: key|description|default|required|secret
 PROMPTS=(
-  "LICENSE_KEY|Your Strata license key (JWT token issued for your organization)||true|secret"
   "DB_HOST|PostgreSQL hostname or IP||true|"
   "DB_PORT|PostgreSQL port|5432|true|"
   "DB_USERNAME|PostgreSQL username||true|"
@@ -513,7 +512,7 @@ if [ "$is_upgrade" = true ]; then
 else
   echo -e "${GREEN}  Strata is running.${RESET}"
   echo ""
-  echo -e "  Open ${BOLD}http://localhost:${port}${RESET} to create your admin account."
+  echo -e "  Open ${BOLD}http://localhost:${port}${RESET} to activate your license and create your admin account."
 fi
 
 echo ""
