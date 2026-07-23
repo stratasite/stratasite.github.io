@@ -1,0 +1,30 @@
+---
+import { getCollection } from 'astro:content';
+import Legal from '../../layouts/Legal.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('legal', ({ data }) => !data.draft);
+  return entries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+// `toc` is injected during rendering by the section-numbering rehype plugin, so
+// it arrives on the remark/rehype frontmatter rather than the validated data.
+const { Content, remarkPluginFrontmatter } = await entry.render();
+const toc = remarkPluginFrontmatter?.toc ?? [];
+---
+
+<Legal
+  title={entry.data.title}
+  summary={entry.data.summary}
+  version={entry.data.version}
+  lastRevised={entry.data.lastRevised}
+  effective={entry.data.effective}
+  slug={entry.slug}
+  toc={toc}
+>
+  <Content />
+</Legal>

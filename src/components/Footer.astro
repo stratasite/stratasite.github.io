@@ -11,6 +11,11 @@ const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
 );
+// Legal documents sit in the bottom bar next to the copyright — the place
+// people look for them, and a stable home as more documents are added.
+const legalDocs = (await getCollection('legal', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
 const year = new Date().getFullYear();
 ---
 
@@ -57,8 +62,16 @@ const year = new Date().getFullYear();
   </div>
 
   <div class="border-t border-border">
-    <div class="mx-auto max-w-7xl px-4 py-6 text-xs text-muted-foreground sm:px-6 lg:px-8">
-      © {year} Strata Business Intelligence, LLC · Born at Netflix, ready for the world
+    <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <p>© {year} Strata Business Intelligence, LLC · Born at Netflix, ready for the world</p>
+      <ul class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {legalDocs.map((d) => (
+          <li>
+            <a class="hover:text-foreground" href={`/legal/${d.slug}/`}>{d.data.navLabel ?? d.data.title}</a>
+          </li>
+        ))}
+        <li><a class="hover:text-foreground" href="/legal/">Legal</a></li>
+      </ul>
     </div>
   </div>
 </footer>

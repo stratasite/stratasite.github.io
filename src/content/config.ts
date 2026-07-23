@@ -76,4 +76,36 @@ const casestudies = defineCollection({
   }),
 });
 
-export const collections = { features, compare, casestudies };
+/**
+ * Legal documents — terms, privacy, and software licenses. Served at
+ * `/legal/[slug]/` from one shared template (src/layouts/Legal.astro).
+ *
+ * These URLs are quoted in contracts, installers, and third-party documents, so
+ * treat a slug as permanent: supersede a document with a new `version` in place
+ * rather than renaming the file. Section anchors (`#section-10-2`) are generated
+ * from structure by the rehype-legal-sections plugin and are equally permanent.
+ */
+const legal = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    // Groups the document on the /legal/ index.
+    docType: z.enum(['agreement', 'privacy', 'license']),
+    // Short label for compact link lists (footer, index cards); falls back to title.
+    navLabel: z.string().optional(),
+    summary: z.string(),
+    // Displayed verbatim in the document header, e.g. "1.0".
+    version: z.string(),
+    lastRevised: z.coerce.date(),
+    // Only set when a document takes effect on a date other than its revision
+    // date (e.g. a license that starts at install time).
+    effective: z.coerce.date().optional(),
+    // Automatic 1 / 1.1 / 1.1(a) numbering + #section-N anchors. On by default;
+    // set false for short documents that read better unnumbered.
+    numbered: z.boolean().default(true),
+    order: z.number().default(100),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { features, compare, casestudies, legal };
