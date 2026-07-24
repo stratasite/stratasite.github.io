@@ -1,0 +1,56 @@
+---
+// Shared hero for the three product pages (/product/*). Left: eyebrow, headline,
+// subhead, CTA. Right: a product still or looping clip with the peach glow used
+// on article lead media. Keep the headline short; the subhead carries the turn.
+import CtaButton from '../CtaButton.astro';
+
+interface Props {
+  eyebrow: string;
+  /** Rendered as-is; wrap emphasis in <span class="text-primary"> via slot instead when needed. */
+  title: string;
+  subhead: string;
+  image?: string;
+  video?: string;
+  alt?: string;
+  ctaLocation?: string;
+}
+const { eyebrow, title, subhead, image, video, alt = '', ctaLocation } = Astro.props;
+---
+
+<section class="border-b border-border">
+  <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+    <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <div>
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">{eyebrow}</p>
+        <h1 class="mt-4 font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+          {title}
+        </h1>
+        <p class="mt-6 text-lg leading-relaxed text-muted-foreground">{subhead}</p>
+        <div class="mt-9 flex flex-wrap items-center gap-4">
+          <CtaButton location={ctaLocation} />
+          <a href="#walkthrough" class="font-semibold text-primary transition-all hover:underline">
+            See it in action
+          </a>
+        </div>
+      </div>
+
+      <figure class="product-media">
+        {image && <img src={image} alt={alt} loading="eager" class="h-auto w-full rounded-2xl border border-border" />}
+        {video && (
+          <video class="h-auto w-full rounded-2xl border border-border" autoplay loop muted playsinline aria-label={alt}>
+            <source src={video} type="video/mp4" />
+          </video>
+        )}
+      </figure>
+    </div>
+  </div>
+</section>
+
+<style>
+  .product-media :global(img),
+  .product-media :global(video) {
+    box-shadow:
+      0 24px 50px -18px rgba(0, 0, 0, 0.5),
+      0 0 90px 6px color-mix(in srgb, var(--strata-peach) 28%, transparent);
+  }
+</style>

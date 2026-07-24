@@ -1,0 +1,364 @@
+---
+/**
+ * Product page: Business Intelligence.
+ *
+ * Positioning: BI built for operators, the people who run the business and are
+ * most starved for custom data, rather than for the analysts who publish
+ * dashboards at them. The antagonist is the request queue, not ugly charts.
+ * The spine of the page is one concrete morning, start to finish.
+ */
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProductHero from '../../components/product/ProductHero.astro';
+import ProofStrip from '../../components/product/ProofStrip.astro';
+import DayInLife from '../../components/product/DayInLife.astro';
+import CapabilityGrid from '../../components/product/CapabilityGrid.astro';
+import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
+import OperatorTable from '../../components/product/OperatorTable.astro';
+import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
+import CtaButton from '../../components/CtaButton.astro';
+
+const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const featuredStudy = caseStudies[0];
+const studyHref = featuredStudy ? `/case-studies/${featuredStudy.slug}/` : undefined;
+
+// One operator, one morning. Every step maps to shipped product surface, and
+// the media is the real product.
+const steps = [
+  {
+    time: '8:42 am',
+    title: 'A question nobody built a dashboard for',
+    body: [
+      'Handle time at one BPO site has drifted up for three weeks. The weekly review is at eleven, and Dana needs to know if it is staffing, contact mix, or billing before she walks in.',
+      'In her old tool that question is a ticket on your team\'s desk and a two day wait. In Strata she just describes what she wants. A comma separated list in the projections zone, handle time, contacts, staffed hours, resolves every measure at once. A sentence in the filter zone becomes the right filter. The AI sits where her hands already are, and none of it reaches you.',
+    ],
+    underHood: {
+      text: 'Natural language field and filter resolution woven into the editor itself, with no pre-authored Explore to start from.',
+      href: '/features/ai-native/',
+      label: 'AI-native editor',
+    },
+    video: '/ai_sprinkled_editor.mp4',
+    alt: 'Resolving a comma separated list of measures and a natural language filter in the Strata editor',
+  },
+  {
+    time: '8:47 am',
+    title: 'Crossing data that was never modeled together',
+    body: [
+      'Handle time lives in telephony, contacts in the CRM, cost in vendor invoices. Three domains, three grains, and no one ever joined them because no one saw this question coming.',
+      'Dana combines all three anyway. As she adds each measure, Strata shows only the paths that are legal to blend and closes the ones that would double count. This is exactly where self-service usually ships a confident wrong number. Here it cannot. She never learns the word grain, and you never field the ticket that starts with why don\'t these totals match.',
+    ],
+    aside:
+      'Ask for something the data cannot answer and the path is simply not offered. Force it, and Strata refuses before running anything and points to the nearest valid alternative. The worst case is a clear no, never a wrong number with your name on the dashboard.',
+    underHood: {
+      text: 'Dynamic universes: the set of blendable fields is derived per query from a compatibility matrix, so only legal drill-across paths are ever presented, validated live as the report is built.',
+      href: '/features/grain-safe-blending/',
+      label: 'Cross domain blending',
+    },
+    video: '/instant_feedback.mp4',
+    alt: 'The valid, blendable field set narrowing live with visual feedback as measures from different domains are combined',
+  },
+  {
+    time: '8:55 am',
+    title: 'The measure she needs does not exist yet',
+    body: [
+      'What Dana wants next is cost per resolved contact by site, versus the same period last year. That measure is in no catalog, and no request queue is going to produce it before eleven.',
+      'So she builds it herself, from measures that already exist and are already governed. One click adds the year over year, another a moving average to cut the noise. The person who understands the question composes the math, and because it is built on your governed measures, it is not a rogue metric you have to reconcile later.',
+    ],
+    underHood: {
+      text: 'Five measure types, standard, complex, snapshot, inclusion LOD and exclusion LOD, plus ad hoc calculations and one click YoY, moving average and percent of total.',
+      href: '/features/measure-types/',
+      label: 'Measure types',
+    },
+    video: '/derived_calculations.mp4',
+    alt: 'Creating a derived calculation from existing governed measures in Strata',
+  },
+  {
+    time: '9:06 am',
+    title: 'It becomes a dashboard without becoming a project',
+    body: [
+      'The answer is a staffing gap on two shifts at one site. Dana adds a few more views, picks full width for the trend and half width for the site breakdown, and the layout engine arranges the rest.',
+      'No theme to configure, no grid to nudge, no design review to schedule. It looks like every other report in the company, so you get a consistent estate instead of a thousand bespoke dashboards to support, and none of it was a build request.',
+    ],
+    underHood: {
+      text: 'A report is a set of views at auto, full, half or third width. The layout engine handles the arrangement so output is consistently good looking by default.',
+      href: '/features/beautiful-self-service/',
+      label: 'Beautiful by default',
+    },
+    video: '/interactive_dashboards.mp4',
+    alt: 'An interactive Strata dashboard built from multiple views',
+  },
+  {
+    time: '9:14 am',
+    title: 'Out of the tool and into the work',
+    body: [
+      'Finance wants the cost numbers in a spreadsheet to reconcile against invoices, so Dana exports to Google Sheets. The add on carries the same fields and the same validation, so the numbers stay live and correct instead of going stale in a pasted block, and stay governed once they leave your walls.',
+      'Then she subscribes the two site leads and schedules the report every Monday at seven. Last quarter this was a two day ticket. Now it is a recurring answer that arrives before anyone asks, and it never touched your team.',
+    ],
+    underHood: {
+      text: 'Exports, subscriptions and schedules are built in. The Google Sheets add on brings the Strata retrieval experience into the spreadsheet instead of handing a raw query endpoint to another tool.',
+    },
+    image: '/beautiful_by_default.png',
+    alt: 'A Strata report ready to export, subscribe and schedule',
+  },
+];
+
+const capabilities = [
+  {
+    icon: 'zap',
+    title: 'Validation on every keystroke',
+    body: 'Every partial query is checked and previewed as it is built, so users are guided toward valid answers instead of discovering an error after a long run.',
+    href: '/features/instant-feedback/',
+  },
+  {
+    icon: 'layers',
+    title: 'Automatic cross domain blending',
+    body: 'Measures from different fact domains combine safely by naming convention. No pre-authored joined datasets, no double counting.',
+    href: '/features/grain-safe-blending/',
+  },
+  {
+    icon: 'sigma',
+    title: 'Measures without a ticket',
+    body: 'Ad hoc calculations plus one click year over year, moving average and percent of total, composed from governed measures.',
+    href: '/features/measure-types/',
+  },
+  {
+    icon: 'dashboard',
+    title: 'Layout engine, not a canvas',
+    body: 'Choose a width, get a dashboard. Consistent, responsive and good looking without a theme file or a design review.',
+    href: '/features/beautiful-self-service/',
+  },
+  {
+    icon: 'share',
+    title: 'Sheets, exports and the last mile',
+    body: 'Push results into Google Sheets through an add on that keeps Strata field resolution and validation intact in the spreadsheet.',
+  },
+  {
+    icon: 'clock',
+    title: 'Subscriptions and schedules',
+    body: 'Send any report on a schedule so recurring questions stop being requests and start arriving on their own.',
+  },
+];
+
+const absent = [
+  'Pixel level layout control. You choose a width, the layout engine does the rest.',
+  'Exotic and long tail chart types. We ship the visualizations that answer business questions, not a gallery.',
+  'Custom CSS, per dashboard theming and font control.',
+  'Print perfect pagination and pixel exact executive decks.',
+  'A headless query endpoint for another BI tool to drive with its own query builder.',
+];
+
+const gained = [
+  'Nobody can build an ugly or inconsistent report, so nothing needs a design review.',
+  'The person with the question builds the answer. No author bottleneck, no request queue.',
+  'Onboarding measured in minutes. One customer replaced their training deck with a ten minute video.',
+  'Every report in the company reads the same way, so trust transfers between teams.',
+  'Correctness guarantees hold everywhere the data goes, including the spreadsheet.',
+];
+
+const operatorRows = [
+  {
+    axis: 'You need a number nobody put on a dashboard',
+    them: 'File a request, wait for the analyst who owns the Explore',
+    strata: 'Build it yourself in minutes, no model knowledge required',
+  },
+  {
+    axis: 'Your question crosses two data domains',
+    them: 'Needs a new Explore with the right joins, or silently double counts',
+    strata: 'Blended automatically at the right grain, or refused with alternatives',
+  },
+  {
+    axis: 'The measure you want does not exist',
+    them: 'A modeling change and a release cycle',
+    strata: 'Ad hoc calculation creator, composed from governed measures',
+  },
+  {
+    axis: 'What you get before you commit to a query',
+    them: 'An error after the query runs, if you are lucky',
+    strata: 'Live validation and preview on every keystroke',
+  },
+  {
+    axis: 'Getting a dashboard to look presentable',
+    them: 'Manual layout, theming, and a review from whoever owns design',
+    strata: 'Layout engine. Pick a width, ship it',
+  },
+  {
+    axis: 'Getting numbers into your spreadsheet',
+    them: 'A stale CSV paste, or a generic driver that breaks on hard measures',
+    strata: 'A Sheets add on carrying the same resolution and validation',
+  },
+  {
+    axis: 'Onboarding a new team or partner',
+    them: 'Custom setup and training per group',
+    strata: 'A short video. One customer onboards partners in ten minutes',
+  },
+];
+---
+
+<Base
+  title="Self-service BI your data team can actually allow | Strata"
+  description="Your operators can't get their own data, so they line up at your team's desk. Strata gives them self-service deep enough to stop asking and governed enough that you can let them. The request queue empties, the numbers stay correct."
+>
+  <ProductHero
+    eyebrow="Business Intelligence"
+    title="Self-service your data team can actually allow"
+    subhead="Your operators can't get their own data, so they line up at your team's desk and the request queue never empties. Strata gives them self-service deep enough to stop asking, and governed enough that you can let them. They get their answers. You stop being the bottleneck, with no wrong numbers going out under your name."
+    video="/interactive_dashboards.mp4"
+    alt="An interactive Strata dashboard"
+    ctaLocation="bi-hero"
+  />
+
+  <ProofStrip
+    stats={[
+      { value: '5 → 100+', label: 'weekly self serve users, within weeks of rollout' },
+      { value: '90%', label: 'fewer ad hoc data requests' },
+      { value: '10 min', label: 'to onboard a new partner org' },
+    ]}
+    note="Measured at a customer service org serving 800 internal and partner users."
+    href={studyHref}
+  />
+
+  <!-- DAY IN THE LIFE -->
+  <section id="walkthrough" class="scroll-mt-20 border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">
+          One morning, zero tickets
+        </p>
+        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          A question at 8:42, an answer before the eleven o'clock
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Dana runs partner operations, and she is exactly the user who fills your request queue. Here
+          is a normal morning for her in Strata. Count how many of these steps would have landed on your
+          team as a ticket. The answer is none.
+        </p>
+      </div>
+      <div class="mt-20">
+        <DayInLife steps={steps} />
+      </div>
+
+      <div class="mx-auto mt-20 max-w-3xl text-center">
+        <p class="font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+          Five answers before eleven. Zero requests to your team.
+        </p>
+        <p class="mt-4 leading-relaxed text-muted-foreground">
+          Now multiply that by every operator and every morning. That backlog is what Strata takes off
+          your desk, and it does it without you giving up a single guarantee: every number Dana built is
+          governed, grain-checked, and row-level secured, exactly as if your team had built it for her.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT MADE THAT POSSIBLE -->
+  <section class="border-b border-border bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">What made that possible</h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          The morning above is not a demo script. It is what the product does by default.
+        </p>
+      </div>
+      <div class="mt-14">
+        <CapabilityGrid cards={capabilities} />
+      </div>
+    </div>
+  </section>
+
+  <!-- THE TRADEOFF -->
+  <section class="border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          What we left out, <span class="text-primary">on purpose</span>
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Strata is missing things your current BI tool has. Pixel perfect control and a long tail of
+          chart types are features for the person publishing to an audience. We are not building for
+          that person. Every hour spent nudging a legend is an hour not spent answering a question, and
+          every configuration surface is a reason a non technical user gives up and files a ticket
+          instead.
+        </p>
+      </div>
+      <div class="mt-14">
+        <TradeoffPanel absent={absent} gained={gained} />
+      </div>
+      <p class="mx-auto mt-12 max-w-3xl text-center font-display text-xl font-semibold leading-relaxed text-foreground">
+        We optimize for time to the right data, not time to a pretty artifact.
+      </p>
+    </div>
+  </section>
+
+  <!-- WHY YOUR TOOL CAN'T + HEAD TO HEAD -->
+  <section class="border-b border-border bg-surface-2">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Why that morning is <span class="text-primary">impossible</span> in the tool you have now
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Ask an operations manager how they get data today and you will hear one of two answers. Both
+          end in a queue.
+        </p>
+      </div>
+
+      <div class="mx-auto mt-14 grid max-w-5xl gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <h3 class="font-display text-xl font-bold tracking-tight">"I ask an analyst"</h3>
+          <p class="mt-3 leading-relaxed text-muted-foreground">
+            The expressive tools are real tools, and that is the problem. Tableau and Power BI reward
+            expertise, so every non trivial question routes through someone who has it. Datasources
+            multiply, redundant measures pile up, and the request backlog becomes a permanent feature of
+            the org. The people closest to the business outcome wait the longest for the data about it.
+          </p>
+        </div>
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <h3 class="font-display text-xl font-bold tracking-tight">"I filter someone else's dashboard"</h3>
+          <p class="mt-3 leading-relaxed text-muted-foreground">
+            The consumption tools call it self service, but the service on offer is a dropdown. You can
+            slice what the author anticipated and nothing else. The moment your question steps outside
+            the dashboard someone built last quarter, you are back in the queue, asking for a new one.
+          </p>
+        </div>
+      </div>
+
+      <div class="mx-auto mt-12 max-w-3xl text-center">
+        <p class="font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+          A semantic layer is only as good as the experience sitting on top of it.
+        </p>
+        <p class="mt-4 leading-relaxed text-muted-foreground">
+          The obvious fix is a more powerful model underneath, and we tried it the expensive way. A
+          correct, fully governed enterprise semantic layer went into production and adoption never
+          passed five users a week. Correctness and governance mean nothing if the interface sends
+          people back to Slack. That lesson is why Strata is the consumption layer and not a box behind
+          your BI tool.
+        </p>
+      </div>
+
+      <div class="mt-20">
+        <OperatorTable rows={operatorRows} />
+      </div>
+      <p class="mt-8 text-center text-sm text-muted-foreground">
+        Want a specific head to head?
+        <a href="/#compare" class="ml-1 font-semibold text-primary hover:underline">Compare Strata to your tool</a>
+      </p>
+    </div>
+  </section>
+
+  {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
+
+  <!-- CLOSING CTA -->
+  <section class="border-t border-border bg-strata-ink">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        Give your operators the answer, not the ticket
+      </h2>
+      <p class="mt-4 text-muted-foreground">
+        We will run it on your data and your messiest cross domain question.
+      </p>
+      <CtaButton location="bi-closing" class="mt-8" />
+    </div>
+  </section>
+</Base>

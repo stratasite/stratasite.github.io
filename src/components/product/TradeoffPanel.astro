@@ -1,0 +1,49 @@
+---
+// Honest two-column tradeoff: what is deliberately absent, and what the absence
+// buys. Read as a credibility move, not an apology, so the "what you get"
+// column is the accented one.
+import Icon from '../Icon.astro';
+
+interface Props {
+  absent: string[];
+  gained: string[];
+  absentTitle?: string;
+  gainedTitle?: string;
+}
+const {
+  absent,
+  gained,
+  absentTitle = 'What Strata does not do',
+  gainedTitle = 'What that buys you',
+} = Astro.props;
+---
+
+<div class="mx-auto grid max-w-5xl gap-6 lg:grid-cols-2">
+  <div class="rounded-xl border border-border bg-surface p-7">
+    <h3 class="font-display text-xl font-bold tracking-tight text-foreground">{absentTitle}</h3>
+    <ul class="mt-5 space-y-3.5">
+      {absent.map((item) => (
+        <li class="flex items-start gap-3 text-[0.98rem] leading-relaxed text-muted-foreground">
+          <svg class="mt-1 h-4 w-4 shrink-0 opacity-50" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75A.75.75 0 014 10z" clip-rule="evenodd" />
+          </svg>
+          <span set:html={item} />
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="rounded-xl border border-primary/40 bg-strata-peach/10 p-7">
+    <h3 class="font-display text-xl font-bold tracking-tight text-foreground">{gainedTitle}</h3>
+    <ul class="mt-5 space-y-3.5">
+      {gained.map((item) => (
+        <li class="flex items-start gap-3 text-[0.98rem] leading-relaxed text-foreground/90">
+          <span class="mt-0.5 shrink-0 text-primary">
+            <Icon name="check" class="h-5 w-5" />
+          </span>
+          <span set:html={item} />
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>

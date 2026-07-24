@@ -1,0 +1,119 @@
+---
+// Narrative walkthrough: one concrete operator, one morning, start to finish.
+// Alternating media rows with a timestamp per step, plus an "under the hood"
+// line that hands the technical reader a link without interrupting the story.
+import FeatureVisual from '../FeatureVisual.astro';
+
+interface Step {
+  time: string;
+  title: string;
+  body: string[];
+  /** Optional pull quote or refusal example rendered as a device inside the step. */
+  aside?: string;
+  underHood?: { text: string; href?: string; label?: string };
+  image?: string;
+  video?: string;
+  /** Named diagram from the FeatureVisual registry (e.g. 'blending'). */
+  diagram?: string;
+  alt?: string;
+}
+interface Props {
+  steps: Step[];
+}
+const { steps } = Astro.props;
+---
+
+<div class="mx-auto max-w-6xl space-y-20 lg:space-y-28">
+  {steps.map((s, i) => {
+    const flip = i % 2 === 1;
+    return (
+      <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-16" data-reveal>
+        <figure class={`dil-media ${flip ? 'lg:order-2' : ''}`}>
+          {s.diagram ? (
+            <div class="dil-diagram rounded-xl border border-border bg-strata-cream p-4">
+              <FeatureVisual index={i} title={s.title} diagram={s.diagram} />
+            </div>
+          ) : s.video ? (
+            <video class="h-auto w-full rounded-xl border border-border" autoplay loop muted playsinline aria-label={s.alt}>
+              <source src={s.video} type="video/mp4" />
+            </video>
+          ) : s.image ? (
+            <img src={s.image} alt={s.alt ?? ''} loading="lazy" class="h-auto w-full rounded-xl border border-border" />
+          ) : null}
+        </figure>
+
+        <div class={flip ? 'lg:order-1' : ''}>
+          <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary tabular-nums">
+            {s.time}
+          </p>
+          <h3 class="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">{s.title}</h3>
+          {s.body.map((p) => (
+            <p class="mt-4 text-[1.05rem] leading-relaxed text-muted-foreground" set:html={p} />
+          ))}
+
+          {s.aside && (
+            <p class="mt-5 rounded-lg border-l-2 border-primary bg-surface px-4 py-3 text-[0.95rem] leading-relaxed text-foreground" set:html={s.aside} />
+          )}
+
+          {s.underHood && (
+            <p class="mt-5 text-sm text-muted-foreground">
+              <span class="font-semibold text-foreground">Under the hood:</span>{' '}
+              <Fragment set:html={s.underHood.text} />
+              {s.underHood.href && (
+                <a href={s.underHood.href} class="ml-1 font-semibold text-primary hover:underline">
+                  {s.underHood.label ?? 'Learn more'}
+                </a>
+              )}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  })}
+</div>
+
+<style>
+  .dil-media :global(img),
+  .dil-media :global(video),
+  .dil-media .dil-diagram {
+    box-shadow:
+      0 20px 44px -20px rgba(0, 0, 0, 0.5),
+      0 0 70px 4px color-mix(in srgb, var(--strata-peach) 20%, transparent);
+  }
+
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s ease;
+  }
+  [data-reveal].in {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Same reveal-on-scroll behavior as the homepage feature rows.
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    },
+    { rootMargin: '0px 0px -10% 0px', threshold: 0.1 }
+  );
+  document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+</script>
