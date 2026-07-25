@@ -200,15 +200,15 @@ const compareRows = [
 ];
 
 const absent = [
-  'A headless SQL, JDBC, or XMLA endpoint for Power BI or Tableau to query.',
-  'Sitting underneath your BI tool as a passive model it drives.',
-  'A protocol that flattens LOD, snapshots, and complex time logic to a common denominator.',
+  'A headless SQL, JDBC, or XMLA endpoint for Power BI or Tableau to drive.',
+  'A role as passive plumbing under a BI tool, with the retrieval experience out of our hands.',
+  'A lowest common denominator protocol that flattens LOD, snapshots, and complex time logic, exactly the expressiveness non technical users and agents depend on.',
 ];
 
 const gained = [
-  'Guarantees that hold, because Strata owns the interface end to end.',
-  'Grain safety and validation that travel into every surface, Sheets and agents included.',
-  'One consumption layer, not a model a foreign query builder silently degrades.',
+  'Deep, safe access to data for the non technical experts this is built for.',
+  'Agents that get correct answers, not a degraded headless approximation.',
+  'Guarantees that travel into every surface Strata owns, Sheets and agents included.',
 ];
 ---
 
@@ -400,8 +400,9 @@ const gained = [
           What we don't do, <span class="text-primary">on purpose</span>
         </h2>
         <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-          Strata is not a headless layer behind your BI tool. A semantic layer's guarantees leak the
-          moment a foreign query builder drives it through SQL or XMLA, so we do not expose that seam.
+          We optimize everything for one job: safe, deep access to data for the people and agents who do
+          not write SQL. A headless endpoint behind someone else's BI tool quietly sacrifices that job, so
+          we do not offer one.
         </p>
       </div>
       <div class="mt-14">
@@ -409,13 +410,27 @@ const gained = [
           absent={absent}
           gained={gained}
           absentTitle="What Strata does not expose"
-          gainedTitle="What that protects"
+          gainedTitle="What it protects"
         />
       </div>
-      <p class="mx-auto mt-12 max-w-3xl text-center font-display text-xl font-semibold leading-relaxed text-foreground">
-        We integrate anywhere our guarantees can travel with the data. A foreign query builder is the one
-        place they cannot, so we do not pretend otherwise.
-      </p>
+      <div class="mx-auto mt-12 max-w-3xl text-center">
+        <p class="font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+          Your highest leverage investment in data is not another dashboard or a faster pipeline. It is
+          putting safe, deep access in the hands of the non technical experts and agents who run the
+          business. We refuse to build anything that gets in the way of that.
+        </p>
+        <a
+          href="https://blog.strata.do/p/what-is-the-semantic-layer"
+          target="_blank"
+          rel="noopener"
+          class="group mt-6 inline-flex items-center gap-1.5 font-semibold text-primary transition-all hover:gap-2.5"
+        >
+          Read the argument: what a semantic layer is really for
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+          </svg>
+        </a>
+      </div>
     </div>
   </section>
 
