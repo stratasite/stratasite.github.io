@@ -3,6 +3,7 @@
 // subhead, CTA. Right: a product still or looping clip with the peach glow used
 // on article lead media. Keep the headline short; the subhead carries the turn.
 import CtaButton from '../CtaButton.astro';
+import FeatureVisual from '../FeatureVisual.astro';
 
 interface Props {
   eyebrow: string;
@@ -13,10 +14,12 @@ interface Props {
   readMore?: { href: string; label: string };
   image?: string;
   video?: string;
+  /** Named diagram from the FeatureVisual registry (e.g. 'agentloop'). Renders borderless. */
+  diagram?: string;
   alt?: string;
   ctaLocation?: string;
 }
-const { eyebrow, title, subhead, readMore, image, video, alt = '', ctaLocation } = Astro.props;
+const { eyebrow, title, subhead, readMore, image, video, diagram, alt = '', ctaLocation } = Astro.props;
 ---
 
 <section class="border-b border-border">
@@ -52,6 +55,11 @@ const { eyebrow, title, subhead, readMore, image, video, alt = '', ctaLocation }
       </div>
 
       <figure class="product-media relative">
+        {diagram && (
+          <div class="hero-diagram">
+            <FeatureVisual index={0} title={alt} diagram={diagram} />
+          </div>
+        )}
         {image && <img src={image} alt={alt} loading="eager" class="h-auto w-full rounded-2xl border border-border" />}
         {video && (
           <Fragment>
