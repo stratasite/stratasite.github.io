@@ -142,19 +142,19 @@ const capabilities = [
 ];
 
 const absent = [
-  'Pixel level layout control. You choose a width, the layout engine does the rest.',
-  'Exotic and long tail chart types. We ship the visualizations that answer business questions, not a gallery.',
-  'Custom CSS, per dashboard theming and font control.',
-  'Print perfect pagination and pixel exact executive decks.',
-  'A headless query endpoint for another BI tool to drive with its own query builder.',
+  'Pixel level layout control.',
+  'A wall of chart types and formatting knobs.',
+  'Custom CSS, themes, and fonts.',
+  'Print perfect pagination and executive decks.',
+  'A headless endpoint for another BI tool to drive.',
 ];
 
 const gained = [
-  'Nobody can build an ugly or inconsistent report, so nothing needs a design review.',
-  'The person with the question builds the answer. No author bottleneck, no request queue.',
-  'Onboarding measured in minutes. One customer replaced their training deck with a ten minute video.',
-  'Every report in the company reads the same way, so trust transfers between teams.',
-  'Correctness guarantees hold everywhere the data goes, including the spreadsheet.',
+  'Common charts instant. Bespoke built by describing it to the visualization AI.',
+  'The person with the question builds the answer. No author, no queue.',
+  'Every report reads the same, so nothing needs a design review.',
+  'Onboarding in minutes, not weeks.',
+  'Correctness holds everywhere, including the spreadsheet.',
 ];
 
 const operatorRows = [
@@ -275,11 +275,9 @@ const operatorRows = [
           What we left out, <span class="text-primary">on purpose</span>
         </h2>
         <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-          Strata is missing things your current BI tool has. Pixel perfect control and a long tail of
-          chart types are features for the person publishing to an audience. We are not building for
-          that person. Every hour spent nudging a legend is an hour not spent answering a question, and
-          every configuration surface is a reason a non technical user gives up and files a ticket
-          instead.
+          We cut the configuration surface, not the capability. Common charts are instant. For the long
+          tail, you describe what you want and the visualization AI builds it. Every knob we removed is
+          an afternoon your users do not lose, and one less reason to file a ticket.
         </p>
       </div>
       <div class="mt-14">
@@ -292,7 +290,10 @@ const operatorRows = [
   </section>
 
   <!-- WHY YOUR TOOL CAN'T + HEAD TO HEAD -->
-  <section class="border-b border-border bg-surface-2">
+  <!-- Scoped to the ink palette (.dark re-themes semantic tokens in tokens.css):
+       cool ink field to set the competitive/objection beat apart from the warm
+       rust narrative above and below it. -->
+  <section class="dark border-b border-border bg-background">
     <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-3xl text-center">
         <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
@@ -306,8 +307,21 @@ const operatorRows = [
 
       <div class="mx-auto mt-14 grid max-w-5xl gap-6 lg:grid-cols-2">
         <div class="rounded-xl border border-border bg-surface p-7">
-          <h3 class="font-display text-xl font-bold tracking-tight">"I ask an analyst"</h3>
-          <p class="mt-3 leading-relaxed text-muted-foreground">
+          <div class="flex items-center gap-4">
+            <img
+              src="/persona_ops_manager.jpg"
+              alt="Portrait representing an operations manager"
+              width="56"
+              height="56"
+              loading="lazy"
+              class="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-border"
+            />
+            <div>
+              <h3 class="font-display text-xl font-bold tracking-tight">"I ask an analyst"</h3>
+              <p class="text-sm text-muted-foreground">The operations manager</p>
+            </div>
+          </div>
+          <p class="mt-4 leading-relaxed text-muted-foreground">
             The expressive tools are real tools, and that is the problem. Tableau and Power BI reward
             expertise, so every non trivial question routes through someone who has it. Datasources
             multiply, redundant measures pile up, and the request backlog becomes a permanent feature of
@@ -315,8 +329,21 @@ const operatorRows = [
           </p>
         </div>
         <div class="rounded-xl border border-border bg-surface p-7">
-          <h3 class="font-display text-xl font-bold tracking-tight">"I filter someone else's dashboard"</h3>
-          <p class="mt-3 leading-relaxed text-muted-foreground">
+          <div class="flex items-center gap-4">
+            <img
+              src="/persona_dashboard_user.jpg"
+              alt="Portrait representing a business user limited to a prebuilt dashboard"
+              width="56"
+              height="56"
+              loading="lazy"
+              class="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-border"
+            />
+            <div>
+              <h3 class="font-display text-xl font-bold tracking-tight">"I filter someone else's dashboard"</h3>
+              <p class="text-sm text-muted-foreground">The dashboard consumer</p>
+            </div>
+          </div>
+          <p class="mt-4 leading-relaxed text-muted-foreground">
             The consumption tools call it self service, but the service on offer is a dropdown. You can
             slice what the author anticipated and nothing else. The moment your question steps outside
             the dashboard someone built last quarter, you are back in the queue, asking for a new one.
