@@ -6,7 +6,7 @@
  * not the operator who consumes it. The antagonist is configuration burden plus
  * silent wrong-number risk. The spine is a technical "how it works" walk through
  * the four mechanisms (convention, correctness, expressiveness, performance)
- * plus the Git-native workflow, pitched against MetricFlow, Cube, Looker, and
+ * plus the Git native workflow, pitched against MetricFlow, Cube, Looker, and
  * Snowflake semantic views. Claims kept inside STRATA.md §9 guardrails.
  *
  * Reuses DayInLife for the mechanism rows: its `time` field carries a one-word
@@ -39,7 +39,7 @@ const steps = [
     title: 'The model emerges from names, not configuration',
     body: [
       'Register a field and give it any name you want. The name is yours, decoupled from the physical column, so the model reads in business terms instead of warehouse schema.',
-      'Give the same concept the same name across facts and Strata treats those fields as conformed and blendable. Give distinct concepts distinct names, Caller Country and Ship Country, and they stay separate. That naming discipline is the whole model. There is no per-combination view to author.',
+      'Give the same concept the same name across facts and Strata treats those fields as conformed and blendable. Give distinct concepts distinct names, Caller Country and Ship Country, and they stay separate. That naming discipline is the whole model. There is no per combination view to author.',
     ],
     underHood: {
       text: 'A registry of freely named dimensions and measures. Conformance is asserted by shared names, not wired up by hand.',
@@ -69,15 +69,15 @@ fields:
     time: 'Correctness',
     title: 'Blend across domains without ever double counting',
     body: [
-      'Ask for measures from different facts across a shared dimension and Strata decomposes the query, aggregates each fact independently to the common grain, then stitches the results with a full outer join on the conformed keys. Never a row-level fact-to-fact join, which is what fans out and double counts.',
+      'Ask for measures from different facts across a shared dimension and Strata decomposes the query, aggregates each fact independently to the common grain, then stitches the results with a full outer join on the conformed keys. Never a row level fact to fact join, which is what fans out and double counts.',
       'Compatibility is derived from the model, not configured. A measure asked for by a dimension its fact cannot reach is refused before anything runs, so the default failure is a missed blend, never a wrong number.',
     ],
     aside:
       'Reach for something the data cannot answer, a measure split by a dimension its fact does not have, and the path is not offered. Force it and Strata refuses before execution and points to the nearest valid query. A clear no, never a confident wrong number.',
     underHood: {
-      text: 'Automatic drill-across on conformed fields, governed by a compatibility matrix derived from each measure\'s fact, grain, and reachable dimensions.',
+      text: 'Automatic drill across on conformed fields, governed by a compatibility matrix derived from each measure\'s fact, grain, and reachable dimensions.',
       href: '/features/grain-safe-blending/',
-      label: 'Cross-domain blending',
+      label: 'Cross domain blending',
     },
     diagram: 'blending',
     alt: 'Two facts at different grains aggregated independently and joined on a shared conformed key',
@@ -86,11 +86,11 @@ fields:
     time: 'Expressiveness',
     title: 'Five measure types, from simple sums to level of detail',
     body: [
-      'Standard sums and counts, complex formulas that reference other measures and dimensions, snapshot measures that know not to sum across time, and inclusion and exclusion LOD measures that fix or drop dimensions from the group-by. LOD is the Tableau FIXED and EXCLUDE idea lifted into a governed layer, and it is rare among competitors.',
+      'Standard sums and counts, complex formulas that reference other measures and dimensions, snapshot measures that know not to sum across time, and inclusion and exclusion LOD measures that fix or drop dimensions from the group by. LOD is the Tableau FIXED and EXCLUDE idea lifted into a governed layer, and it is rare among competitors.',
       'On top of those, anyone can derive a new measure in the calculation creator, and turn any measure into a year over year, moving average, or percent of total with one click. Expressiveness that usually needs SQL, available without it.',
     ],
     underHood: {
-      text: 'Standard, Complex, Snapshot, Inclusion LOD and Exclusion LOD, plus ad-hoc calculations and one-click YoY, moving average, and percent of total.',
+      text: 'Standard, Complex, Snapshot, Inclusion LOD and Exclusion LOD, plus ad hoc calculations and one click YoY, moving average, and percent of total.',
       href: '/features/measure-types/',
       label: 'Measure types',
     },
@@ -104,7 +104,7 @@ fields:
     expression:
       sql: sum(inv_units_received)
   - type: measure
-    name: Inventory On Hand  # snapshot: semi-additive
+    name: Inventory On Hand  # snapshot: semi additive
     data_type: integer
     snapshot: ending
     expression:
@@ -114,11 +114,11 @@ fields:
     time: 'Performance',
     title: 'One definition, routed across every engine',
     body: [
-      'Map ClickHouse, Druid, or Databricks alongside Snowflake and designate a hot tier. Strata knows the partition each source holds and routes to the hot tier only when the query filters fall inside it, falling back to the warehouse of record otherwise. It also routes to pre-aggregated tables whenever they can satisfy the request.',
-      'One measure definition serves all of it. No re-modeling per dialect, no rollups managed by hand. Sub-second responses from hot tiers and aggregates, less load on the warehouse.',
+      'Map ClickHouse, Druid, or Databricks alongside Snowflake and designate a hot tier. Strata knows the partition each source holds and routes to the hot tier only when the query filters fall inside it, falling back to the warehouse of record otherwise. It also routes to aggregate tables whenever they can satisfy the request.',
+      'One measure definition serves all of it. No remodeling per dialect, no rollups managed by hand. Responses in under a second from hot tiers and aggregates, less load on the warehouse.',
     ],
     underHood: {
-      text: 'Aggregate-aware plus federated OLAP with partition-aware hot-tier routing. One model, every engine.',
+      text: 'Aggregate aware plus federated OLAP with partition aware hot tier routing. One model, every engine.',
       href: '/features/federated-olap/',
       label: 'Federated OLAP routing',
     },
@@ -140,7 +140,7 @@ fields:
     codeLang: 'bash',
     codeFile: 'terminal',
     code: `strata init acme-analytics   # scaffold a project
-strata audit                 # grain-check the model
+strata audit                 # grain check the model
 strata deploy                # deploy the git branch`,
   },
 ];
@@ -151,12 +151,12 @@ const capabilities = [
   {
     icon: 'shield',
     title: 'Row level security and masking',
-    body: 'Masking and auto-filtering live in the model, so the same governed measures are safe for every audience, from an exec to an external partner.',
+    body: 'Masking and auto filtering live in the model, so the same governed measures are safe for every audience, from an exec to an external partner.',
   },
   {
     icon: 'check',
-    title: 'Grain-checked in CI',
-    body: 'Wire strata audit into CI and every pull request is grain-checked against your warehouse before it can merge. A broken measure never reaches production.',
+    title: 'Grain checked in CI',
+    body: 'Wire strata audit into CI and every pull request is grain checked against your warehouse before it can merge. A broken measure never reaches production.',
   },
   {
     icon: 'bot',
@@ -173,18 +173,18 @@ const compareRows = [
     strata: 'Name the field once, blending is derived',
   },
   {
-    axis: 'Two same-named dimensions from different tables',
-    them: 'The semantic view breaks',
-    strata: 'The shared name means they are conformed and blendable',
+    axis: 'Two same named dimensions from different tables',
+    them: 'A name clash to resolve, or a join to wire by hand',
+    strata: 'The shared name is the blend key',
   },
   {
-    axis: 'A cross-domain question at different grains',
+    axis: 'A cross domain question at different grains',
     them: 'Refused, or silently double counted',
-    strata: 'Aggregated to a common grain, then joined, grain-safe',
+    strata: 'Aggregated to a common grain, then joined, grain safe',
   },
   {
     axis: 'Moving a measure to a faster engine',
-    them: 'Re-model it in another dialect',
+    them: 'Model it again in another dialect',
     strata: 'One definition, federated across engines',
   },
   {
@@ -194,8 +194,8 @@ const compareRows = [
   },
   {
     axis: 'Speed on recent, hot data',
-    them: 'Warehouse-bound',
-    strata: 'Aggregate-aware plus hot-tier routing',
+    them: 'Warehouse bound, or a closed proprietary OLAP',
+    strata: 'Open federation, aggregate and hot tier aware',
   },
 ];
 
@@ -207,19 +207,19 @@ const absent = [
 
 const gained = [
   'Guarantees that hold, because Strata owns the interface end to end.',
-  'Grain-safety and validation that travel into every surface, Sheets and agents included.',
+  'Grain safety and validation that travel into every surface, Sheets and agents included.',
   'One consumption layer, not a model a foreign query builder silently degrades.',
 ];
 ---
 
 <Base
   title="Most semantic layers are built for the wrong job | Strata"
-  description="The job of a semantic layer is not to feed dashboards or crown a source of truth for engineers. It is deep self-service for non-technical domain experts. Strata is built for that one job, which is why it is easy to model by convention and delivers self-service no BI tool can match. Building it right for people made it ideal for agents too."
+  description="The job of a semantic layer is not to feed dashboards or crown a source of truth for engineers. It is deep self service for non technical domain experts. Strata is built for that one job, which is why it is easy to model by convention and delivers self service no BI tool can match. Building it right for people made it ideal for agents too."
 >
   <ProductHero
     eyebrow="Semantic Layer"
     title="Most semantic layers are built for the wrong job"
-    subhead="The next highest-leverage investment in your data is deep access for your non-technical domain experts. Strata was built for exactly that. Simple to model by convention, unmatched by any BI tool, agent-ready by the same design."
+    subhead="The next highest leverage investment in your data is deep access for your non technical domain experts. Strata was built for exactly that. Simple to model by convention, unmatched by any BI tool, agent ready by the same design."
     readMore={{ href: 'https://blog.strata.do/p/what-is-the-semantic-layer', label: 'Read the argument: what a semantic layer is really for' }}
     video="/modeling_cli.mp4"
     alt="Defining a Strata semantic model as code with a CLI"
@@ -230,9 +230,9 @@ const gained = [
     stats={[
       { value: '4+ years', label: 'in production at Netflix scale' },
       { value: '1 definition', label: 'per measure, across every engine' },
-      { value: '5 measure types', label: 'Standard, Complex, Snapshot, LOD, ad-hoc' },
+      { value: '5 measure types', label: 'Standard, Complex, Snapshot, LOD, ad hoc' },
     ]}
-    note="The modeling architecture behind a deployment that scaled self-service from a handful of users to hundreds."
+    note="The modeling architecture behind a deployment that scaled self service from a handful of users to hundreds."
     href={studyHref}
   />
 
@@ -250,7 +250,7 @@ const gained = [
           Less than 1% of your data ever reaches a dashboard. That slice is fine for a glance and useless
           to the people who actually run things. Your domain experts do not want a prettier chart. They
           want to start at a number and go straight to the transactions behind it, sliced by cuts nobody
-          thought to pre-build.
+          thought to build ahead.
         </p>
       </div>
 
@@ -289,7 +289,7 @@ const gained = [
           </span>
           <h4 class="mt-4 font-display text-lg font-bold tracking-tight">Ask anything</h4>
           <p class="mt-2 leading-relaxed text-muted-foreground">
-            No pre-built explore or datasource to choose first. The model assembles around the question as
+            No prebuilt explore or datasource to choose first. The model assembles around the question as
             it is asked, so an expert can chase a hunch instead of filing for a new dataset.
           </p>
         </div>
@@ -309,7 +309,7 @@ const gained = [
           </span>
           <h4 class="mt-4 font-display text-lg font-bold tracking-tight">Go all the way down, fast</h4>
           <p class="mt-2 leading-relaxed text-muted-foreground">
-            From a KPI to the transactions behind it in sub-second time, across engines. Depth that makes
+            From a KPI to the transactions behind it in under a second, across engines. Depth that makes
             you wait is depth nobody uses.
           </p>
         </div>
@@ -329,7 +329,7 @@ const gained = [
         </h2>
         <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
           The model still exists. It is just expressed in the cheapest medium, names and code, instead of
-          the most expensive, per-combination views and per-dialect rewrites.
+          the most expensive, per combination views and per dialect rewrites.
         </p>
       </div>
       <div class="mt-20">
@@ -381,7 +381,7 @@ const gained = [
       <div class="mt-14">
         <OperatorTable
           axisHeader="When your data gets messy"
-          columnLabel="Config-heavy semantic layers"
+          columnLabel="Them"
           rows={compareRows}
         />
       </div>
@@ -428,7 +428,7 @@ const gained = [
         Point Strata at your messiest schema
       </h2>
       <p class="mt-4 text-muted-foreground">
-        Bring a hundred tables, a few fact domains, and a cross-domain question that breaks today. We
+        Bring a hundred tables, a few fact domains, and a cross domain question that breaks today. We
         will model it by naming.
       </p>
       <CtaButton location="sl-closing" class="mt-8" />

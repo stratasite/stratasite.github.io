@@ -36,9 +36,9 @@ const steps = [
       'In her old tool that question is a ticket on your team\'s desk and a two day wait. In Strata she just describes what she wants. A comma separated list in the projections zone, handle time, contacts, staffed hours, resolves every measure at once. A sentence in the filter zone becomes the right filter. The AI sits where her hands already are, and none of it reaches you.',
     ],
     underHood: {
-      text: 'Natural language field and filter resolution woven into the editor itself, with no pre-authored Explore to start from.',
+      text: 'Natural language field and filter resolution woven into the editor itself, with no explore authored up front.',
       href: '/features/ai-native/',
-      label: 'AI-native editor',
+      label: 'AI native editor',
     },
     video: '/ai_sprinkled_editor.mp4',
     alt: 'Resolving a comma separated list of measures and a natural language filter in the Strata editor',
@@ -48,12 +48,12 @@ const steps = [
     title: 'Crossing data that was never modeled together',
     body: [
       'Handle time lives in telephony, contacts in the CRM, cost in vendor invoices. Three domains, three grains, and no one ever joined them because no one saw this question coming.',
-      'Dana combines all three anyway. As she adds each measure, Strata shows only the paths that are legal to blend and closes the ones that would double count. This is exactly where self-service usually ships a confident wrong number. Here it cannot. She never learns the word grain, and you never field the ticket that starts with why don\'t these totals match.',
+      'Dana combines all three anyway. As she adds each measure, Strata shows only the paths that are legal to blend and closes the ones that would double count. This is exactly where self service usually ships a confident wrong number. Here it cannot. She never learns the word grain, and you never field the ticket that starts with why don\'t these totals match.',
     ],
     aside:
       'Ask for something the data cannot answer and the path is simply not offered. Force it, and Strata refuses before running anything and points to the nearest valid alternative. The worst case is a clear no, never a wrong number with your name on the dashboard.',
     underHood: {
-      text: 'Dynamic universes: the set of blendable fields is derived per query from a compatibility matrix, so only legal drill-across paths are ever presented, validated live as the report is built.',
+      text: 'Dynamic universes: the set of blendable fields is derived per query from a compatibility matrix, so only legal drill across paths are ever presented, validated live as the report is built.',
       href: '/features/grain-safe-blending/',
       label: 'Cross domain blending',
     },
@@ -115,7 +115,7 @@ const capabilities = [
   {
     icon: 'layers',
     title: 'Automatic cross domain blending',
-    body: 'Measures from different fact domains combine safely by naming convention. No pre-authored joined datasets, no double counting.',
+    body: 'Measures from different fact domains combine safely by naming convention. No joined datasets built ahead, no double counting.',
     href: '/features/grain-safe-blending/',
   },
   {
@@ -198,13 +198,13 @@ const operatorRows = [
 ---
 
 <Base
-  title="Self-service BI your data team can actually allow | Strata"
-  description="Your operators can't get their own data, so they line up at your team's desk. Strata gives them self-service deep enough to stop asking and governed enough that you can let them. The request queue empties, the numbers stay correct."
+  title="Self service BI your data team can actually allow | Strata"
+  description="Your operators can't get their own data, so they line up at your team's desk. Strata gives them self service deep enough to stop asking and governed enough that you can let them. The request queue empties, the numbers stay correct."
 >
   <ProductHero
     eyebrow="Business Intelligence"
-    title="Self-service your data team can actually allow"
-    subhead="Your operators can't get their own data, so they line up at your team's desk and the request queue never empties. Strata gives them self-service deep enough to stop asking, and governed enough that you can let them. They get their answers. You stop being the bottleneck, with no wrong numbers going out under your name."
+    title="Self service your data team can actually allow"
+    subhead="Your operators can't get their own data, so they line up at your team's desk and the request queue never empties. Strata gives them self service deep enough to stop asking, and governed enough that you can let them. They get their answers. You stop being the bottleneck, with no wrong numbers going out under your name."
     video="/interactive_dashboards.mp4"
     alt="An interactive Strata dashboard"
     ctaLocation="bi-hero"
@@ -247,7 +247,7 @@ const operatorRows = [
         <p class="mt-4 leading-relaxed text-muted-foreground">
           Now multiply that by every operator and every morning. That backlog is what Strata takes off
           your desk, and it does it without you giving up a single guarantee: every number Dana built is
-          governed, grain-checked, and row-level secured, exactly as if your team had built it for her.
+          governed, grain checked, and row level secured, exactly as if your team had built it for her.
         </p>
       </div>
     </div>
