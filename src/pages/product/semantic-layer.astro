@@ -145,40 +145,24 @@ strata deploy                # deploy the git branch`,
   },
 ];
 
+// Two governance cards plus one agent card. The rest of the agent story is
+// handed off to the AI Analytics page via the link below the grid.
 const capabilities = [
   {
     icon: 'shield',
-    title: 'Row level security, built in',
-    body: 'Masking and auto-filtering defined in the model, so the same governed measures are safe for every audience, including external partners.',
+    title: 'Row level security and masking',
+    body: 'Masking and auto-filtering live in the model, so the same governed measures are safe for every audience, from an exec to an external partner.',
+  },
+  {
+    icon: 'check',
+    title: 'Grain-checked in CI',
+    body: 'Wire strata audit into CI and every pull request is grain-checked against your warehouse before it can merge. A broken measure never reaches production.',
   },
   {
     icon: 'bot',
     title: 'A real agent API',
-    body: 'The interface that validates a human\'s partial query, with compatible next steps and structured refusals, is exactly what lets an agent build correct queries instead of guessing SQL.',
+    body: 'The interface that validates a human\'s partial query, with compatible next steps and structured refusals, is exactly what an agent needs to build correct queries instead of guessing SQL.',
     href: '/features/ai-native/',
-  },
-  {
-    icon: 'check',
-    title: 'Correct by construction',
-    body: 'Grain is checked and invalid combinations are refused before execution. Back it with a golden-query suite and correctness becomes a property of the system, not a hope.',
-    href: '/features/grain-safe-blending/',
-  },
-  {
-    icon: 'gauge',
-    title: 'Aggregate-aware speed',
-    body: 'Queries land on pre-aggregated tables and hot tiers whenever they can, so dashboards and agent turns stay sub-second and warehouse spend drops.',
-    href: '/features/federated-olap/',
-  },
-  {
-    icon: 'sigma',
-    title: 'Calculations without SQL',
-    body: 'Ad-hoc measures and one-click YoY, moving average, and percent of total put expressiveness in reach of non-engineers.',
-    href: '/features/measure-types/',
-  },
-  {
-    icon: 'share',
-    title: 'Guarantees that travel',
-    body: 'Where Strata goes its retrieval experience goes too, like the Google Sheets add-on, so grain-safety and validation hold instead of leaking at a tool boundary.',
   },
 ];
 
@@ -355,19 +339,30 @@ const gained = [
   </section>
 
   <!-- GOVERNED + AGENT-READY -->
-  <section class="border-b border-border bg-surface">
+  <!-- Ink-scoped (.dark): a cool systems beat that breaks the long rust stretch
+       and ties to the ink CTA. Governance + agents, the two things the
+       walkthrough did not cover. -->
+  <section class="dark border-b border-border bg-background">
     <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-3xl text-center">
+      <div class="mx-auto max-w-2xl text-center">
         <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Governed, performant, and ready for agents
+          Governed for humans, ready for agents
         </h2>
         <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-          The same model that makes humans fast and safe is the one an agent can drive without guessing.
+          The same model that keeps a person from a wrong number keeps an agent from one, and keeps both
+          inside exactly what they are allowed to see.
         </p>
       </div>
       <div class="mt-14">
         <CapabilityGrid cards={capabilities} />
       </div>
+
+      <p class="mt-12 text-center text-muted-foreground">
+        Agents are a big enough story to have their own page.
+        <a href="/product/ai-analytics/" class="ml-1 font-semibold text-primary hover:underline">
+          See AI Analytics &rarr;
+        </a>
+      </p>
     </div>
   </section>
 
