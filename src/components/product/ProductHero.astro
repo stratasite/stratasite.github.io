@@ -9,12 +9,14 @@ interface Props {
   /** Rendered as-is; wrap emphasis in <span class="text-primary"> via slot instead when needed. */
   title: string;
   subhead: string;
+  /** Optional supporting link under the subhead (e.g. a blog essay that defends a bold claim). */
+  readMore?: { href: string; label: string };
   image?: string;
   video?: string;
   alt?: string;
   ctaLocation?: string;
 }
-const { eyebrow, title, subhead, image, video, alt = '', ctaLocation } = Astro.props;
+const { eyebrow, title, subhead, readMore, image, video, alt = '', ctaLocation } = Astro.props;
 ---
 
 <section class="border-b border-border">
@@ -26,6 +28,21 @@ const { eyebrow, title, subhead, image, video, alt = '', ctaLocation } = Astro.p
           {title}
         </h1>
         <p class="mt-6 text-lg leading-relaxed text-muted-foreground">{subhead}</p>
+        {readMore && (
+          <p class="mt-5">
+            <a
+              href={readMore.href}
+              target="_blank"
+              rel="noopener"
+              class="group inline-flex items-center gap-1.5 font-semibold text-primary transition-all hover:gap-2.5"
+            >
+              {readMore.label}
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+              </svg>
+            </a>
+          </p>
+        )}
         <div class="mt-9 flex flex-wrap items-center gap-4">
           <CtaButton location={ctaLocation} />
           <a href="#walkthrough" class="font-semibold text-primary transition-all hover:underline">
@@ -34,12 +51,20 @@ const { eyebrow, title, subhead, image, video, alt = '', ctaLocation } = Astro.p
         </div>
       </div>
 
-      <figure class="product-media">
+      <figure class="product-media relative">
         {image && <img src={image} alt={alt} loading="eager" class="h-auto w-full rounded-2xl border border-border" />}
         {video && (
-          <video class="h-auto w-full rounded-2xl border border-border" autoplay loop muted playsinline aria-label={alt}>
-            <source src={video} type="video/mp4" />
-          </video>
+          <Fragment>
+            <video data-video-zoom class="h-auto w-full rounded-2xl border border-border" autoplay loop muted playsinline aria-label={alt}>
+              <source src={video} type="video/mp4" />
+            </video>
+            <span class="video-zoom-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+              </svg>
+              Expand
+            </span>
+          </Fragment>
         )}
       </figure>
     </div>

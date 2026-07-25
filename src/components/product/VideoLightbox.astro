@@ -1,0 +1,179 @@
+---
+// Click-to-zoom lightbox for inline product videos. Include ONCE per page.
+// Any `<video data-video-zoom>` on the page opens enlarged here when clicked;
+// the handler is delegated, so it covers every product component (hero rows,
+// walkthrough steps) without per-video wiring. Progressive: with JS disabled the
+// inline videos still autoplay in place and nothing breaks.
+---
+
+<div id="video-lightbox" class="vlb" role="dialog" aria-modal="true" aria-label="Enlarged video" hidden>
+  <button type="button" class="vlb-close" aria-label="Close video">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18 6 6 18" /><path d="M6 6l12 12" />
+    </svg>
+  </button>
+  <div class="vlb-stage">
+    <!-- src is set at open time; muted so it can autoplay, controls let the user scrub or unmute -->
+    <video class="vlb-video" controls loop playsinline muted preload="none"></video>
+  </div>
+</div>
+
+<style is:global>
+  /* Inline video affordance: it is clickable, say so. */
+  [data-video-zoom] {
+    cursor: zoom-in;
+  }
+  .video-zoom-badge {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--strata-ink) 78%, transparent);
+    color: var(--strata-cream);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    pointer-events: none; /* clicks fall through to the video beneath */
+    opacity: 0.9;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .video-zoom-badge svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+  /* Lift the badge slightly when the media is hovered. */
+  figure:hover .video-zoom-badge {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+
+  /* Overlay */
+  .vlb {
+    position: fixed;
+    inset: 0;
+    z-index: 100; /* above the sticky nav (z-50) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    /* Translucent dim, not a takeover: the page stays visible behind it. */
+    background: color-mix(in srgb, var(--strata-ink) 58%, transparent);
+    backdrop-filter: blur(2px);
+    animation: vlb-fade 0.18s ease;
+  }
+  .vlb[hidden] {
+    display: none;
+  }
+  .vlb-stage {
+    width: min(1100px, 92vw);
+    max-height: 86vh;
+    display: flex;
+  }
+  .vlb-video {
+    width: 100%;
+    height: auto;
+    max-height: 86vh;
+    border-radius: var(--radius-lg);
+    box-shadow:
+      0 30px 80px -20px rgba(0, 0, 0, 0.7),
+      0 0 100px 8px color-mix(in srgb, var(--strata-peach) 22%, transparent);
+  }
+  .vlb-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--strata-cream) 30%, transparent);
+    background: color-mix(in srgb, var(--strata-ink) 60%, transparent);
+    color: var(--strata-cream);
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .vlb-close svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  .vlb-close:hover {
+    background: color-mix(in srgb, var(--strata-ink) 85%, transparent);
+    transform: scale(1.05);
+  }
+  .vlb-close:focus-visible {
+    outline: 2px solid var(--strata-peach);
+    outline-offset: 2px;
+  }
+
+  @keyframes vlb-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vlb {
+      animation: none;
+    }
+    .video-zoom-badge {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const lb = document.getElementById('video-lightbox') as HTMLElement | null;
+  if (lb) {
+    const stage = lb.querySelector('.vlb-video') as HTMLVideoElement;
+    const closeBtn = lb.querySelector('.vlb-close') as HTMLButtonElement;
+    let lastFocused: HTMLElement | null = null;
+
+    const open = (src: string) => {
+      stage.src = src;
+      lb.hidden = false;
+      document.body.style.overflow = 'hidden';
+      lastFocused = document.activeElement as HTMLElement;
+      stage.currentTime = 0;
+      stage.play()?.catch(() => {});
+      closeBtn.focus();
+    };
+
+    const close = () => {
+      lb.hidden = true;
+      stage.pause();
+      stage.removeAttribute('src');
+      stage.load();
+      document.body.style.overflow = '';
+      lastFocused?.focus();
+    };
+
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const vid = target.closest('[data-video-zoom]') as HTMLVideoElement | null;
+      if (vid) {
+        const src = vid.currentSrc || vid.querySelector('source')?.getAttribute('src') || '';
+        if (src) {
+          e.preventDefault();
+          open(src);
+        }
+        return;
+      }
+      // Backdrop or close button dismisses.
+      if (target === lb || target.closest('.vlb-close')) close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !lb.hidden) close();
+    });
+  }
+</script>

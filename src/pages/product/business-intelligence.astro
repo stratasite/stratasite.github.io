@@ -16,6 +16,7 @@ import CapabilityGrid from '../../components/product/CapabilityGrid.astro';
 import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
 import OperatorTable from '../../components/product/OperatorTable.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
+import VideoLightbox from '../../components/product/VideoLightbox.astro';
 import CtaButton from '../../components/CtaButton.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
@@ -388,4 +389,6 @@ const operatorRows = [
       <CtaButton location="bi-closing" class="mt-8" />
     </div>
   </section>
+
+  <VideoLightbox />
 </Base>

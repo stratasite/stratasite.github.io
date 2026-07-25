@@ -9,16 +9,18 @@ interface Row {
 }
 interface Props {
   columnLabel?: string;
+  /** Header over the left (axis) column. Frame it for the page's reader. */
+  axisHeader?: string;
   rows: Row[];
 }
-const { columnLabel = 'Traditional BI', rows } = Astro.props;
+const { columnLabel = 'Traditional BI', axisHeader = 'If you are the operator', rows } = Astro.props;
 ---
 
 <div class="mx-auto max-w-5xl overflow-x-auto rounded-xl border border-border">
   <table class="w-full min-w-[44rem] border-collapse text-left text-sm">
     <thead>
       <tr class="bg-surface-2">
-        <th class="w-56 px-4 py-3 font-display font-semibold">If you are the operator</th>
+        <th class="w-56 px-4 py-3 font-display font-semibold">{axisHeader}</th>
         <th class="px-4 py-3 font-display font-semibold text-muted-foreground">{columnLabel}</th>
         <th class="px-4 py-3 font-display font-semibold text-primary">Strata</th>
       </tr>

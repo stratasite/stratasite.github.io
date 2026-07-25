@@ -2,6 +2,7 @@
 // Narrative walkthrough: one concrete operator, one morning, start to finish.
 // Alternating media rows with a timestamp per step, plus an "under the hood"
 // line that hands the technical reader a link without interrupting the story.
+import { Code } from 'astro:components';
 import FeatureVisual from '../FeatureVisual.astro';
 
 interface Step {
@@ -15,6 +16,10 @@ interface Step {
   video?: string;
   /** Named diagram from the FeatureVisual registry (e.g. 'blending'). */
   diagram?: string;
+  /** Inline code sample, rendered in a dark ink panel. Proves "simple" better than a diagram. */
+  code?: string;
+  codeLang?: string;
+  codeFile?: string;
   alt?: string;
 }
 interface Props {
@@ -28,15 +33,33 @@ const { steps } = Astro.props;
     const flip = i % 2 === 1;
     return (
       <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-16" data-reveal>
-        <figure class={`dil-media ${flip ? 'lg:order-2' : ''}`}>
-          {s.diagram ? (
-            <div class="dil-diagram rounded-xl border border-border bg-strata-cream p-4">
+        <figure class={`dil-media relative ${flip ? 'lg:order-2' : ''}`}>
+          {s.code ? (
+            <div class="dil-code">
+              {s.codeFile && (
+                <div class="dil-code-head">
+                  <span class="dil-code-dot" aria-hidden="true"></span>
+                  {s.codeFile}
+                </div>
+              )}
+              <Code code={s.code} lang={s.codeLang ?? 'yaml'} theme="github-dark" />
+            </div>
+          ) : s.diagram ? (
+            <div class="dil-diagram">
               <FeatureVisual index={i} title={s.title} diagram={s.diagram} />
             </div>
           ) : s.video ? (
-            <video class="h-auto w-full rounded-xl border border-border" autoplay loop muted playsinline aria-label={s.alt}>
-              <source src={s.video} type="video/mp4" />
-            </video>
+            <Fragment>
+              <video data-video-zoom class="h-auto w-full rounded-xl border border-border" autoplay loop muted playsinline aria-label={s.alt}>
+                <source src={s.video} type="video/mp4" />
+              </video>
+              <span class="video-zoom-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                </svg>
+                Expand
+              </span>
+            </Fragment>
           ) : s.image ? (
             <img src={s.image} alt={s.alt ?? ''} loading="lazy" class="h-auto w-full rounded-xl border border-border" />
           ) : null}
@@ -73,12 +96,53 @@ const { steps } = Astro.props;
 </div>
 
 <style>
+  /* Only real media (screenshots, video) gets the lifted-card glow. Generated
+     diagrams render borderless and blend into the page, like the homepage rows. */
   .dil-media :global(img),
-  .dil-media :global(video),
-  .dil-media .dil-diagram {
+  .dil-media :global(video) {
     box-shadow:
       0 20px 44px -20px rgba(0, 0, 0, 0.5),
       0 0 70px 4px color-mix(in srgb, var(--strata-peach) 20%, transparent);
+  }
+
+  /* Code panel: a dark ink surface that reads as a real artifact on the rust
+     page. Ink is a brand color, so this is on-brand, not a white screenshot box. */
+  .dil-code {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--strata-ink-line);
+    box-shadow: 0 20px 44px -22px rgba(0, 0, 0, 0.55);
+  }
+  .dil-code-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 0.95rem;
+    background: var(--strata-ink-soft);
+    border-bottom: 1px solid var(--strata-ink-line);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: #a9b6ce;
+  }
+  .dil-code-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: var(--strata-peach);
+  }
+  /* Force the Shiki background to deep ink for exact brand match, keep tokens. */
+  .dil-code :global(pre.astro-code) {
+    margin: 0;
+    background: var(--strata-ink-deep) !important;
+    padding: 1.15rem 1.3rem;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox: scroll without a visible bar */
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+  /* Chrome/Safari: hide the bar too. Content still scrolls if it overflows. */
+  .dil-code :global(pre.astro-code::-webkit-scrollbar) {
+    display: none;
   }
 
   [data-reveal] {
