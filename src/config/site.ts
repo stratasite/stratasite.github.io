@@ -23,9 +23,9 @@ export const site = {
 } as const;
 
 /**
- * The three products the platform is sold as. These are the primary entries in
- * the Product dropdown; each gets a detail page at `/product/<slug>/`.
- * Feature pages sit underneath these, not beside them.
+ * The products the platform is sold as. These are the primary entries in the
+ * Product dropdown; each gets a detail page at `/product/<slug>/`. Feature
+ * pages sit underneath these, not beside them.
  */
 export const products = [
   {
@@ -45,6 +45,12 @@ export const products = [
     label: 'AI Analytics',
     summary: 'Agents that ask broad questions and get correct answers, on a governed model.',
     icon: 'sparkles',
+  },
+  {
+    slug: 'open-olap',
+    label: 'Open OLAP',
+    summary: 'Bring any OLAP engine. Fast, cost effective, and swappable, with no lock in.',
+    icon: 'plug',
   },
 ] as const;
 

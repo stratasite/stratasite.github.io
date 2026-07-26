@@ -1,0 +1,155 @@
+---
+// Partition-aware routing. The warehouse holds all history; a hot tier holds
+// only the recent range. Strata sends each query to the source whose partition
+// covers the query's filter, so recent questions land on the fast tier and
+// deep-history questions fall back to the warehouse of record. Brand tokens
+// only, so it blends into the rust page like the other diagrams.
+---
+
+<figure class="prt mx-auto w-full max-w-2xl" aria-label="Partition-aware routing across a hot tier and the warehouse">
+  <svg viewBox="0 0 560 360" role="img" class="h-auto w-full">
+    <title>A recent query routes to the fast hot tier; a deep-history query falls back to the warehouse.</title>
+    <defs>
+      <marker id="prt-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path class="prt-head" d="M0 0 L0 9 L7 4.5 Z" />
+      </marker>
+    </defs>
+
+    <!-- query chips -->
+    <rect class="prt-q" x="34" y="20" width="214" height="52" rx="12" />
+    <text class="prt-q-t" x="52" y="45">"revenue, last 3 years"</text>
+    <text class="prt-q-s" x="52" y="61">deep history</text>
+
+    <rect class="prt-q" x="312" y="20" width="214" height="52" rx="12" />
+    <text class="prt-q-t" x="330" y="45">"revenue, last 30 days"</text>
+    <text class="prt-q-s" x="330" y="61">recent filter</text>
+
+    <!-- routing arrows -->
+    <path class="prt-flow" d="M141 72 L141 254" marker-end="url(#prt-arrow)" />
+    <text class="prt-note" x="151" y="150">falls back to</text>
+    <text class="prt-note" x="151" y="165">the warehouse</text>
+
+    <path class="prt-flow prt-flow-hot" d="M419 72 L419 168" marker-end="url(#prt-arrow)" />
+    <text class="prt-note prt-note-hot" x="429" y="120">routed to the</text>
+    <text class="prt-note prt-note-hot" x="429" y="135">hot tier, fast</text>
+
+    <!-- hot tier band (recent portion only) -->
+    <rect class="prt-hot" x="300" y="168" width="226" height="52" rx="13" />
+    <text class="prt-hot-t" x="413" y="192" text-anchor="middle">Hot tier · ClickHouse</text>
+    <text class="prt-hot-s" x="413" y="209" text-anchor="middle">recent range · sub second</text>
+
+    <!-- warehouse band (all history) -->
+    <rect class="prt-wh" x="34" y="254" width="492" height="52" rx="13" />
+    <text class="prt-wh-t" x="280" y="278" text-anchor="middle">Warehouse · Snowflake</text>
+    <text class="prt-wh-s" x="280" y="295" text-anchor="middle">system of record · all history</text>
+
+    <!-- partition boundary (bracketing the warehouse band, not crossing its text) + timeline -->
+    <line class="prt-bound" x1="300" y1="222" x2="300" y2="252" />
+    <line class="prt-bound" x1="300" y1="308" x2="300" y2="328" />
+    <line class="prt-axis" x1="34" y1="330" x2="526" y2="330" marker-end="url(#prt-arrow)" />
+    <text class="prt-tick" x="40" y="348">3 years ago</text>
+    <text class="prt-tick" x="300" y="348" text-anchor="middle">hot tier starts</text>
+    <text class="prt-tick" x="520" y="348" text-anchor="end">now</text>
+  </svg>
+</figure>
+
+<style>
+  .prt .prt-head {
+    fill: var(--strata-peach);
+  }
+  .prt .prt-q {
+    fill: color-mix(in srgb, var(--strata-cream) 5%, transparent);
+    stroke: color-mix(in srgb, var(--strata-cream) 22%, transparent);
+    stroke-width: 1.2;
+  }
+  .prt .prt-q-t {
+    fill: var(--strata-cream);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .prt .prt-q-s {
+    fill: color-mix(in srgb, var(--strata-cream) 60%, transparent);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .prt .prt-flow {
+    fill: none;
+    stroke: color-mix(in srgb, var(--strata-cream) 45%, transparent);
+    stroke-width: 2;
+    stroke-dasharray: 6 7;
+    animation: prt-flow 2s linear infinite;
+  }
+  .prt .prt-flow-hot {
+    stroke: var(--strata-peach);
+  }
+  .prt .prt-note {
+    fill: color-mix(in srgb, var(--strata-cream) 62%, transparent);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .prt .prt-note-hot {
+    fill: var(--strata-peach);
+    font-weight: 600;
+  }
+  .prt .prt-hot {
+    fill: var(--strata-peach);
+  }
+  .prt .prt-hot-t {
+    fill: var(--strata-rust-deep);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .prt .prt-hot-s {
+    fill: color-mix(in srgb, var(--strata-rust-deep) 80%, transparent);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .prt .prt-wh {
+    fill: color-mix(in srgb, var(--strata-cream) 8%, transparent);
+    stroke: color-mix(in srgb, var(--strata-cream) 20%, transparent);
+    stroke-width: 1.2;
+  }
+  .prt .prt-wh-t {
+    fill: var(--strata-cream);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .prt .prt-wh-s {
+    fill: color-mix(in srgb, var(--strata-cream) 60%, transparent);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .prt .prt-bound {
+    stroke: color-mix(in srgb, var(--strata-peach) 55%, transparent);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 5;
+  }
+  .prt .prt-axis {
+    stroke: color-mix(in srgb, var(--strata-cream) 30%, transparent);
+    stroke-width: 1.5;
+  }
+  .prt .prt-tick {
+    fill: color-mix(in srgb, var(--strata-cream) 55%, transparent);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  @keyframes prt-flow {
+    to {
+      stroke-dashoffset: -26;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .prt .prt-flow {
+      animation: none;
+    }
+  }
+</style>

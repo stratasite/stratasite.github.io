@@ -1,0 +1,256 @@
+---
+/**
+ * Product page: Open OLAP.
+ *
+ * Thesis: the fast tier that makes dashboards and agents usable should be open
+ * and owned, not a proprietary black box you rent. Bring any OLAP engine
+ * (ClickHouse, Druid, whatever fits the workload); Strata routes across them
+ * and the warehouse from one measure model, partition and aggregate aware. The
+ * engines stay yours: queryable over SQL, loaded by your ETL, swappable as
+ * better ones ship.
+ *
+ * Reader: the data platform / engineering lead who owns latency, warehouse
+ * cost, and infrastructure. Antagonist: closed managed OLAP (a cache you can't
+ * see into) or warehouse-only (slow and expensive for hot queries).
+ *
+ * Diagram-forward page: the federation diagram in the hero, a custom
+ * partition-routing diagram as the centerpiece. Claims stay inside STRATA.md §9
+ * (no specific cost percentages; "sub second" as a descriptor).
+ */
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProductHero from '../../components/product/ProductHero.astro';
+import CapabilityGrid from '../../components/product/CapabilityGrid.astro';
+import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
+import PartitionRoutingDiagram from '../../components/PartitionRoutingDiagram.astro';
+import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
+import CtaButton from '../../components/CtaButton.astro';
+
+const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const featuredStudy = caseStudies[0];
+
+const capabilities = [
+  {
+    icon: 'plug',
+    title: 'Any engine you choose',
+    body: 'Map ClickHouse, Druid, or whatever fits as a hot tier. Use a time series store for time series and a columnar engine for high cardinality, the right tool for each workload, all under one model.',
+  },
+  {
+    icon: 'gauge',
+    title: 'Fast and cost effective',
+    body: 'Purpose built OLAP answers hot queries in sub second, for a fraction of warehouse compute. The warehouse stays your system of record while the hot tier absorbs the repetitive load.',
+  },
+  {
+    icon: 'braces',
+    title: 'SQL access for your other tools',
+    body: 'The engines are real databases you own, so other tools can query them directly over SQL and your hot data is never trapped behind one vendor. That SQL reaches the physical engine, not Strata\'s semantic model, which stays the governed path for correct, consistent answers.',
+  },
+  {
+    icon: 'database',
+    title: 'Managed alongside your ETL',
+    body: 'The hot tier is part of the infrastructure you already run, loaded by your own pipelines. No separate opaque service to babysit, no second operational model.',
+  },
+  {
+    icon: 'layers',
+    title: 'One measure, every engine',
+    body: 'Define a measure once and Strata serves it from the warehouse, a hot tier, or a pre aggregated table. No re modeling per dialect, no rollups to maintain by hand.',
+  },
+  {
+    icon: 'swap',
+    title: 'Swap engines freely',
+    body: 'When a faster or cheaper engine ships, point Strata at it. The semantic model does not change, so there is no lock in and nothing to rewrite. Your speed keeps up with the field.',
+  },
+];
+
+const absent = [
+  'A proprietary, managed cache you cannot query, tune, or replace.',
+  'One fixed engine forced onto every workload.',
+  'A hot tier locked behind Strata, invisible to the rest of your stack.',
+];
+
+const gained = [
+  'OLAP engines you own, query over SQL, and manage with your own pipelines.',
+  'The right engine for each workload, and the freedom to swap as the field moves.',
+  'Speed and cost control, without giving up ownership of your data.',
+];
+---
+
+<Base
+  title="Open OLAP: your engines, your speed, no lock in | Strata"
+  description="Strata does not ship a closed, managed cache. Bring any OLAP engine you want, and Strata routes across it and your warehouse from one measure model, partition and aggregate aware. The engines stay yours: queryable over SQL, loaded by your ETL, and swappable as better ones ship."
+>
+  <ProductHero
+    eyebrow="Open OLAP"
+    title="Your OLAP engines, not a proprietary black box"
+    subhead="Strata does not ship a closed, managed cache you cannot see into. You bring the OLAP engines you want, ClickHouse, Druid, whatever fits the job, and Strata routes across them and your warehouse from one measure model. They stay yours: queryable by other tools over SQL, loaded by your own ETL, and swappable the day a better engine ships."
+    diagram="federation"
+    alt="Consumers query Strata, which routes across a hot tier, the warehouse, and a cold tier"
+    ctaLocation="oo-hero"
+  />
+
+  <!-- THE PROBLEM -->
+  <!-- Ink-scoped (.dark): the problem beat, set apart from the warm narrative. -->
+  <section class="dark border-b border-border bg-background">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Speed usually comes with a <span class="text-primary">leash</span>
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          A fast tier is where dashboards and agents live or die. Most ways to get one make you give up
+          control to get it.
+        </p>
+      </div>
+
+      <div class="mx-auto mt-14 grid max-w-5xl gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <h3 class="font-display text-xl font-bold tracking-tight">A cache you cannot see into</h3>
+          <p class="mt-3 leading-relaxed text-muted-foreground">
+            A proprietary OLAP bolted onto a BI tool is a black box. One engine for every workload, no SQL
+            access for your other tools, and no way out when a better engine ships. You rent speed and
+            hand over control.
+          </p>
+        </div>
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <h3 class="font-display text-xl font-bold tracking-tight">Or no hot tier at all</h3>
+          <p class="mt-3 leading-relaxed text-muted-foreground">
+            Stay warehouse only and every dashboard refresh and agent turn hits warehouse compute.
+            Correct, but slow and expensive, and it only gets worse as agents fan out into dozens of
+            queries per task.
+          </p>
+        </div>
+      </div>
+
+      <div class="mx-auto mt-12 max-w-3xl text-center">
+        <p class="font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+          You should not have to choose between speed and control. Open OLAP gives you both.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW ROUTING WORKS -->
+  <section class="border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">
+          How it works
+        </p>
+        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Routed to the fastest source that can answer
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Strata knows the partition each source holds. A query whose filters fall in the hot tier's range
+          is served there in sub second time. A query that reaches deeper falls back to the warehouse of
+          record. You never pick the source, and you never get a wrong answer for it.
+        </p>
+      </div>
+
+      <div class="mt-16">
+        <PartitionRoutingDiagram />
+      </div>
+
+      <div class="mx-auto mt-16 grid max-w-5xl gap-8 sm:grid-cols-3">
+        <div>
+          <h3 class="font-display text-lg font-bold tracking-tight text-primary">Partition aware</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            Each source declares the data range it holds. Strata routes to the hot tier only when the
+            query's filters fall inside it, so results are always complete.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-display text-lg font-bold tracking-tight text-primary">Aggregate aware</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            When a pre aggregated table can satisfy the request, Strata uses it instead of scanning the
+            base facts, on whichever engine holds it.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-display text-lg font-bold tracking-tight text-primary">One definition</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            The same measure serves every source. Add or swap an engine and nothing about the model
+            changes, so there is no double modeling to keep in sync.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY OPEN WINS -->
+  <section class="border-b border-border bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Why open wins</h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          The performance layer is too important to rent. When it is open, every advantage compounds.
+        </p>
+      </div>
+      <div class="mt-14">
+        <CapabilityGrid cards={capabilities} />
+      </div>
+    </div>
+  </section>
+
+  <!-- COST + PORTABILITY: the sunk-cost trap of closed OLAP vs the portability
+       of an investment that lives in engines you own. -->
+  <section class="border-b border-border">
+    <div class="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        A closed cache costs more than its <span class="text-primary">license</span>
+      </h2>
+      <p class="mt-6 text-lg leading-relaxed text-muted-foreground">
+        The license is the cheap part. A proprietary cache also costs the months your team spends
+        building and tuning aggregations inside it, and the expertise they build up in a system whose
+        knowledge transfers nowhere. Then the day you change BI tools, add a complementary one, or outgrow
+        the vendor, all of it is stranded. You paid to build an asset you were never allowed to keep.
+      </p>
+      <p class="mt-6 text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+        With Open OLAP, that work lives in engines you own. The aggregations, the caches, and the
+        expertise around them carry over to any tool you bring, now or later. Change your BI layer, add
+        another beside it, or take the engines and go. The investment was always yours.
+      </p>
+    </div>
+  </section>
+
+  <!-- THE TRADEOFF -->
+  <section class="border-b border-border bg-surface-2">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          What we don't do, <span class="text-primary">on purpose</span>
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Strata orchestrates your engines. It never becomes the cage around them.
+        </p>
+      </div>
+      <div class="mt-14">
+        <TradeoffPanel
+          absent={absent}
+          gained={gained}
+          absentTitle="What Strata does not do"
+          gainedTitle="What it protects"
+        />
+      </div>
+      <p class="mx-auto mt-12 max-w-3xl text-center font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+        Speed should be something you own, not something you rent.
+      </p>
+    </div>
+  </section>
+
+  {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
+
+  <!-- CLOSING CTA -->
+  <section class="border-t border-border bg-strata-ink">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        Put a hot tier on your stack
+      </h2>
+      <p class="mt-4 text-muted-foreground">
+        Bring your warehouse and your slowest dashboard. We will show you sub second on an engine you own.
+      </p>
+      <CtaButton location="oo-closing" class="mt-8" />
+    </div>
+  </section>
+</Base>
