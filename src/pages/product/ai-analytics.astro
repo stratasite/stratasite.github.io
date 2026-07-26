@@ -35,8 +35,8 @@ const steps = [
     time: 'Build',
     title: 'Build an agent the way you build a report',
     body: [
-      'Open the same editor your team already uses for reports and assemble an agent instead. No code, no prompt engineering. If someone can build a report in Strata, they can build an agent.',
-      'You drop live semantic entities and real, current data values straight into its instructions. Its context is not a paragraph describing your business, it is the actual governed measures, dimensions, and values it will reason over, inline and always current. Describe what you want in plain language and Strata resolves it to those governed fields, never a column the model invented.',
+      'Open the same editor your team already uses for reports and assemble an agent instead. Drop in the governed measures, dimensions, and live values it should reason over, and describe its job in plain language. No code, no prompt engineering.',
+      'Because it is built on the governed model, the agent knows your entities by name. Ask it about bracelets and it already knows bracelets is an item class, not a word to guess at. Its context is the real, current definitions your team already trusts.',
     ],
     underHood: {
       text: 'Purpose built agents on the governed semantic model, grounded in live entities and real data values, scoped to the slice that matters.',
@@ -47,36 +47,34 @@ const steps = [
     alt: 'Building a purpose built agent in the Strata agent editor, with live entities and data values embedded in its instructions',
   },
   {
-    time: 'Ground',
-    title: 'Grounded in your data, not ground zero',
+    time: 'Inspect',
+    title: 'See and steer every query it runs',
     body: [
-      'A chat box over the warehouse starts every question cold, rediscovering what is relevant on every task. A Strata agent starts with the important subset already in hand, the exact measures, dimensions, and live values its job depends on.',
-      'That changes two things at once. The agent understands your data in far richer detail, because the real definitions and examples sit right in its instructions. And it stays scoped to the slice that matters, instead of thrashing across a hundred tables trying to rediscover what is relevant.',
+      'An agent in Strata is not a black box. Every query it builds is a governed query you can open, read, and change, the same way you would edit a report. When an answer looks off, you see exactly what it asked, not an opaque blob of SQL.',
+      'Take any query the agent created, adjust a filter or a measure, and carry on from there. The agent proposes, you stay in control, and every change is validated against the model, so steering it can never produce a wrong number.',
     ],
     underHood: {
-      text: 'Natural language field and filter resolution grounds each agent in governed entities, so its context is real and current rather than a description the model has to trust.',
-      href: '/features/ai-native/',
-      label: 'AI ready analytics',
-    },
-    video: '/ai_sprinkled_editor.mp4',
-    alt: 'Resolving plain language to governed semantic entities in the Strata editor',
-  },
-  {
-    time: 'Trust',
-    title: 'It navigates a validated space, never guesses SQL',
-    body: [
-      'Because the agent queries through the semantic model, it does not write SQL and hope. Every step returns the same contract: is this partial query valid, what are the compatible next steps, and if something is rejected, exactly why. The agent moves through a checked space instead of guessing joins.',
-      'When it reaches for something the model cannot answer, Strata refuses before execution and hands back the nearest valid alternatives. The worst case is a missed answer the agent is told about and can route around, never a confident wrong number.',
-    ],
-    aside:
-      'The interactive loop that validates a person\'s query as they build it is, structurally, the agent API. The feedback that makes the editor pleasant for people is the exact mechanism that makes it safe for machines.',
-    underHood: {
-      text: 'A compatibility matrix derived from each measure\'s fact, grain, and reachable dimensions decides what is answerable, and refuses the rest before anything runs.',
+      text: 'The agent builds through the same validated query interface as a person, so its queries are legible and editable, checked against the compatibility matrix at every step.',
       href: '/features/grain-safe-blending/',
       label: 'Correctness by construction',
     },
     video: '/instant_feedback.mp4',
-    alt: 'A query validated live as it is built, the same checked contract an agent moves through',
+    alt: 'Opening and adjusting a governed query in the Strata editor, validated live at every step',
+  },
+  {
+    time: 'Share',
+    title: 'Share an agent the way you share a report',
+    body: [
+      'An agent is a first class object in Strata, just like a report. Publish it and share it with a team, and everyone gets the same purpose built expert for that domain, governed by the same rules as everything else.',
+      'The person who understands the questions builds the agent once, and the whole team can use it. Row level security still applies on every turn, so each person only ever sees the data they are allowed to.',
+    ],
+    underHood: {
+      text: 'Agents are governed, shareable objects. Sharing one respects the same row level security and masking as every report and dashboard in Strata.',
+      href: '/features/ai-native/',
+      label: 'AI ready analytics',
+    },
+    video: '/exports_and_schedules.mp4',
+    alt: 'Sharing a Strata object with a team, governed by the same access rules as reports',
   },
 ];
 
@@ -92,10 +90,9 @@ const capabilities = [
     body: 'Humans and agents reason over the same governed model. Build a report or build an agent, the number comes out the same, because both are answered the same governed way.',
   },
   {
-    icon: 'gauge',
-    title: 'Fast enough to actually use',
-    body: 'A single agent task can fan out into dozens of queries. Federation and aggregate tables keep those turns sub second, so an agent rollout does not stall on latency.',
-    href: '/features/federated-olap/',
+    icon: 'check',
+    title: 'Only the fields you defined',
+    body: 'An agent can only reason over the governed measures and dimensions in your model, never a column or metric it invented. Its answers use the definitions your team already agreed on.',
   },
 ];
 
@@ -153,8 +150,8 @@ const gained = [
     eyebrow="AI Analytics"
     title="Agents your experts build, not a chatbot you bolt on"
     subhead="Your experts can now build a report for a project, or an agent, and Strata makes both easy for non technical domain experts. Every agent rides your governed semantic model, grounded in real entities and live data, so users get correct answers fast."
-    diagram="agentloop"
-    alt="The agent validation loop: an agent proposes a partial query, Strata validates and responds, repeating into a grain safe answer"
+    video="/querying_with_ai.mp4"
+    alt="Querying data with a Strata agent: asking about bracelets, which the agent already knows is an item class"
     ctaLocation="aa-hero"
   />
 
@@ -228,11 +225,11 @@ const gained = [
           How it works
         </p>
         <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          A purpose built agent, grounded and governed
+          An agent is a first class object, just like a report
         </h2>
         <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-          Not one chatbot over everything. A focused agent your experts build, holding the exact data and
-          context its job needs, on a model that will not let it guess a wrong answer.
+          Build it, open up any query it runs, and share it with your team, the same way you already work
+          with reports. No black box, no separate tool to learn.
         </p>
       </div>
       <div class="mt-20">
