@@ -19,6 +19,7 @@ import DayInLife from '../../components/product/DayInLife.astro';
 import CapabilityGrid from '../../components/product/CapabilityGrid.astro';
 import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
 import OperatorTable from '../../components/product/OperatorTable.astro';
+import Icon from '../../components/Icon.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import VideoLightbox from '../../components/product/VideoLightbox.astro';
 import CtaButton from '../../components/CtaButton.astro';
@@ -157,45 +158,63 @@ const gained = [
     ctaLocation="aa-hero"
   />
 
-  <!-- THE COLD CHATBOT PROBLEM -->
-  <!-- Ink-scoped (.dark): the problem beat, set apart from the warm narrative. -->
+  <!-- WHY STRATA AGENTS ARE SHARPER -->
+  <!-- Ink-scoped (.dark): the differentiator beat. The argument is not cold
+       start, it is the managed reduction of the agent's selection space, plus
+       open OLAP for multi turn speed. -->
   <section class="dark border-b border-border bg-background">
     <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-3xl text-center">
         <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          A chatbot on your warehouse starts from <span class="text-primary">zero</span>, every time
+          Fewer decisions, <span class="text-primary">sharper answers</span>
         </h2>
-        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-          Point an LLM at a hundred inconsistent tables and it guesses the joins, guesses the grain, and
-          hands back a number that is fluent, confident, and quietly wrong. No prompt fixes it, because
-          the model has no way to know the join was invalid. It is the top reason AI over data pilots
-          stall.
+        <p class="mt-5 text-xl font-semibold leading-relaxed text-foreground">
+          Strata narrows every agent decision to the moves your <span class="text-primary">governed
+          model</span> can actually answer, so answers come back <span class="text-primary">correct and
+          fast</span>.
         </p>
       </div>
 
-      <div class="mx-auto mt-14 grid max-w-5xl gap-6 lg:grid-cols-2">
+      <div class="mx-auto mt-14 grid max-w-6xl gap-6 lg:grid-cols-3">
         <div class="rounded-xl border border-border bg-surface p-7">
-          <h3 class="font-display text-xl font-bold tracking-tight">It guesses, then sounds sure</h3>
-          <p class="mt-3 leading-relaxed text-muted-foreground">
-            An LLM writing SQL over a messy schema joins facts at the wrong grain and double counts. The
-            failure is not a crash you can catch. It is a plausible number that is wrong, and nothing in
-            the answer tells you so.
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="zap" class="h-5 w-5" />
+          </span>
+          <h3 class="mt-4 font-display text-lg font-bold tracking-tight">Nothing to select first</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            No explore, view, or datasource to choose before the conversation starts, and no narrow slice
+            that leaves the agent missing context. Strata's dynamic universes assemble the valid field
+            space around each question.
           </p>
         </div>
         <div class="rounded-xl border border-border bg-surface p-7">
-          <h3 class="font-display text-xl font-bold tracking-tight">It starts cold, every task</h3>
-          <p class="mt-3 leading-relaxed text-muted-foreground">
-            A single chat box over the whole warehouse has no project context. It rediscovers what is
-            relevant on every question, thrashing across tables with no memory of what you were actually
-            trying to do.
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="layers" class="h-5 w-5" />
+          </span>
+          <h3 class="mt-4 font-display text-lg font-bold tracking-tight">Only moves that are correct</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            Automatic blending and the compatibility matrix mean every option in front of the agent is
+            one the model can answer without double counting. Narrowing the selection space to valid moves
+            is what makes agentic use cases far more accurate here than on competitor offerings.
+          </p>
+        </div>
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="gauge" class="h-5 w-5" />
+          </span>
+          <h3 class="mt-4 font-display text-lg font-bold tracking-tight">Open OLAP for multi turn</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            A single task fans out into dozens of queries. Open OLAP federation and hot tiers keep each
+            turn fast, so multi turn conversations feel responsive instead of grinding on warehouse
+            latency.
           </p>
         </div>
       </div>
 
       <div class="mx-auto mt-12 max-w-3xl text-center">
         <p class="font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
-          Accuracy cannot come from better prompting. It has to be a property of the system the agent
-          queries.
+          Accuracy and speed are not prompt tricks. They come from a model that narrows the agent to
+          valid moves, and answers each one fast.
         </p>
       </div>
     </div>
