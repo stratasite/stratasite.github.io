@@ -1,11 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
-import { nav, site } from '../config/site';
+import { nav, products, site } from '../config/site';
 import CtaButton from './CtaButton.astro';
 import Icon from './Icon.astro';
 
-// Product dropdown is generated from the features collection so it never drifts.
-const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
+// The case studies rail in the Product dropdown is generated from the content
+// collection so it never drifts from the published pages.
+const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
 );
 ---
@@ -32,18 +33,44 @@ const features = (await getCollection('features', ({ data }) => !data.draft)).so
         </button>
         <!-- Dropdown -->
         <div class="invisible absolute left-1/2 top-full -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-          <div class="grid w-[34rem] grid-cols-3 gap-1 rounded-lg border border-border bg-surface p-3 shadow-xl">
-            {features.map((f) => (
-              <a
-                href={`/features/${f.slug}/`}
-                class="group/item flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-surface-2"
-              >
-                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-primary transition-colors group-hover/item:bg-primary group-hover/item:text-primary-foreground">
-                  <Icon name={f.data.icon ?? 'layers'} class="h-5 w-5" />
-                </span>
-                <span class="text-sm font-semibold leading-snug text-foreground">{f.data.title}</span>
-              </a>
-            ))}
+          <div class="flex w-[46rem] overflow-hidden rounded-lg border border-menu-border bg-menu shadow-2xl">
+            <!-- Left: the three products -->
+            <div class="flex-1 p-3">
+              <p class="px-3 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-menu-muted">
+                Platform
+              </p>
+              {products.map((p) => (
+                <a
+                  href={`/product/${p.slug}/`}
+                  class="group/item flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-menu-raised"
+                >
+                  <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-menu-raised text-menu-primary transition-colors group-hover/item:bg-menu-primary group-hover/item:text-menu-primary-foreground">
+                    <Icon name={p.icon} class="h-5 w-5" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-sm font-semibold leading-snug text-menu-primary">{p.label}</span>
+                    <span class="mt-0.5 block text-xs leading-snug text-menu-muted">{p.summary}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+
+            <!-- Right: proof rail -->
+            <div class="w-[17rem] shrink-0 border-l border-menu-border bg-menu-2 p-3">
+              <p class="px-3 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-menu-muted">
+                Case studies
+              </p>
+              {caseStudies.map((cs) => (
+                <a
+                  href={`/case-studies/${cs.slug}/`}
+                  class="block rounded-md p-3 transition-colors hover:bg-menu-raised"
+                >
+                  <span class="block text-sm font-semibold leading-snug text-menu-primary">
+                    {cs.data.title}
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </li>

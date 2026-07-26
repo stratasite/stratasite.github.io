@@ -1,0 +1,41 @@
+---
+// Compact card grid naming the machinery behind the walkthrough. Gives the
+// technical evaluator substance after the narrative, and keeps the feature
+// pages reachable from the product pages.
+import Icon from '../Icon.astro';
+
+interface Card {
+  icon: string;
+  title: string;
+  body: string;
+  href?: string;
+}
+interface Props {
+  cards: Card[];
+}
+const { cards } = Astro.props;
+---
+
+<div class="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  {cards.map((c) => {
+    const Tag = c.href ? 'a' : 'div';
+    return (
+      <Tag
+        {...(c.href ? { href: c.href } : {})}
+        class={`group/card block rounded-xl border border-border bg-surface p-6 transition-colors ${c.href ? 'hover:border-primary/50 hover:bg-surface-2' : ''}`}
+      >
+        <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-primary transition-colors group-hover/card:bg-primary group-hover/card:text-primary-foreground">
+          <Icon name={c.icon} class="h-5 w-5" />
+        </span>
+        <h3 class="mt-4 font-display text-lg font-bold tracking-tight text-foreground">{c.title}</h3>
+        <p class="mt-2 text-sm leading-relaxed text-muted-foreground">{c.body}</p>
+        {c.href && (
+          <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover/card:gap-2">
+            Learn more
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+          </span>
+        )}
+      </Tag>
+    );
+  })}
+</div>

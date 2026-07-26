@@ -1,0 +1,485 @@
+---
+/**
+ * Product page: Semantic Layer.
+ *
+ * Reader is the data / analytics engineer who builds and maintains the model,
+ * not the operator who consumes it. The antagonist is configuration burden plus
+ * silent wrong-number risk. The spine is a technical "how it works" walk through
+ * the four mechanisms (convention, correctness, expressiveness, performance)
+ * plus the Git native workflow, pitched against MetricFlow, Cube, Looker, and
+ * Snowflake semantic views. Claims kept inside STRATA.md §9 guardrails.
+ *
+ * Reuses DayInLife for the mechanism rows: its `time` field carries a one-word
+ * eyebrow here (Convention, Correctness, ...) rather than a timestamp.
+ */
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProductHero from '../../components/product/ProductHero.astro';
+import ProofStrip from '../../components/product/ProofStrip.astro';
+import DayInLife from '../../components/product/DayInLife.astro';
+import CapabilityGrid from '../../components/product/CapabilityGrid.astro';
+import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
+import OperatorTable from '../../components/product/OperatorTable.astro';
+import Icon from '../../components/Icon.astro';
+import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
+import VideoLightbox from '../../components/product/VideoLightbox.astro';
+import CtaButton from '../../components/CtaButton.astro';
+
+const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const featuredStudy = caseStudies[0];
+const studyHref = featuredStudy ? `/case-studies/${featuredStudy.slug}/` : undefined;
+
+// The four mechanisms plus the workflow. Each row links to its feature page and
+// carries the canonical diagram or product asset.
+const steps = [
+  {
+    time: 'Convention',
+    title: 'The model emerges from names, not configuration',
+    body: [
+      'Register a field and give it any name you want. The name is yours, decoupled from the physical column, so the model reads in business terms instead of warehouse schema.',
+      'Give the same concept the same name across facts and Strata treats those fields as conformed and blendable. Give distinct concepts distinct names, Caller Country and Ship Country, and they stay separate. That naming discipline is the whole model. There is no per combination view to author.',
+    ],
+    underHood: {
+      text: 'A registry of freely named dimensions and measures. Conformance is asserted by shared names, not wired up by hand.',
+      href: '/features/semantic-layer-as-code/',
+      label: 'Semantic layer as code',
+    },
+    codeLang: 'yaml',
+    codeFile: 'models/sales/tbl.orders.yml',
+    code: `name: Orders
+physical_name: fct_orders
+datasource: snowflake
+imports:
+  - ../common/dates.yml    # conformed dims, defined once
+fields:
+  - type: dimension
+    name: Country          # shared name = conformed
+    data_type: string
+    expression:
+      sql: ship_country
+  - type: measure
+    name: Total Revenue    # the business name...
+    data_type: decimal
+    expression:
+      sql: sum(amount)     # ...not the column`,
+  },
+  {
+    time: 'Correctness',
+    title: 'Blend across domains without ever double counting',
+    body: [
+      'Ask for measures from different facts across a shared dimension and Strata decomposes the query, aggregates each fact independently to the common grain, then stitches the results with a full outer join on the conformed keys. Never a row level fact to fact join, which is what fans out and double counts.',
+      'Compatibility is derived from the model, not configured. A measure asked for by a dimension its fact cannot reach is refused before anything runs, so the default failure is a missed blend, never a wrong number.',
+    ],
+    aside:
+      'Reach for something the data cannot answer, a measure split by a dimension its fact does not have, and the path is not offered. Force it and Strata refuses before execution and points to the nearest valid query. A clear no, never a confident wrong number.',
+    underHood: {
+      text: 'Automatic drill across on conformed fields, governed by a compatibility matrix derived from each measure\'s fact, grain, and reachable dimensions.',
+      href: '/features/grain-safe-blending/',
+      label: 'Cross domain blending',
+    },
+    diagram: 'blending',
+    alt: 'Two facts at different grains aggregated independently and joined on a shared conformed key',
+  },
+  {
+    time: 'Expressiveness',
+    title: 'Five measure types, from simple sums to level of detail',
+    body: [
+      'Standard sums and counts, complex formulas that reference other measures and dimensions, snapshot measures that know not to sum across time, and inclusion and exclusion LOD measures that fix or drop dimensions from the group by. LOD is the Tableau FIXED and EXCLUDE idea lifted into a governed layer, and it is rare among competitors.',
+      'On top of those, anyone can derive a new measure in the calculation creator, and turn any measure into a year over year, moving average, or percent of total with one click. Expressiveness that usually needs SQL, available without it.',
+    ],
+    underHood: {
+      text: 'Standard, Complex, Snapshot, Inclusion LOD and Exclusion LOD, plus ad hoc calculations and one click YoY, moving average, and percent of total.',
+      href: '/features/measure-types/',
+      label: 'Measure types',
+    },
+    codeLang: 'yaml',
+    codeFile: 'models/inventory/tbl.inventory.yml',
+    code: `snapshot_date: Date
+fields:
+  - type: measure
+    name: Units Received     # standard: a plain sum
+    data_type: integer
+    expression:
+      sql: sum(inv_units_received)
+  - type: measure
+    name: Inventory On Hand  # snapshot: semi additive
+    data_type: integer
+    snapshot: ending
+    expression:
+      sql: sum(inv_quantity_on_hand)`,
+  },
+  {
+    time: 'Performance',
+    title: 'One definition, routed across every engine',
+    body: [
+      'Map ClickHouse, Druid, or Databricks alongside Snowflake and designate a hot tier. Strata knows the partition each source holds and routes to the hot tier only when the query filters fall inside it, falling back to the warehouse of record otherwise. It also routes to aggregate tables whenever they can satisfy the request.',
+      'One measure definition serves all of it. No remodeling per dialect, no rollups managed by hand. Responses in under a second from hot tiers and aggregates, less load on the warehouse.',
+    ],
+    underHood: {
+      text: 'Aggregate aware plus federated OLAP with partition aware hot tier routing. One model, every engine.',
+      href: '/features/federated-olap/',
+      label: 'Federated OLAP routing',
+    },
+    diagram: 'federation',
+    alt: 'A query routed to a fast OLAP hot tier when filters are in range, else to the warehouse',
+  },
+  {
+    time: 'Workflow',
+    title: 'Versioned in Git, driven by a CLI',
+    body: [
+      'The model is code. Review it in pull requests, branch it, deploy a branch to test a change before it ships. The whole model lives where the rest of your engineering does, under the same controls.',
+      'A CLI built for the way engineers work now, coding assistants included, means changes are fast to make and safe to roll back. The semantic layer stops being a fragile GUI and becomes part of your codebase.',
+    ],
+    underHood: {
+      text: 'Model as code, versioned in Git with branch deploys, managed through a CLI built for coding assistants.',
+      href: '/features/semantic-layer-as-code/',
+      label: 'Semantic layer as code',
+    },
+    codeLang: 'bash',
+    codeFile: 'terminal',
+    code: `strata init acme-analytics   # scaffold a project
+strata audit                 # grain check the model
+strata deploy                # deploy the git branch`,
+  },
+];
+
+// Two governance cards plus one agent card. The rest of the agent story is
+// handed off to the AI Analytics page via the link below the grid.
+const capabilities = [
+  {
+    icon: 'shield',
+    title: 'Row level security and masking',
+    body: 'Masking and auto filtering live in the model, so the same governed measures are safe for every audience, from an exec to an external partner.',
+  },
+  {
+    icon: 'check',
+    title: 'Grain checked in CI',
+    body: 'Wire strata audit into CI and every pull request is grain checked against your warehouse before it can merge. A broken measure never reaches production.',
+  },
+  {
+    icon: 'bot',
+    title: 'A real agent API',
+    body: 'The interface that validates a human\'s partial query, with compatible next steps and structured refusals, is exactly what an agent needs to build correct queries instead of guessing SQL.',
+    href: '/features/ai-native/',
+  },
+];
+
+const compareRows = [
+  {
+    axis: 'Adding a blendable combination',
+    them: 'Author a new view, explore, or YAML model',
+    strata: 'Name the field once, blending is derived',
+  },
+  {
+    axis: 'Two same named dimensions from different tables',
+    them: 'A name clash to resolve, or a join to wire by hand',
+    strata: 'The shared name is the blend key',
+  },
+  {
+    axis: 'A cross domain question at different grains',
+    them: 'Refused, or silently double counted',
+    strata: 'Aggregated to a common grain, then joined, grain safe',
+  },
+  {
+    axis: 'Moving a measure to a faster engine',
+    them: 'Model it again in another dialect',
+    strata: 'One definition, federated across engines',
+  },
+  {
+    axis: 'Serving an AI agent',
+    them: 'Headless SQL and guessed joins',
+    strata: 'A validated agent API with structured refusals',
+  },
+  {
+    axis: 'Speed on recent, hot data',
+    them: 'Warehouse bound, or a closed proprietary OLAP',
+    strata: 'Open federation, aggregate and hot tier aware',
+  },
+];
+
+const absent = [
+  'A headless SQL, JDBC, or XMLA endpoint for Power BI or Tableau to drive.',
+  'A role as passive plumbing under a BI tool, with the retrieval experience out of our hands.',
+  'A lowest common denominator protocol that flattens LOD, snapshots, and complex time logic, exactly the expressiveness non technical users and agents depend on.',
+];
+
+const gained = [
+  'Deep, safe access to data for the non technical experts this is built for.',
+  'Agents that get correct answers, not a degraded headless approximation.',
+  'Guarantees that travel into every surface Strata owns, Sheets and agents included.',
+];
+---
+
+<Base
+  title="Most semantic layers are built for the wrong job | Strata"
+  description="The job of a semantic layer is not to feed dashboards or crown a source of truth for engineers. It is deep self service for non technical domain experts. Strata is built for that one job, which is why it is easy to model by convention and delivers self service no BI tool can match. Building it right for people made it ideal for agents too."
+>
+  <ProductHero
+    eyebrow="Semantic Layer"
+    title="Most semantic layers are built for the wrong job"
+    subhead="The next highest leverage investment in your data is deep access for your non technical domain experts. Strata was built for exactly that. Simple to model by convention, unmatched by any BI tool, agent ready by the same design."
+    readMore={{ href: 'https://blog.strata.do/p/what-is-the-semantic-layer', label: 'Read the argument: what a semantic layer is really for' }}
+    video="/modeling_cli.mp4"
+    alt="Defining a Strata semantic model as code with a CLI"
+    ctaLocation="sl-hero"
+  />
+
+  <ProofStrip
+    stats={[
+      { value: '4+ years', label: 'in production at Netflix scale' },
+      { value: '1 definition', label: 'per measure, across every engine' },
+      { value: '5 measure types', label: 'Standard, Complex, Snapshot, LOD, ad hoc' },
+    ]}
+    note="The modeling architecture behind a deployment that scaled self service from a handful of users to hundreds."
+    href={studyHref}
+  />
+
+  <!-- THE 99% PROBLEM -->
+  <!-- Ink-scoped (.dark) to set the reframe apart from the warm rust narrative
+       around it, matching the other product pages. Expands the hero thesis:
+       dashboards serve breadth (the 1%), experts need depth (the 99%). -->
+  <section class="dark border-b border-border bg-background">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Dashboards are the 1%. Your experts need the <span class="text-primary">other 99%</span>.
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Less than 1% of your data ever reaches a dashboard. That slice is fine for a glance and useless
+          to the people who actually run things. Your domain experts do not want a prettier chart. They
+          want to start at a number and go straight to the transactions behind it, sliced by cuts nobody
+          thought to build ahead.
+        </p>
+      </div>
+
+      <!-- 1% / 99% proportional visual -->
+      <figure class="mx-auto mt-14 max-w-4xl">
+        <div class="proportion-track" role="img" aria-label="Less than one percent of your data reaches a dashboard; the other ninety-nine percent sits in the warehouse.">
+          <div class="proportion-slice"></div>
+          <div class="proportion-rest"><span>99%</span></div>
+        </div>
+        <div class="mt-4 flex items-start justify-between gap-6">
+          <div class="max-w-[15rem]">
+            <p class="font-display text-lg font-bold text-foreground">1% · on a dashboard</p>
+            <p class="mt-1 text-sm leading-snug text-muted-foreground">
+              Breadth. Curated metrics for many shallow viewers. A solved problem.
+            </p>
+          </div>
+          <div class="max-w-[18rem] text-right">
+            <p class="font-display text-lg font-bold text-primary">99% · in the warehouse</p>
+            <p class="mt-1 text-sm leading-snug text-muted-foreground">
+              Depth. Every transaction, out of reach for the experts who need it most.
+            </p>
+          </div>
+        </div>
+      </figure>
+
+      <!-- What serving the 99% takes: capability, at the concept level -->
+      <div class="mx-auto mt-20 max-w-2xl text-center">
+        <h3 class="font-display text-2xl font-bold tracking-tight">
+          Serving the 99% takes three things dashboards never had to solve
+        </h3>
+      </div>
+      <div class="mx-auto mt-10 grid max-w-6xl gap-6 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="zap" class="h-5 w-5" />
+          </span>
+          <h4 class="mt-4 font-display text-lg font-bold tracking-tight">Ask anything</h4>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            No prebuilt explore or datasource to choose first. The model assembles around the question as
+            it is asked, so an expert can chase a hunch instead of filing for a new dataset.
+          </p>
+        </div>
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="layers" class="h-5 w-5" />
+          </span>
+          <h4 class="mt-4 font-display text-lg font-bold tracking-tight">Trust every number</h4>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            Blend across domains at any grain without ever double counting. Depth is worthless if the
+            numbers are silently wrong, so correctness is built into the model, not left to the user.
+          </p>
+        </div>
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="gauge" class="h-5 w-5" />
+          </span>
+          <h4 class="mt-4 font-display text-lg font-bold tracking-tight">Go all the way down, fast</h4>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            From a KPI to the transactions behind it in under a second, across engines. Depth that makes
+            you wait is depth nobody uses.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="walkthrough" class="scroll-mt-20 border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">
+          How it works
+        </p>
+        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Convention over configuration, end to end
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          The model still exists. It is just expressed in the cheapest medium, names and code, instead of
+          the most expensive, per combination views and per dialect rewrites.
+        </p>
+      </div>
+      <div class="mt-20">
+        <DayInLife steps={steps} />
+      </div>
+    </div>
+  </section>
+
+  <!-- GOVERNED + AGENT-READY -->
+  <!-- Ink-scoped (.dark): a cool systems beat that breaks the long rust stretch
+       and ties to the ink CTA. Governance + agents, the two things the
+       walkthrough did not cover. -->
+  <section class="dark border-b border-border bg-background">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Governed for humans, ready for agents
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          The same model that keeps a person from a wrong number keeps an agent from one, and keeps both
+          inside exactly what they are allowed to see.
+        </p>
+      </div>
+      <div class="mt-14">
+        <CapabilityGrid cards={capabilities} />
+      </div>
+
+      <p class="mt-12 text-center text-muted-foreground">
+        Agents are a big enough story to have their own page.
+        <a href="/product/ai-analytics/" class="ml-1 font-semibold text-primary hover:underline">
+          See AI Analytics &rarr;
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <!-- HEAD TO HEAD -->
+  <section class="border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          The difference shows up when your data gets messy
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Every semantic layer lists the same features. They diverge the moment your data is spread
+          across domains, grains, and engines.
+        </p>
+      </div>
+      <div class="mt-14">
+        <OperatorTable
+          axisHeader="When your data gets messy"
+          columnLabel="Them"
+          rows={compareRows}
+        />
+      </div>
+      <p class="mt-8 text-center text-sm text-muted-foreground">
+        Want the detailed head to heads?
+        <a href="/#compare" class="ml-1 font-semibold text-primary hover:underline">Compare Strata to Cube, Looker, MetricFlow, and Snowflake</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- THE TRADEOFF -->
+  <section class="border-b border-border bg-surface-2">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          What we don't do, <span class="text-primary">on purpose</span>
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          We optimize everything for one job: safe, deep access to data for the people and agents who do
+          not write SQL. A headless endpoint behind someone else's BI tool quietly sacrifices that job, so
+          we do not offer one.
+        </p>
+      </div>
+      <div class="mt-14">
+        <TradeoffPanel
+          absent={absent}
+          gained={gained}
+          absentTitle="What Strata does not expose"
+          gainedTitle="What it protects"
+        />
+      </div>
+      <div class="mx-auto mt-12 max-w-3xl text-center">
+        <p class="font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+          Your highest leverage investment in data is not another dashboard or a faster pipeline. It is
+          putting safe, deep access in the hands of the non technical experts and agents who run the
+          business. We refuse to build anything that gets in the way of that.
+        </p>
+        <a
+          href="https://blog.strata.do/p/what-is-the-semantic-layer"
+          target="_blank"
+          rel="noopener"
+          class="group mt-6 inline-flex items-center gap-1.5 font-semibold text-primary transition-all hover:gap-2.5"
+        >
+          Read the argument: what a semantic layer is really for
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
+
+  <!-- CLOSING CTA -->
+  <section class="border-t border-border bg-strata-ink">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        Point Strata at your messiest schema
+      </h2>
+      <p class="mt-4 text-muted-foreground">
+        Bring a hundred tables, a few fact domains, and a cross domain question that breaks today. We
+        will model it by naming.
+      </p>
+      <CtaButton location="sl-closing" class="mt-8" />
+    </div>
+  </section>
+
+  <VideoLightbox />
+</Base>
+
+<style>
+  /* 1% / 99% proportional bar. The 1% is a faint crumb; the 99% is a warm block
+     that dominates, so the disproportion reads before the caption does.
+     Theme-invariant brand swatches, so it holds inside the ink (.dark) section. */
+  .proportion-track {
+    display: flex;
+    height: 4.5rem;
+    overflow: hidden;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .proportion-slice {
+    width: 2.2%;
+    background: color-mix(in srgb, var(--strata-cream) 20%, transparent);
+  }
+  .proportion-rest {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding-inline: 1.25rem;
+    background: linear-gradient(90deg, var(--strata-peach), var(--strata-orange));
+  }
+  .proportion-rest span {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: 0.01em;
+    color: var(--strata-ink);
+  }
+</style>

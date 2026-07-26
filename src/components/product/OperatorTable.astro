@@ -1,0 +1,49 @@
+---
+// Head to head on operator axes, not feature axes. Every row is phrased as a
+// question the person who needs the number would actually ask. Competitor
+// capabilities move; re-verify before each publish (see STRATA.md §9.4).
+interface Row {
+  axis: string;
+  them: string;
+  strata: string;
+}
+interface Props {
+  columnLabel?: string;
+  /** Header over the left (axis) column. Frame it for the page's reader. */
+  axisHeader?: string;
+  rows: Row[];
+}
+const { columnLabel = 'Traditional BI', axisHeader = 'If you are the operator', rows } = Astro.props;
+---
+
+<div class="mx-auto max-w-5xl overflow-x-auto rounded-xl border border-border">
+  <table class="w-full min-w-[44rem] border-collapse text-left text-sm">
+    <thead>
+      <tr class="bg-surface-2">
+        <th class="w-56 px-4 py-3 font-display font-semibold">{axisHeader}</th>
+        <th class="them-cell px-4 py-3 font-display font-semibold text-muted-foreground">{columnLabel}</th>
+        <th class="px-4 py-3 font-display font-semibold text-primary">Strata</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row, ri) => (
+        <tr class={ri % 2 ? 'bg-surface' : 'bg-background'}>
+          <th scope="row" class="px-4 py-3 align-top font-medium text-foreground">{row.axis}</th>
+          <td class="them-cell px-4 py-3 align-top text-muted-foreground">{row.them}</td>
+          <td class="strata-cell px-4 py-3 align-top font-medium text-foreground">{row.strata}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  /* Warm highlight on Strata, a cool de-emphasized wash on "Them", so the two
+     options read as opposite temperatures and the columns separate cleanly. */
+  .strata-cell {
+    background: color-mix(in srgb, var(--strata-peach) 12%, transparent);
+  }
+  .them-cell {
+    background: color-mix(in srgb, var(--strata-ink) 10%, transparent);
+  }
+</style>

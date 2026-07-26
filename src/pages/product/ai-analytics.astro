@@ -1,0 +1,269 @@
+---
+/**
+ * Product page: AI Analytics.
+ *
+ * Thesis: this reader already accepts semantic-layer-over-SQL, so we sell that
+ * Strata's is the best foundation for agents. Non technical experts build
+ * purpose built agents the same way they build reports, grounded in live
+ * entities and real data. The edge is a managed reduction of the agent's
+ * decision space (dynamic universes + automatic blending + compatibility
+ * matrix) for accuracy, plus open OLAP for multi turn speed.
+ *
+ * Reader: the data / AI leader deploying agents over their data, with the non
+ * technical builder as the empathy figure. Claims kept inside STRATA.md §9
+ * guardrails (refuses / narrows to valid moves, not "never wrong").
+ */
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProductHero from '../../components/product/ProductHero.astro';
+import DayInLife from '../../components/product/DayInLife.astro';
+import CapabilityGrid from '../../components/product/CapabilityGrid.astro';
+import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
+import Icon from '../../components/Icon.astro';
+import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
+import VideoLightbox from '../../components/product/VideoLightbox.astro';
+import CtaButton from '../../components/CtaButton.astro';
+
+const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const featuredStudy = caseStudies[0];
+const studyHref = featuredStudy ? `/case-studies/${featuredStudy.slug}/` : undefined;
+
+const steps = [
+  {
+    time: 'Build',
+    title: 'Build an agent the way you build a report',
+    body: [
+      'Open the same editor your team already uses for reports and assemble an agent instead. Drop in the governed measures, dimensions, and live values it should reason over, and describe its job in plain language. No code, no prompt engineering.',
+      'Because it is built on the governed model, the agent knows your entities by name. Ask it about bracelets and it already knows bracelets is an item class, not a word to guess at. Its context is the real, current definitions your team already trusts.',
+    ],
+    underHood: {
+      text: 'Purpose built agents on the governed semantic model, grounded in live entities and real data values, scoped to the slice that matters.',
+      href: '/features/ai-native/',
+      label: 'AI ready analytics',
+    },
+    video: '/creating_agent.mp4',
+    alt: 'Building a purpose built agent in the Strata agent editor, with live entities and data values embedded in its instructions',
+  },
+  {
+    time: 'Inspect',
+    title: 'See and steer every query it runs',
+    body: [
+      'An agent in Strata is not a black box. Every query it builds is a governed query you can open, read, and change, the same way you would edit a report. When an answer looks off, you see exactly what it asked, not an opaque blob of SQL.',
+      'Take any query the agent created, adjust a filter or a measure, and carry on from there. The agent proposes, you stay in control, and every change is validated against the model, so steering it can never produce a wrong number.',
+    ],
+    underHood: {
+      text: 'The agent builds through the same validated query interface as a person, so its queries are legible and editable, checked against the compatibility matrix at every step.',
+      href: '/features/grain-safe-blending/',
+      label: 'Correctness by construction',
+    },
+    video: '/editing_ai_query.mp4',
+    alt: 'Opening and adjusting a governed query in the Strata editor, validated live at every step',
+  },
+  {
+    time: 'Share',
+    title: 'Share an agent the way you share a report',
+    body: [
+      'An agent is a first class object in Strata, just like a report. Publish it and share it with a team, and everyone gets the same purpose built expert for that domain, governed by the same rules as everything else.',
+      'The person who understands the questions builds the agent once, and the whole team can use it. Row level security still applies on every turn, so each person only ever sees the data they are allowed to.',
+    ],
+    underHood: {
+      text: 'Agents are governed, shareable objects. Sharing one respects the same row level security and masking as every report and dashboard in Strata.',
+      href: '/features/ai-native/',
+      label: 'AI ready analytics',
+    },
+    video: '/sharing_agent.mp4',
+    alt: 'Sharing a Strata agent with a team, governed by the same access rules as reports',
+  },
+];
+
+const capabilities = [
+  {
+    icon: 'shield',
+    title: 'Inherits your security',
+    body: 'Agents query through the same layer as people, so row level security and masking apply automatically. An agent can never read what its user could not, and you never keep a second security model for the machines.',
+  },
+  {
+    icon: 'layers',
+    title: 'One model, one answer',
+    body: 'Humans and agents reason over the same governed model. Build a report or build an agent, the number comes out the same, because both are answered the same governed way.',
+  },
+  {
+    icon: 'check',
+    title: 'Only the fields you defined',
+    body: 'An agent can only reason over the governed measures and dimensions in your model, never a column or metric it invented. Its answers use the definitions your team already agreed on.',
+  },
+];
+
+const absent = [
+  'Hand an LLM raw SQL access to your warehouse to guess with.',
+  'Ship one general chatbot and hope it rediscovers your model on every task.',
+  'Bolt AI on as a layer that bypasses your governance.',
+];
+
+const gained = [
+  'Agents that return correct answers, because they cannot query around the model.',
+  'Context that is real and current, not a paragraph describing your business.',
+  'One security model, inherited by every human and agent alike.',
+];
+---
+
+<Base
+  title="Agents your experts build, not a chatbot you bolt on | Strata"
+  description="Stop bolting one chatbot onto your warehouse. Your domain experts build purpose built agents the same way they build reports, grounded in live data and real semantic entities, on a governed model that makes correctness structural."
+>
+  <ProductHero
+    eyebrow="AI Analytics"
+    title="Agents your experts build, not a chatbot you bolt on"
+    subhead="Your experts can now build a report for a project, or an agent, and Strata makes both easy for non technical domain experts. Every agent rides your governed semantic model, grounded in real entities and live data, so users get correct answers fast."
+    video="/querying_with_ai.mp4"
+    alt="Querying data with a Strata agent: asking about bracelets, which the agent already knows is an item class"
+    ctaLocation="aa-hero"
+  />
+
+  <!-- WHY STRATA AGENTS ARE SHARPER -->
+  <!-- Ink-scoped (.dark): the differentiator beat. The argument is not cold
+       start, it is the managed reduction of the agent's selection space, plus
+       open OLAP for multi turn speed. -->
+  <section class="dark border-b border-border bg-background">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Fewer decisions, <span class="text-primary">sharper answers</span>
+        </h2>
+        <p class="mt-5 text-xl font-semibold leading-relaxed text-foreground">
+          Strata narrows every agent decision to the moves your <span class="text-primary">governed
+          model</span> can actually answer, so answers come back <span class="text-primary">correct and
+          fast</span>.
+        </p>
+      </div>
+
+      <div class="mx-auto mt-14 grid max-w-6xl gap-6 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="zap" class="h-5 w-5" />
+          </span>
+          <h3 class="mt-4 font-display text-lg font-bold tracking-tight">Nothing to select first</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            No explore, view, or datasource to choose before the conversation starts, and no narrow slice
+            that leaves the agent missing context. Strata's dynamic universes assemble the valid field
+            space around each question.
+          </p>
+        </div>
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="layers" class="h-5 w-5" />
+          </span>
+          <h3 class="mt-4 font-display text-lg font-bold tracking-tight">Only moves that are correct</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            Automatic blending and the compatibility matrix mean every option in front of the agent is
+            one the model can answer without double counting. Narrowing the selection space to valid moves
+            is what makes agentic use cases far more accurate here than on competitor offerings.
+          </p>
+        </div>
+        <div class="rounded-xl border border-border bg-surface p-7">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-primary">
+            <Icon name="gauge" class="h-5 w-5" />
+          </span>
+          <h3 class="mt-4 font-display text-lg font-bold tracking-tight">Open OLAP for multi turn</h3>
+          <p class="mt-2 leading-relaxed text-muted-foreground">
+            A single task fans out into dozens of queries. Open OLAP federation and hot tiers keep each
+            turn fast, so multi turn conversations feel responsive instead of grinding on warehouse
+            latency.
+          </p>
+        </div>
+      </div>
+
+      <div class="mx-auto mt-12 max-w-3xl text-center">
+        <p class="font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+          Accuracy and speed are not prompt tricks. They come from a model that narrows the agent to
+          valid moves, and answers each one fast.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="walkthrough" class="scroll-mt-20 border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">
+          How it works
+        </p>
+        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          An agent is a first class object, just like a report
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Build it, open up any query it runs, and share it with your team, the same way you already work
+          with reports. No black box, no separate tool to learn.
+        </p>
+      </div>
+      <div class="mt-20">
+        <DayInLife steps={steps} />
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUSTWORTHY BY CONSTRUCTION -->
+  <section class="border-b border-border bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Trustworthy by construction
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          The same governed model that makes your experts fast is what makes their agents safe.
+        </p>
+      </div>
+      <div class="mt-14">
+        <CapabilityGrid cards={capabilities} />
+      </div>
+    </div>
+  </section>
+
+  <!-- THE TRADEOFF -->
+  <section class="border-b border-border bg-surface-2">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          What we don't do, <span class="text-primary">on purpose</span>
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
+          An agent is only as trustworthy as the system it queries. So we refuse to build the parts that
+          let it guess its way to a confident wrong answer.
+        </p>
+      </div>
+      <div class="mt-14">
+        <TradeoffPanel
+          absent={absent}
+          gained={gained}
+          absentTitle="What Strata does not do"
+          gainedTitle="What it protects"
+        />
+      </div>
+      <p class="mx-auto mt-12 max-w-3xl text-center font-display text-xl font-semibold leading-relaxed text-foreground sm:text-2xl">
+        Correctness is not a prompt. It is a property of the model the agent queries, and we refuse to
+        ship anything that lets an agent route around it.
+      </p>
+    </div>
+  </section>
+
+  {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
+
+  <!-- CLOSING CTA -->
+  <section class="border-t border-border bg-strata-ink">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        Put an agent on your data, without the wrong answers
+      </h2>
+      <p class="mt-4 text-muted-foreground">
+        Bring the question your last chatbot got confidently wrong. We will build an agent that gets it
+        right.
+      </p>
+      <CtaButton location="aa-closing" class="mt-8" />
+    </div>
+  </section>
+
+  <VideoLightbox />
+</Base>

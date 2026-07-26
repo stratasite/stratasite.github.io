@@ -1,0 +1,38 @@
+---
+// Numbers band that sits directly under a product hero. Buys credibility for
+// everything below it, so keep every figure traceable to the linked source.
+interface Stat {
+  value: string;
+  label: string;
+}
+interface Props {
+  stats: Stat[];
+  note?: string;
+  href?: string;
+  linkLabel?: string;
+}
+const { stats, note, href, linkLabel = 'Read the case study' } = Astro.props;
+---
+
+<!-- Ink-scoped (.dark re-themes semantic tokens in tokens.css): a cool band of
+     proof that lifts the numbers off the warm rust hero directly above it. -->
+<section class="dark border-b border-border bg-background">
+  <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <dl class="grid gap-8 sm:grid-cols-3">
+      {stats.map((s) => (
+        <div class="text-center">
+          <dt class="font-display text-3xl font-bold tabular-nums text-primary sm:text-4xl">{s.value}</dt>
+          <dd class="mt-2 text-sm leading-snug text-muted-foreground">{s.label}</dd>
+        </div>
+      ))}
+    </dl>
+    {(note || href) && (
+      <p class="mt-8 text-center text-sm text-muted-foreground">
+        {note}
+        {href && (
+          <a href={href} class="ml-1 font-semibold text-primary hover:underline">{linkLabel}</a>
+        )}
+      </p>
+    )}
+  </div>
+</section>

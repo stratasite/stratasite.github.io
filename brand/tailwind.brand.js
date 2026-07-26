@@ -27,6 +27,18 @@ module.exports = {
     },
     ring: 'var(--ring)',
 
+    // menus & overlays (ink family) — nav dropdowns, popovers
+    menu: {
+      DEFAULT: 'var(--menu-surface)',
+      2: 'var(--menu-surface-2)',
+      raised: 'var(--menu-raised)',
+      foreground: 'var(--menu-foreground)',
+      muted: 'var(--menu-muted-foreground)',
+      border: 'var(--menu-border)',
+      primary: 'var(--menu-primary)',
+      'primary-foreground': 'var(--menu-primary-foreground)',
+    },
+
     // raw brand swatches (use sparingly; e.g. marketing, illustration)
     strata: {
       rust: '#BC3908',
@@ -35,6 +47,8 @@ module.exports = {
       peach: '#FFC26E',
       cream: '#FFF6EA',
       ink: '#1C2B45',
+      'ink-soft': '#243450',
+      'ink-deep': '#14203A',
     },
 
     // data-viz

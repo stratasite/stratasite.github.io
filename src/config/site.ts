@@ -22,10 +22,36 @@ export const site = {
   blogUrl: 'https://blog.strata.do',
 } as const;
 
-/** Top-level navigation. The Product item is a dropdown of feature pages. */
+/**
+ * The three products the platform is sold as. These are the primary entries in
+ * the Product dropdown; each gets a detail page at `/product/<slug>/`.
+ * Feature pages sit underneath these, not beside them.
+ */
+export const products = [
+  {
+    slug: 'business-intelligence',
+    label: 'Business Intelligence',
+    summary: 'Beautiful by default dashboards and deep self service for everyone.',
+    icon: 'dashboard',
+  },
+  {
+    slug: 'semantic-layer',
+    label: 'Semantic Layer',
+    summary: 'Model by naming. Grain safe blending, five measure types, federated routing.',
+    icon: 'layers',
+  },
+  {
+    slug: 'ai-analytics',
+    label: 'AI Analytics',
+    summary: 'Agents that ask broad questions and get correct answers, on a governed model.',
+    icon: 'sparkles',
+  },
+] as const;
+
+/** Top-level navigation. The Product item is a dropdown of products + proof. */
 export const nav = {
-  // The Product dropdown is generated from the `features` content collection at
-  // render time (see Nav.astro), so feature links never drift from the pages.
+  // The Product dropdown is built from `products` above plus the `casestudies`
+  // content collection at render time (see Nav.astro), so links never drift.
   links: [
     { label: 'Features', href: '/#features' },
     { label: 'Pricing', href: '/pricing/' },

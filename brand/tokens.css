@@ -13,6 +13,8 @@
   --strata-cream:       #FFF6EA;  /* field / light surface tint */
   --strata-ink:         #1C2B45;  /* cool accent: text, trend line, wordmark */
   --strata-ink-soft:    #243450;  /* secondary ink */
+  --strata-ink-deep:    #14203A;  /* deepest ink: recessed panels behind ink */
+  --strata-ink-line:    #2A3A57;  /* ink hairline / divider */
 
   /* --- Semantic tokens (rust theme — rust is the primary background) --- */
   --background:          #BC3908;  /* rust */
@@ -27,6 +29,19 @@
   --accent:             #FFF6EA;
   --accent-foreground:  #9C2A04;
   --ring:               #FFC26E;
+
+  /* --- Menus & overlays (ink family) ---
+     Overlay chrome that floats above the rust field — nav dropdowns, popovers.
+     Ink separates them from the page instead of stacking rust on rust. Same
+     values in both themes: an overlay reads as ink either way. */
+  --menu-surface:            #1C2B45;  /* ink: the panel itself */
+  --menu-surface-2:          #14203A;  /* deeper ink: recessed rail inside a panel */
+  --menu-raised:             #243450;  /* ink-soft: hover / raised item */
+  --menu-foreground:         #FFF6EA;  /* cream: item labels */
+  --menu-muted-foreground:   #A9B6CE;  /* cool off-white: summaries, section labels */
+  --menu-border:             #2A3A57;  /* ink hairline */
+  --menu-primary:            #FFC26E;  /* peach accent on ink */
+  --menu-primary-foreground: #14203A;  /* deep ink text on peach */
 
   /* --- Data-viz: categorical series (use in this order) --- */
   --chart-1: #BC3908;  /* rust */
