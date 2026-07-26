@@ -2,15 +2,16 @@
 /**
  * Product page: AI Analytics.
  *
- * Thesis: don't bolt one chatbot onto your warehouse. Non technical experts
- * build purpose built agents (the same way they build reports), grounded in
- * live entities and real data values, on a governed model that makes
- * correctness structural. Antagonist: the cold, chat box first agent that
- * starts every question from zero and guesses SQL.
+ * Thesis: this reader already accepts semantic-layer-over-SQL, so we sell that
+ * Strata's is the best foundation for agents. Non technical experts build
+ * purpose built agents the same way they build reports, grounded in live
+ * entities and real data. The edge is a managed reduction of the agent's
+ * decision space (dynamic universes + automatic blending + compatibility
+ * matrix) for accuracy, plus open OLAP for multi turn speed.
  *
- * Reader: the data / AI leader whose agent over data pilot is returning wrong
- * answers, with the non technical builder as the empathy figure. Claims kept
- * inside STRATA.md §9 guardrails (grain checked / refuses, not "never wrong").
+ * Reader: the data / AI leader deploying agents over their data, with the non
+ * technical builder as the empathy figure. Claims kept inside STRATA.md §9
+ * guardrails (refuses / narrows to valid moves, not "never wrong").
  */
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
@@ -18,7 +19,6 @@ import ProductHero from '../../components/product/ProductHero.astro';
 import DayInLife from '../../components/product/DayInLife.astro';
 import CapabilityGrid from '../../components/product/CapabilityGrid.astro';
 import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
-import OperatorTable from '../../components/product/OperatorTable.astro';
 import Icon from '../../components/Icon.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import VideoLightbox from '../../components/product/VideoLightbox.astro';
@@ -93,39 +93,6 @@ const capabilities = [
     icon: 'check',
     title: 'Only the fields you defined',
     body: 'An agent can only reason over the governed measures and dimensions in your model, never a column or metric it invented. Its answers use the definitions your team already agreed on.',
-  },
-];
-
-const compareRows = [
-  {
-    axis: 'Where each question starts',
-    them: 'From zero, guessing your schema',
-    strata: 'With your entities and live data already in hand',
-  },
-  {
-    axis: 'Who builds it',
-    them: 'Engineers, in prompts and pipelines',
-    strata: 'The domain expert, in the report editor',
-  },
-  {
-    axis: 'How it forms a query',
-    them: 'Guesses SQL and joins',
-    strata: 'Navigates a validated space, never guesses',
-  },
-  {
-    axis: 'When it cannot answer',
-    them: 'A confident wrong number',
-    strata: 'Refuses, with the nearest valid alternative',
-  },
-  {
-    axis: 'What it is allowed to see',
-    them: 'A second security model to maintain',
-    strata: "Inherits the user's row level security",
-  },
-  {
-    axis: 'Scope',
-    them: 'One chat box over the whole warehouse',
-    strata: 'A purpose built agent per project',
   },
 ];
 
@@ -251,27 +218,6 @@ const gained = [
       </div>
       <div class="mt-14">
         <CapabilityGrid cards={capabilities} />
-      </div>
-    </div>
-  </section>
-
-  <!-- HEAD TO HEAD -->
-  <section class="border-b border-border">
-    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-3xl text-center">
-        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Two ways to put AI on your data
-        </h2>
-        <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-          A chatbot bolted onto the warehouse, or a purpose built agent grounded in a governed model.
-        </p>
-      </div>
-      <div class="mt-14">
-        <OperatorTable
-          axisHeader="When you put AI on your data"
-          columnLabel="Them"
-          rows={compareRows}
-        />
       </div>
     </div>
   </section>
