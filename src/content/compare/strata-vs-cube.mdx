@@ -2,19 +2,90 @@
 title: Strata vs Cube
 competitor: Cube
 category: semantic-layer
-summary: Cube is a strong headless pre-aggregation layer. Strata is aggregate-aware and federated too, and ships its own beautiful self-service instead of leaving you headless.
+summary: Cube is a capable semantic layer with strong pre-aggregations, now growing a BI layer on top. But its operator is still technical, cross-fact analysis needs a view for every combination, and the fast tier is a proprietary cache. Strata makes the non-technical user the operator, blends by naming, and runs on OLAP engines you own.
 order: 20
-draft: true
 ---
+
+import Callout from '../../components/Callout.astro';
 
 ## Where Cube Is Strong
 
-Cube has strong managed pre-aggregations and caching, a broad API and BI ecosystem, and it is a common
-choice for embedded analytics.
+Cube is a genuinely capable semantic layer, and it is moving fast. Model
+definition in YAML is intuitive, the open-source Docker build iterates in
+seconds (edit a model and it is live on the server, no deploy cycle), and
+AI-assisted modeling can scaffold dozens of tables in one sitting.
+Pre-aggregations are the standout: Cube Store answers a single chart in the low
+hundreds of milliseconds and refreshes a multi-chart dashboard in about a
+second, even over billions of rows. On top of that it has grown a BI layer,
+cloud workbooks, and a built-in AI chat that probes dimension values to
+disambiguate a question. For a technical team it is a strong, well-built
+product.
+
+<Callout type="tip" title="Who is the Primary Operator?">
+The primary operator is the person who can drive the full tool: build reports,
+dashboards, agents, and exports, not just view them. It is the first question to
+settle when choosing an analytics platform.
+
+**Who are you trying to enable?**
+  1. Technical users (analytics and data engineers) who deliver dashboards and views, or
+  2. Non-technical domain experts who need to self-serve analytics.
+
+Cube is built for the first. Non-technical users stay passive consumers who
+depend on engineers to author the right view. In Strata the primary operator is
+the non-technical user. Engineers set the project up and keep it current as KPIs
+change and new tables land, but that upkeep is light. The day-to-day building is
+done by domain experts.
+</Callout>
 
 ## Where Strata Pulls Ahead
 
-Cube is headless with no native dashboards, and it carries a heavy configuration burden of cubes and
-views with weak LOD and snapshot expressiveness. Strata is aggregate-aware and federates across engines
-with partition-aware routing, models by naming instead of authored cubes, ships five measure types, and
-gives you a beautiful consumption layer for people and agents.
+**A view for every combination.** In Cube, cross-fact analysis lives in views,
+and you need a view for every combination of facts you want to blend. That
+guarantees view sprawl and a standing maintenance burden, and it turns the
+non-technical user into a supplicant: "which view has the measures and
+dimensions I need?" Mix grains without the right view and you hit an
+unresolvable join path. Strata blends automatically. Give the same concept the
+same name and Strata aggregates each fact to a common grain, then outer-joins on
+the conformed keys. No view to author, no combination to pre-build, and invalid
+blends are refused before they run, with an explanation and the nearest valid
+alternative.
+
+**Hard measures mean hard SQL.** Simple measures are easy in both tools. But a
+semi-additive measure, a monthly inventory balance, took undocumented
+multi-stage workarounds in Cube and generated well over a hundred lines of SQL
+for a single number, and calculated measures can reference other measures but
+not dimensions. As you layer on complexity the generated SQL only gets harder to
+debug. Strata ships five measure types, Standard, Complex, Snapshot, LOD, and
+ad-hoc. Snapshot is a first-class declaration rather than a workaround, and
+Complex measures reference both measures and dimensions. One click adds
+year-over-year, moving average, or percent of total.
+
+**Dashboards that guide the user, not trap them.** Cube's dashboards are
+cloud-only, built through a click-to-place UI that feels dated next to modern
+drop zones, and laid out by manual snap-to-grid. Most telling, they offer no
+guardrails: a user can assemble an illegal query and only discover it through a
+"can't find join path" error. Strata is beautiful by default, arranges views
+with a layout engine, and validates every query as it is built, so a
+non-technical user cannot construct a broken or wrong-numbered view in the first
+place.
+
+**A proprietary cache, versus engines you own.** Cube's speed comes from Cube
+Store, a closed OLAP engine. It is fast, but it is a black box you cannot query
+with your other tools or replace when something better ships. Strata's
+performance is aggregate-aware and federated across OLAP engines you bring and
+own, ClickHouse, Druid, whatever fits, with partition-aware routing to the
+fastest source that can answer. One measure definition serves every engine, your
+other tools can query those engines directly over SQL, and the aggregation and
+caching work you invest carries over to any tool you add later.
+
+**AI inherits the layer's limits.** Cube's built-in chat is a bright spot, but
+its quality is capped by the quality of your views: it inherits the semantic
+layer's limitations, and there is no way to bring your own model. Strata's
+validation loop is the agent API. Agents ask broad questions against the
+governed model and get the same grain-safe refusals and correct answers a person
+does, so agent quality rises with the model instead of being gated by a
+hand-built view for every question.
+
+The review of Cube ends on the right question: which persona are you trying to
+enable? Cube enables the engineer, and does it well. Strata enables the domain
+expert, and the agent, on the same governed, grain-safe, federated model.

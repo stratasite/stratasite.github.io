@@ -41,15 +41,15 @@ export const competitorCells: Record<string, string[]> = {
     'Growing, but you build the retrieval',
   ],
   'strata-vs-cube': [
-    'Developers. Headless; end users consume through another tool',
-    'Authored cubes and views; high config burden',
-    'Only through authored views',
-    'Depends on cube and view design',
-    'Weak LOD and snapshot support',
-    'Managed pre-aggregations and caching',
-    'Multi-engine',
-    'Headless; no native dashboards',
-    'API-first; you build the agent logic',
+    'Technical users (analytics and data engineers). Non-technical users passively consume views others build',
+    'Authored cubes plus a view for every blend combination; view sprawl',
+    'Only through authored views; mixing grains hits unresolvable join paths',
+    'On the model author; dashboards surface "can\'t find join path" errors to users',
+    'Semi-additive needs undocumented workarounds; complex measures cannot use dimensions',
+    'Strong managed pre-aggregations via proprietary Cube Store',
+    'Queries many warehouses, but the fast tier is closed Cube Store',
+    'Cloud-only workbooks; click-to-place, manual layout, no query guardrails',
+    'Built-in chat, but it inherits view quality and its limits; no custom model',
   ],
   'strata-vs-looker': [
     'LookML developers build; business users explore within prebuilt guardrails',
@@ -115,6 +115,18 @@ export const extraRows: Record<
   string,
   { capability: string; them: string; strata: string }[]
 > = {
+  'strata-vs-cube': [
+    {
+      capability: 'Fast tier',
+      them: 'Proprietary Cube Store cache; not queryable by other tools or replaceable',
+      strata: 'Any OLAP engine you own, queryable over SQL and swappable, with no lock in',
+    },
+    {
+      capability: 'Generated SQL',
+      them: 'Complex multi-stage SQL; a simple semi-additive measure ran past 100 lines',
+      strata: 'Grain-safe drill-across: each fact aggregated, then outer-joined on conformed keys',
+    },
+  ],
   'strata-vs-metabase': [
     {
       capability: 'Query building',
