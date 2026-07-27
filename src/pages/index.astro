@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
+import ProductGrid from '../components/ProductGrid.astro';
 import FeatureRows from '../components/FeatureRows.astro';
 import StackUp from '../components/StackUp.astro';
 import CaseStudySpotlight from '../components/CaseStudySpotlight.astro';
@@ -33,8 +34,26 @@ const featuredStudy = caseStudies[0];
     </div>
   </section>
 
+  <!-- PRODUCTS -->
+  <section id="products" class="dark scroll-mt-20 border-t border-border bg-background">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          One platform, <span class="text-primary">four propositions</span>
+        </h2>
+        <p class="mt-4 text-muted-foreground">
+          A governed semantic layer, beautiful self-service dashboards, agents grounded in live data, and the
+          open OLAP engines that make it all fast. One system, four ways to put it to work.
+        </p>
+      </div>
+      <div class="mt-16">
+        <ProductGrid />
+      </div>
+    </div>
+  </section>
+
   <!-- FEATURES -->
-  <section id="features" class="scroll-mt-20">
+  <section id="features" class="scroll-mt-20 border-t border-border">
     <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-3xl text-center">
         <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">

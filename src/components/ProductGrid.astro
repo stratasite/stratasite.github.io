@@ -1,0 +1,26 @@
+---
+// The four products as cards linking to each product page. Data comes from the
+// `products` config (the single source of truth shared with the nav dropdown and
+// footer), so the home page can't drift from the site's product architecture.
+import Icon from './Icon.astro';
+import { products } from '../config/site';
+---
+
+<div class="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
+  {products.map((p) => (
+    <a
+      href={`/product/${p.slug}/`}
+      class="group/card flex flex-col rounded-xl border border-border bg-surface p-6 transition-colors hover:border-primary/50 hover:bg-surface-2"
+    >
+      <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-primary transition-colors group-hover/card:bg-primary group-hover/card:text-primary-foreground">
+        <Icon name={p.icon} class="h-5 w-5" />
+      </span>
+      <h3 class="mt-4 font-display text-lg font-bold tracking-tight text-foreground">{p.label}</h3>
+      <p class="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{p.summary}</p>
+      <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover/card:gap-2">
+        Explore
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+      </span>
+    </a>
+  ))}
+</div>
