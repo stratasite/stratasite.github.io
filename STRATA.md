@@ -4,6 +4,8 @@
 >
 > **Terminology note:** Strata uses **"measure"** (never "metric"). This document follows that convention throughout.
 >
+> **v3.1 change summary (September 2026):** **Segments have shipped** — cohort scoping applied to a whole view or to a single measure. Added to §3.5 (new "Segments" block), §4 (expressiveness), §10 (glossary) and §11 (quick facts). Segments are not a measure type but they change what a measure returns, so treat them as part of the expressiveness story. Also rewrote §9.3: absolute correctness is now a claim to make plainly rather than hedge.
+>
 > **v3 change summary (July 2026):** The **Google Sheets add-on, subscriptions, and scheduling have shipped**. Added §3.9 (delivery: exports, subscriptions, schedules) and relaxed §9.7 so Sheets can be named in external copy; the no-pre-announce rule now applies only to surfaces after Sheets. Everything below reflects shipped capability unless explicitly marked roadmap.
 >
 > **v2 change summary:** Replaced the "no BI integration" absolute with the **owned-UX integration doctrine** (§3.8, §4, §5, §7, §8, §9.6, §10, §11): Strata embeds into other surfaces (e.g., a Google Sheets add-on) wherever Strata provides and controls the retrieval UX, but never exposes headless query-protocol access for external BI tools to drive with their own query builders. Added §5.4 on the universal semantic layer trend and OSI.
@@ -61,6 +63,12 @@ Aggregation is defined at the model/table level. Strata offers these kinds of me
 
 **One-click measure transforms.** From any measure, users can one-click generate **year-over-year** versions, **moving averages**, and **percent-to-total** calculations.
 
+**Segments (shipped).** A **segment** restricts a query to one or more **cohorts**. It applies at two levels:
+- **View/query level** — every measure on the report answers for that population.
+- **Measure level** — a single measure is restricted while the measures beside it keep answering for everyone.
+
+The measure-level form is the differentiating one: a segmented measure sitting next to an unsegmented one yields **cohort against baseline in a single view** (new-customer revenue beside total revenue, one cohort beside another, share-of-population) with no correlated subquery and no query-per-cohort stitched together by hand. Most semantic layers cannot express this at all, because a filter there applies to the whole query and therefore to every measure on it. Segments are **not a measure type**, but they change what a measure returns, so they belong to the expressiveness story alongside §3.5's five types.
+
 ### 3.6 Performance architecture: aggregate-aware + federated OLAP hot tiers
 - **Aggregate-aware:** Strata routes queries to pre-aggregated tables when they can satisfy the request, avoiding base-fact scans.
 - **Open OLAP / federation:** additional data sources (ClickHouse, Druid, other fast OLAP DBs, Databricks) can be mapped into the same project. A source/model can be designated a **hot tier** — chosen preferentially.
@@ -100,7 +108,7 @@ The last mile — getting an answer out of the tool and to the people who act on
 - **Integration without abdication.** Strata goes where users work — Sheets and other owned-UX surfaces — but the retrieval experience is always Strata's. Correctness guarantees can't be enforced through a foreign query builder, so Strata never exposes one; it extends its own interface instead. (This is the principled contrast with headless "universal semantic layers," whose guarantees leak at the tool boundary.)
 - **The last mile is built in.** Exports to Google Sheets through Strata's own add-on, plus subscriptions and schedules, so answers reach the spreadsheets and inboxes where operators actually work. Competitors reach those surfaces through generic drivers or static exports — precisely where freshness and semantic guarantees break down.
 - **AI-native throughout** — natural-language field/filter resolution in the editor, structured agent API, grain-safe retrieval.
-- **Expressiveness:** five measure types (Standard, Complex, Snapshot, LOD, ad-hoc) plus one-click YoY / moving average / percent-to-total transforms.
+- **Expressiveness:** five measure types (Standard, Complex, Snapshot, LOD, ad-hoc) plus one-click YoY / moving average / percent-to-total transforms, plus **segments** for cohort scoping at either view or measure level — the measure-level form (cohort beside baseline in one view) is not expressible in layers where a filter necessarily applies to the whole query.
 
 ---
 
@@ -189,7 +197,7 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 
 1. **Netflix / prior-employer IP.** Strata is "architecturally similar, built from prior experience, with enhancements." **Get legal counsel** on clean-room independence and prior IP/invention agreements before publishing code or strong claims. Phrase the proof point as a **scale descriptor** ("production-proven at Netflix scale") rather than a claim about a specific employer's internal system. Note Netflix has its own OSS semantic-layer work (e.g. DataJunction) — be ready to articulate how Strata differs. *(Not legal advice.)*
 2. **Cost-savings claims ("lower warehouse bill").** Workload-dependent — only true when a meaningful share of traffic is repetitive queries over recent/aggregated data a hot tier or agg table can absorb. Frame as "size the savings against your query patterns," ideally proven live with their query history. Don't promise specific percentages.
-3. **"Never get a wrong number" / absolute correctness.** An absolute a technical evaluator will test. Prefer "grain-checked; refuses invalid combinations" / "grain-safe retrieval." Back it with a golden-query correctness suite as the real guarantee.
+3. **Absolute correctness — claim it plainly.** Strata refuses every semantically invalid query before execution, and there is no workaround: no raw-SQL passthrough, no headless endpoint (§9.6), and no consumption surface that isn't driven by Strata's own validated retrieval interface (§3.8). Compatibility is derived from the model rather than configured per combination, so validation cannot be skipped or out-configured. State it as an absolute ("Strata cannot return a semantically invalid answer"; "there is no path to a wrong number") rather than hedging to "grain-checked" or "refuses invalid combinations" — hedged phrasing understates a structural guarantee and reads as a caveat. Technical evaluators *will* test it, so keep the golden-query correctness suite current as the live demonstration. Note the boundary this claim does and does not cover: it is a guarantee about semantic validity, not about upstream data quality — Strata will not blend or aggregate wrongly, but it cannot vouch for wrong values in the warehouse.
 4. **Competitor capabilities evolve.** Snowflake semantic views (esp. modeling/BI) and MetricFlow are improving quarterly, and OSI adoption is moving fast (native platform support roadmapped through late 2026). Re-verify the comparison table and §5.4 before each publish; build positioning on architecture (federation + agg-awareness + convention model + full self-service + owned-UX doctrine), not on closeable feature gaps.
 5. **Convention quality is a human dependency.** Naming discipline matters: the modeler must give the same concept the same registered name to enable blending, and distinct concepts distinct names to keep them safe. Don't oversell "zero modeling" — it's "modeling by naming," with free choice of names.
 6. **Headless BI integration is intentionally excluded; owned-UX embedding is the integration model.** Never imply Strata feeds or embeds into Power BI/Tableau/Superset via drivers or protocols — that exclusion is principled and permanent. But also never say "Strata has no integrations": the doctrine is that Strata embeds into other surfaces (Google Sheets, shipped) wherever it controls the retrieval UX. Frame the exclusion as an engineering standard, not a gap: *"we integrate anywhere our guarantees can travel with the data."*
@@ -209,6 +217,8 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 - **LOD (level of detail) include/exclude:** controlling which dimensions enter a measure's group-by/filter (enables % of total, share, fixed denominators, hierarchy exclusion).
 - **Snapshot / semi-additive measure:** a measure that can't be naively summed across time (balances, inventory, headcount); handled via snapshot beginning/ending + table snapshot date.
 - **Measure transforms:** one-click YoY, moving average, percent-to-total derived from a base measure.
+- **Segment:** a restriction of a query to one or more cohorts, applied either to an entire view (every measure answers for that population) or to a single measure (the measures beside it stay unrestricted). The per-measure form enables cohort-vs-baseline in one view. Not a measure type, but it changes what a measure returns.
+- **Cohort:** the population a segment restricts to.
 - **Aggregate-aware:** routing a query to a pre-aggregated table when it can satisfy the request.
 - **Hot tier:** a fast OLAP source (ClickHouse, Druid) preferentially used when query filters fall within its partition range.
 - **Partition-aware routing:** the layer knows each source's data range and routes to the hot tier only when filters are compatible, else falls back to the warehouse.
@@ -225,7 +235,7 @@ Strata spans two categories at once: it is a **semantic/retrieval layer** (vs Sn
 
 - **Product:** Strata — AI-safe, high-performance self-service analytics platform (governed semantic layer + beautiful-by-default dashboards).
 - **Category:** self-service analytics + governed semantic/retrieval layer for dashboards and AI agents.
-- **Core differentiators:** freely-named semantic field registry; automatic grain-safe cross-fact blending; aggregate-aware + federated OLAP with partition-aware hot-tier routing; five measure types (Standard, Complex, Snapshot, LOD, ad-hoc) + one-click YoY/moving-avg/percent-to-total; beautiful-by-default dashboards via a layout engine; AI-native editor (NL field/filter resolution); grain-safe agent API; built-in exports, subscriptions and schedules; owned-UX embeds into work surfaces (Google Sheets add-on, shipped).
+- **Core differentiators:** freely-named semantic field registry; automatic grain-safe cross-fact blending; aggregate-aware + federated OLAP with partition-aware hot-tier routing; five measure types (Standard, Complex, Snapshot, LOD, ad-hoc) + one-click YoY/moving-avg/percent-to-total + segments (cohort scoping per view or per measure); beautiful-by-default dashboards via a layout engine; AI-native editor (NL field/filter resolution); grain-safe agent API; built-in exports, subscriptions and schedules; owned-UX embeds into work surfaces (Google Sheets add-on, shipped).
 - **Engines:** Snowflake, ClickHouse, Druid, Databricks (extensible).
 - **Stage:** early-stage startup; architecture production-proven at Netflix scale 4+ years.
 - **Primary wedge:** add a ClickHouse hot tier + aggregate awareness on top of a Snowflake stack → faster dashboards/agents + lower Snowflake spend, with a more beautiful self-service experience.

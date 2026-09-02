@@ -1,6 +1,6 @@
 ---
-title: The most comprehensive suite of measure types, built for non technical users and agents
-summary: Standard, Complex, Snapshot, Exclusion LOD, and Inclusion LOD measures. Plus derived custom calculations and one click YoY, Moving Averages, and Percent of Total transforms.
+title: Five Measure Types Plus Segments, Built for People and Agents
+summary: Standard, Complex, Snapshot, and both Exclusion and Inclusion LOD measures, defined once and always computed at the right grain. Segments restrict a whole view or a single measure to a cohort, so new customer revenue can sit beside total revenue in one report. Semi additive and level of detail logic is exactly what headless layers flatten and what an agent cannot invent on its own. Ask for a median ticket size or a running balance and it is a field, not a ticket.
 icon: sigma
 diagram: measures
 order: 50
@@ -11,6 +11,7 @@ sections:
   - { id: exclusion-level-of-detail-lod, label: Exclusion LOD }
   - { id: inclusion-level-of-detail-lod, label: Inclusion LOD }
   - { id: derived-calculations, label: Derived calculations }
+  - { id: segments, label: Segments }
   - { id: transforms, label: Transforms }
 ---
 
@@ -151,6 +152,26 @@ It is powerful, and it stays correct.
   preload="metadata"
   aria-label="Creating custom measures and derived calculations from the semantic layer"
 ></video>
+
+## Segments
+
+Not every question is about everyone. You want revenue from the accounts that onboarded this quarter, margin on
+enterprise customers only, or retention for the cohort that arrived through one channel.
+
+A Segment restricts a query to one or more cohorts. Apply it to the view and every measure on the report answers
+for that population. Apply it to a single measure and only that measure is restricted, while the measures beside
+it keep answering for everyone.
+
+That second form is where it gets powerful. Put a segmented measure next to an unsegmented one and you have a
+cohort and its baseline in the same view: new customer revenue beside total revenue, one cohort beside another,
+a share of population without a hand written subquery. In SQL that is a correlated subquery, or a query per cohort
+that somebody stitches back together by hand. Most semantic layers cannot express it at all, because a filter there
+applies to the whole query and every measure on it.
+
+Segments are applied at query time, so there is no new model to ship to ask a cohort question. And because the
+restriction is understood by the semantic layer rather than bolted on after the fact, it carries the same grain
+safety as everything else. A person switching a cohort on and an agent scoping a question to one are doing the
+same governed thing.
 
 ## Transforms
 
