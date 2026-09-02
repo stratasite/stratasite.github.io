@@ -63,7 +63,7 @@ Aggregation is defined at the model/table level. Strata offers these kinds of me
 
 **One-click measure transforms.** From any measure, users can one-click generate **year-over-year** versions, **moving averages**, and **percent-to-total** calculations.
 
-**Segments (shipped).** A **segment** restricts a query to one or more **cohorts**. It applies at two levels:
+**Segments (shipped).** A **segment** restricts a query to one or more **cohorts**. Unlike the measure types above, a segment is **applied at query time and is not declared in YAML** — there is no model change required to ask a cohort question. It carries the same grain safety as everything else (§3.2), so a segmented measure is validated exactly like an unsegmented one. It applies at two levels:
 - **View/query level** — every measure on the report answers for that population.
 - **Measure level** — a single measure is restricted while the measures beside it keep answering for everyone.
 
