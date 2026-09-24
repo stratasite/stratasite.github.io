@@ -53,7 +53,7 @@ STRATA_ENCRYPTION_KEY_DERIVATION_SALT=${strata_encryption_key_derivation_salt}
 # Internal URL for worker-to-web requests (PDF asset loading via Ferrum).
 # APP_INTERNAL_URL=http://web:80
 # Host port exposed by docker compose (maps to container STRATA_CONTAINER_PORT).
-# PORT=3000
+# PORT=8080
 
 # Container HTTP listen port for Strata runtime (default: 80).
 # STRATA_CONTAINER_PORT=80

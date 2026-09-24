@@ -129,7 +129,10 @@ const slugSet = new Set(comparisons.map((c) => c.slug));
 
   <div class="mt-12 text-center">
     <p class="text-muted-foreground">See the difference on your own warehouse.</p>
-    <CtaButton location="stackup" class="mt-5" />
+    <div class="mt-5 flex flex-wrap items-center justify-center gap-4">
+      <CtaButton location="stackup" />
+      <CtaButton action="demo" location="stackup" />
+    </div>
   </div>
 </div>
 

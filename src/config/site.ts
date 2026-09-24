@@ -11,11 +11,20 @@ export const site = {
     'High-performance, AI-safe self-service analytics — a governed semantic layer fused with beautiful-by-default dashboards, for humans and agents.',
 
   /**
-   * Demo call-to-action. Single source of truth for every CTA (CtaButton) and
-   * the footer link — update here to swap schedulers.
+   * Demo call-to-action (the secondary action site-wide). Single source of
+   * truth for CtaButton action="demo" and the nav/footer links; update here
+   * to swap schedulers.
    */
   demoUrl: 'https://calendar.app.google/KjU3TdPwfVNpfuSs5',
   demoLabel: 'Schedule a demo',
+
+  /**
+   * Free trial. The primary call to action site-wide: every CtaButton defaults
+   * to it, with the demo as the secondary action. The page itself walks a
+   * visitor through the Docker install and the CLI quick start.
+   */
+  trialUrl: '/try/',
+  trialLabel: 'Try it free',
 
   // Outbound destinations (live on other domains/paths today).
   docsUrl: 'https://strata.do/developer-docs/',

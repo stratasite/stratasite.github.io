@@ -1,0 +1,569 @@
+---
+// The free trial page. A visitor lands here from every "Try it free" CTA and
+// leaves with Strata running on their own machine against their own warehouse.
+//
+// Hero, then straight into the work: server, CLI, warehouse connection, then
+// a coding agent does the modeling. Copy comes from the
+// Docker quick install and CLI quick start in the docs, tightened for someone
+// doing this for the first time. Analytics events are listed in
+// src/scripts/track.ts.
+import Base from '../layouts/Base.astro';
+import CtaButton from '../components/CtaButton.astro';
+import CommandBlock from '../components/try/CommandBlock.astro';
+import Tabs from '../components/try/Tabs.astro';
+import SectionScrollNav from '../components/SectionScrollNav.astro';
+import { site } from '../config/site';
+
+const title = 'Try Strata free on your own machine';
+const description =
+  'Run Strata locally in about 15 minutes. One Docker command starts the server, the CLI connects your warehouse, and your coding agent builds the semantic model.';
+
+const docs = (path: string) => `${site.docsUrl}${path}`;
+// Where the local server answers. The installer and the docker command both default to port 8080.
+const appUrl = 'http://localhost:8080';
+
+const navSections = [
+  { id: 'step-1', label: 'Start the server' },
+  { id: 'step-2', label: 'Install the CLI' },
+  { id: 'step-3', label: 'Create a project' },
+  { id: 'step-4', label: 'Build the model' },
+  { id: 'step-5', label: 'Deploy and explore' },
+  { id: 'help', label: 'If something goes wrong' },
+  { id: 'next', label: 'What next' },
+];
+
+const agentPrompt = `Build the semantic model for the tables in my warehouse datasource.
+Follow AGENTS.md. Show me your proposal before writing any files.`;
+
+// Troubleshooting and caveats, rendered as an accordion. Entries may hold
+// inline HTML. The Ruby/Git entry is authored inline in the markup because it
+// holds OS tabs.
+const faq = [
+  {
+    id: 'localhost-not-loading',
+    q: 'localhost:8080 does not load',
+    a: 'First boot sets up the bundled database and can take 30 to 60 seconds. Watch it with <code>docker logs -f strata</code> and refresh once you see "Databases ready".',
+  },
+  {
+    id: 'docker-not-reachable',
+    q: 'The installer says Docker is not running, or permission denied',
+    a: 'Docker is installed but the installer cannot talk to it. On macOS or Windows, start Docker Desktop and wait for it to say it is running. On Linux, start it with <code>sudo systemctl start docker</code>. If you see permission denied, run the installer with sudo: <code>curl -fsSL https://strata.do/server/install.sh | sudo bash</code>. Use sudo for the docker commands afterwards too.',
+  },
+  {
+    id: 'container-exits',
+    q: 'The container exits immediately',
+    a: 'Check the logs. The usual cause is port 8080 already in use. Remove the container with <code>docker rm -f strata</code>, then re-run the installer and enter a different port, or with plain docker change the left side of <code>-p</code>, for example <code>-p 9090:80</code>.',
+  },
+  {
+    id: 'manage-server',
+    q: 'How do I stop, upgrade, or remove the server?',
+    a: 'It is one container named <code>strata</code>. <code>docker stop strata</code> and <code>docker start strata</code> pause and resume it, re-running the installer upgrades it in place, and <code>docker rm -f strata</code> removes it. Your data lives in the <code>strata_data</code> volume and survives all of that until you run <code>docker volume rm strata_data</code>.',
+  },
+  {
+    id: 'command-not-found',
+    q: 'strata: command not found',
+    a: 'Open a new terminal so your PATH picks up the gem. If it persists, run <code>gem environment</code> and make sure the gem bin directory is on your PATH.',
+  },
+  {
+    id: 'datasource-test-fails',
+    q: 'datasource test fails',
+    a: 'The CLI connects from your laptop, so your laptop needs a route to the warehouse first: VPN on, IP allowlisted, firewall open. Then check host, port, database, schema, and credentials, and re-enter credentials with <code>strata datasource auth warehouse</code>. Your server in Docker uses the same route when it runs queries.',
+  },
+  {
+    id: 'local-database',
+    q: 'My database is on the same laptop',
+    a: 'Inside Docker, <code>localhost</code> is the container itself. Use <code>host.docker.internal</code> as the host so the server can reach a local PostgreSQL, or mount a DuckDB or SQLite file into the container.',
+  },
+  {
+    id: 'adapter-gem-missing',
+    q: 'Adapter gem missing',
+    a: 'Run <code>strata datasource check</code>. It lists the adapter gems you have and the ones you need, for example <code>gem install pg</code> for PostgreSQL.',
+  },
+  {
+    id: 'ai-features-prompt',
+    q: 'The CLI asked whether to enable AI features',
+    a: 'You can say no. That prompt covers AI assisted table generation inside the CLI. Your coding agent does the modeling from AGENTS.md instead.',
+  },
+  {
+    id: 'agent-off-script',
+    q: 'The agent invented YAML keys or asked for credentials',
+    a: 'Start the agent from the project root so it reads AGENTS.md, and point it at the file explicitly. It never needs credentials. Those live in <code>.strata</code>, which is gitignored. Agents only write model YAML: deploys and datasources stay with you.',
+  },
+];
+---
+
+<Base title={`${title} — Strata`} description={description}>
+  <!-- HERO -->
+  <section class="border-b border-border">
+    <div class="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
+      <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">Free trial</p>
+      <h1 class="mt-4 font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+        Run Strata on your own machine
+      </h1>
+      <p class="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+        Free plan, no credit card, everything runs locally. About 15 minutes.
+      </p>
+    </div>
+  </section>
+
+  <!-- GUIDE -->
+  <section>
+    <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+      <div class="lg:grid lg:grid-cols-[1fr_15rem] lg:gap-12">
+        <div class="guide mx-auto w-full max-w-3xl">
+          <!-- STEP 1 -->
+          <section id="step-1" class="step first" data-step="1" data-step-id="start-server">
+            <h2>Start the server</h2>
+            <p>
+              Strata Server runs in Docker with its own bundled database, so there is nothing to configure.
+              Need Docker?
+              <a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener" data-track="trial_docs_click" data-track-target="get-docker">Get Docker Desktop</a>.
+            </p>
+
+            <Tabs
+              group="server"
+              tabs={[
+                { key: 'installer', label: 'Installer (recommended)' },
+                { key: 'docker', label: 'Plain docker run' },
+              ]}
+              class="mt-6"
+            >
+              <div data-panel="installer">
+                <p class="!mt-0">Run this in a terminal and press Enter to accept the default port:</p>
+                <CommandBlock
+                  id="installer-run"
+                  step="1"
+                  code="curl -fsSL https://strata.do/server/install.sh | bash"
+                  class="mt-4"
+                />
+                <p>
+                  It checks Docker, pulls the image, starts the container, and waits until it is healthy. Then open
+                  <a href={appUrl} target="_blank" rel="noopener" data-track="trial_open_app" data-track-port="8080">{appUrl}</a>
+                  and create your admin account. Your free trial activates on its own, and a TPC-DS retail
+                  sample model is already loaded, so you can explore before connecting anything.
+                </p>
+              </div>
+              <div data-panel="docker" hidden>
+                <p class="!mt-0">One container, one command:</p>
+                <CommandBlock
+                  id="docker-run"
+                  step="1"
+                  code="docker run -d -p 8080:80 -v strata_data:/data --name strata ghcr.io/stratasite/server:latest"
+                  class="mt-4"
+                />
+                <p>
+                  Give it 30 to 60 seconds on first boot, then open
+                  <a href={appUrl} target="_blank" rel="noopener" data-track="trial_open_app" data-track-port="8080">{appUrl}</a>
+                  and create your admin account. Your free trial activates on its own, and a TPC-DS retail
+                  sample model is already loaded.
+                </p>
+              </div>
+            </Tabs>
+          </section>
+
+          <!-- STEP 2 -->
+          <section id="step-2" class="step" data-step="2" data-step-id="install-cli">
+            <h2>Install the CLI</h2>
+            <p>
+              The CLI is where projects, warehouse connections, and deploys happen. One command installs it and
+              verifies it works:
+            </p>
+            <CommandBlock id="cli-install" step="2" code="curl -fsSL https://strata.do/cli/install.sh | bash" class="mt-4" />
+            <p>Confirm it is on your path:</p>
+            <CommandBlock id="cli-version" step="2" code="strata version" class="mt-4" />
+
+
+          </section>
+
+          <!-- STEP 3 -->
+          <section id="step-3" class="step" data-step="3" data-step-id="create-project">
+            <h2>Create a project</h2>
+            <p>
+              A project is a folder of YAML under git. It ships with an <code>AGENTS.md</code> that tells your
+              coding agent exactly how Strata models work.
+            </p>
+            <CommandBlock id="init" step="3" code={`strata init my-analytics\ncd my-analytics`} class="mt-4" />
+
+            <h3>Add your warehouse</h3>
+            <p>
+              The only part that depends on your network and your credentials. A read only user is ideal. Have
+              these ready:
+            </p>
+
+            <div class="mt-6 overflow-hidden rounded-xl border border-border">
+              <table class="w-full text-sm">
+                <thead class="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th class="px-4 py-3">Warehouse</th>
+                    <th class="px-4 py-3">What the CLI will ask for</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border bg-surface">
+                  <tr>
+                    <td class="px-4 py-3 font-semibold text-foreground">Snowflake</td>
+                    <td class="px-4 py-3 text-muted-foreground">
+                      Account identifier (like <code>myorg-myaccount</code>), database, warehouse, role, and a
+                      personal access token. PAT is the simplest auth mode. Key pair and OAuth are also supported.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-semibold text-foreground">Databricks</td>
+                    <td class="px-4 py-3 text-muted-foreground">Workspace host, the SQL warehouse HTTP path, catalog and schema, and a personal access token.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-semibold text-foreground">PostgreSQL, Redshift, MySQL, SQL Server</td>
+                    <td class="px-4 py-3 text-muted-foreground">Host, port, database, schema, username, password. Turn on SSL if your server requires it.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-semibold text-foreground">Athena, Trino, Druid</td>
+                    <td class="px-4 py-3 text-muted-foreground">Endpoint or region plus credentials.</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-3 font-semibold text-foreground">DuckDB, SQLite</td>
+                    <td class="px-4 py-3 text-muted-foreground">
+                      A path to the database file.
+                      <a href={docs('developer-guide/semantic-model/adapters')} target="_blank" rel="noopener" data-track="trial_docs_click" data-track-target="adapters">Full field list per adapter</a>.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              Pick your adapter. The CLI asks for a key (use <code>warehouse</code>, the prompts below assume
+              it), a display name, the connection details, and the credentials. Credentials go into
+              <code>.strata</code>, which is gitignored and never leaves your machine except inside a deploy to
+              your own server.
+            </p>
+            <CommandBlock
+              id="datasource-add"
+              step="3"
+              code={`strata datasource add snowflake\n# or: databricks, postgres, redshift, mysql, sqlserver, athena, trino, druid, duckdb, sqlite`}
+              class="mt-4"
+            />
+
+            <p>Then test it. Do not skip this. It reports exactly what is wrong when something is.</p>
+            <CommandBlock id="datasource-test" step="3" code="strata datasource test warehouse" class="mt-4" />
+            <p>Once it passes, confirm you can see the tables you expect:</p>
+            <CommandBlock id="datasource-tables" step="3" code="strata datasource tables warehouse" class="mt-4" />
+
+          </section>
+
+          <!-- STEP 4 -->
+          <section id="step-4" class="step" data-step="4" data-step-id="build-model">
+            <h2>Build the model with your agent</h2>
+            <p>
+              Open Claude Code, Codex, or Cursor from the project root, the folder holding
+              <code>project.yml</code> and <code>AGENTS.md</code>. The agent reads that file automatically. It
+              is the whole contract: Strata's YAML schema, naming rules, join constraints, and the read only
+              discovery commands to use instead of guessing at your schema. No custom prompt needed.
+            </p>
+
+            <Tabs
+              group="model"
+              tabs={[
+                { key: 'agent', label: 'With a coding agent' },
+                { key: 'manual', label: 'By hand with the CLI' },
+              ]}
+              class="mt-6"
+            >
+              <div data-panel="agent">
+                <p class="!mt-0">Ask for the model:</p>
+                <CommandBlock id="agent-prompt" step="4" code={agentPrompt} class="mt-4" />
+                <p>
+                  The agent inspects your tables, proposes fact and dimension tables, fields, and joins, and
+                  waits for your approval before writing anything. Read the proposal. The things worth a second
+                  look:
+                </p>
+                <ul>
+                  <li>Which tables it treats as facts and which as dimensions.</li>
+                  <li>
+                    Shared dimension names are intentional. In Strata, the same name on two tables means the same
+                    concept and makes them blendable. Measure names must stay distinct per fact.
+                  </li>
+                  <li>One join per table pair. A second key to the same dimension needs a role playing table.</li>
+                  <li>Names, because they are what your users will see and query.</li>
+                </ul>
+                <p>
+                  Say yes and it writes <code>models/**/*.yml</code>, running <code>strata audit</code> after every
+                  change. Twenty tables or two hundred, this is a few minutes.
+                </p>
+              </div>
+              <div data-panel="manual" hidden>
+                <p class="!mt-0">
+                  The CLI walks you through one table at a time: it lists tables in your datasource, pulls the
+                  column metadata, and prompts you to name each field and mark it a dimension or a measure.
+                </p>
+                <CommandBlock
+                  id="create-table"
+                  step="4"
+                  code={`strata create table sales/orders\nstrata create table common/customers`}
+                  class="mt-4"
+                />
+                <p>Then define how they join:</p>
+                <CommandBlock id="create-relation" step="4" code="strata create relation sales/orders_customers" class="mt-4" />
+                <p>
+                  Both paths write the same YAML, so mix them freely: let the agent draft the whole schema, then
+                  refine a table or two here.
+                </p>
+              </div>
+            </Tabs>
+
+            <p class="text-sm text-muted-foreground">
+              Full guide:
+              <a href={docs('developer-guide/cli/building-your-model')} target="_blank" rel="noopener" data-track="trial_docs_click" data-track-target="building-your-model">Building your model</a>.
+            </p>
+          </section>
+
+          <!-- STEP 5 -->
+          <section id="step-5" class="step" data-step="5" data-step-id="deploy">
+            <h2>Deploy and explore</h2>
+            <p>Validate the whole model, then push it to your server:</p>
+            <CommandBlock id="audit-deploy" step="5" code={`strata audit all\nstrata deploy`} class="mt-4" />
+            <p>
+              The first deploy asks for your server URL (<code>{appUrl}</code>) and offers to sign
+              you in through the browser. It saves an API key for you, so there is no key to copy around.
+            </p>
+            <p>
+              Refresh
+              <a href={appUrl} target="_blank" rel="noopener" data-track="trial_open_app" data-track-port="8080">{appUrl}</a>
+              and your model is live. Some good first moves:
+            </p>
+            <ul>
+              <li>Type a question in plain language and let Strata resolve it to the right fields.</li>
+              <li>Drag a measure from one fact next to a dimension from another and watch it blend, or refuse with a reason.</li>
+              <li>Build a report from a few views and let the layout engine arrange it.</li>
+              <li>Push a view into Google Sheets with the add on, or schedule it to land in an inbox.</li>
+            </ul>
+            <p>
+              Every change to the model is the same loop: edit YAML (or ask the agent), <code>strata audit
+              all</code>, <code>strata deploy</code>.
+            </p>
+          </section>
+
+          <!-- HELP: accordion FAQ -->
+          <section id="help" class="step" data-step="6" data-step-id="help">
+            <h2 class="!mt-0">If something goes wrong</h2>
+            <div class="faq mt-6 divide-y divide-border rounded-xl border border-border bg-surface">
+              {faq.map((t) => (
+                <details class="group/faq" data-faq={t.id}>
+                  <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-display font-bold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+                    {t.q}
+                    <svg class="h-4 w-4 shrink-0 text-primary transition-transform group-open/faq:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                  </summary>
+                  <p class="!mt-0 px-5 pb-5 text-sm leading-relaxed text-muted-foreground" set:html={t.a} />
+                </details>
+              ))}
+              <details class="group/faq" data-faq="ruby-setup">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-display font-bold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+                  The CLI installer says Ruby or Git is missing
+                  <svg class="h-4 w-4 shrink-0 text-primary transition-transform group-open/faq:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                  </svg>
+                </summary>
+                <div class="px-5 pb-5 text-sm">
+                  <p class="!mt-0 leading-relaxed text-muted-foreground">
+                    The CLI is a Ruby gem and needs Ruby 3.4.4 or newer plus Git. Install them, open a new
+                    terminal, and run the CLI installer again.
+                  </p>
+                  <Tabs
+                    group="os"
+                    tabs={[
+                      { key: 'mac', label: 'macOS' },
+                      { key: 'linux', label: 'Linux' },
+                      { key: 'windows', label: 'Windows' },
+                    ]}
+                    class="mt-4"
+                  >
+                    <div data-panel="mac">
+                      <CommandBlock id="ruby-mac" step="6" code="brew install ruby git" class="!mt-0" />
+                      <p class="text-muted-foreground">
+                        Homebrew installs a current Ruby next to the system one. rbenv or asdf work too.
+                      </p>
+                    </div>
+                    <div data-panel="linux" hidden>
+                      <CommandBlock
+                        id="ruby-linux"
+                        step="6"
+                        code={`# Debian / Ubuntu\nsudo apt update && sudo apt install ruby-full git\n\n# Fedora / RHEL\nsudo dnf install ruby git`}
+                        class="!mt-0"
+                      />
+                      <p class="text-muted-foreground">
+                        If your distribution ships an older Ruby, use rbenv or asdf to get 3.4.4 or newer.
+                      </p>
+                    </div>
+                    <div data-panel="windows" hidden>
+                      <p class="!mt-0 text-muted-foreground">
+                        Install Ruby 3.4.x with
+                        <a href="https://rubyinstaller.org/" target="_blank" rel="noopener" data-track="trial_docs_click" data-track-target="rubyinstaller">RubyInstaller</a>
+                        (include the MSYS2 toolchain when prompted) and Git with
+                        <a href="https://git-scm.com/download/win" target="_blank" rel="noopener" data-track="trial_docs_click" data-track-target="git-windows">Git for Windows</a>.
+                        Then, in a new terminal, this replaces the shell installer:
+                      </p>
+                      <CommandBlock id="gem-windows" step="6" code="gem install strata-cli" class="mt-4" />
+                    </div>
+                  </Tabs>
+                </div>
+              </details>
+            </div>
+            <p>
+              Still stuck? Email
+              <a href="mailto:hello@strata.do" data-track="trial_docs_click" data-track-target="email">hello@strata.do</a>
+              with the output of the failing command, or book a setup call and we will do it with you.
+            </p>
+          </section>
+
+          <!-- NEXT -->
+          <section id="next" class="step" data-step="7" data-step-id="next">
+            <h2 class="!mt-0">What next</h2>
+            <ul class="!list-none !pl-0 mt-6 grid gap-4 sm:grid-cols-2">
+              {[
+                { label: 'Tutorial', body: 'The full TPC-DS walkthrough, from a raw schema to a blended report.', path: 'developer-guide/getting-started/tutorial', target: 'tutorial' },
+                { label: 'Core concepts', body: 'Fields, grain, conformed dimensions, and why naming is the model.', path: 'developer-guide/getting-started/concepts', target: 'concepts' },
+                { label: 'Measure types', body: 'Standard, complex, snapshot, LOD, and the transforms on top.', path: 'developer-guide/semantic-model/fields/measures', target: 'measures' },
+                { label: 'AI agents and Strata', body: 'Point your own agents at the API and get grain safe answers.', path: 'developer-guide/api/ai-agents', target: 'ai-agents' },
+              ].map((l) => (
+                <li>
+                  <a
+                    href={docs(l.path)}
+                    target="_blank"
+                    rel="noopener"
+                    class="group/card flex h-full flex-col rounded-xl border border-border bg-surface p-5 no-underline transition-colors hover:border-primary/50 hover:bg-surface-2"
+                    data-track="trial_docs_click"
+                    data-track-target={l.target}
+                  >
+                    <span class="font-display font-bold text-foreground">{l.label}</span>
+                    <span class="mt-1.5 text-sm leading-relaxed text-muted-foreground">{l.body}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+
+        <aside class="order-last">
+          <SectionScrollNav sections={navSections} />
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING CTA -->
+  <section class="mt-16 border-t border-border bg-strata-ink">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Rather do this together?</h2>
+      <p class="mt-4 text-muted-foreground">
+        Book 30 minutes and we will connect your warehouse, model it, and answer your hardest cross domain
+        question live.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <CtaButton action="demo" variant="primary" location="try-closing" label="Book a setup call" />
+        <a href="/pricing/" class="font-semibold text-primary transition-all hover:underline">See plans</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* Step sections: article prose rhythm without pulling in the whole
+     .prose-strata block, since most of this page is components. */
+  .step {
+    scroll-margin-top: 6rem;
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid var(--border);
+  }
+  .step.first {
+    margin-top: 0;
+    padding-top: 3.5rem;
+    border-top: 0;
+  }
+  .step h2 {
+    margin-top: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .step h3 {
+    margin-top: 2rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  .step p {
+    margin-top: 1rem;
+    line-height: 1.7;
+    color: var(--muted-foreground);
+  }
+  .step ul:not(.\!list-none) {
+    margin-top: 1rem;
+    padding-left: 1.5rem;
+    list-style: disc;
+    color: var(--muted-foreground);
+    line-height: 1.7;
+  }
+  .step ul:not(.\!list-none) li + li {
+    margin-top: 0.5rem;
+  }
+  .step a:not(.cta) {
+    font-weight: 500;
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .step a.group\/card {
+    text-decoration: none;
+  }
+  .step :not(pre) > code {
+    border-radius: 4px;
+    background: var(--surface-2);
+    padding: 0.1em 0.4em;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    color: var(--foreground);
+  }
+  .step strong {
+    color: var(--foreground);
+  }
+  /* Command blocks inside prose follow the paragraph rhythm. */
+  .step .cmd {
+    margin-top: 1rem;
+  }
+  .faq details[open] summary {
+    color: var(--primary);
+  }
+</style>
+
+<script>
+  // Funnel: fire `trial_step_view` once per step as it scrolls into view, so
+  // GA4 shows how far down the guide visitors get, and `trial_faq_open` when
+  // a troubleshooting entry is expanded.
+  import { track } from '../scripts/track';
+
+  const seen = new Set<string>();
+  const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-step-id]'));
+  if (sections.length && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const el = entry.target as HTMLElement;
+          const id = el.dataset.stepId!;
+          if (seen.has(id)) continue;
+          seen.add(id);
+          track('trial_step_view', { step: Number(el.dataset.step), step_id: id });
+          io.unobserve(el);
+        }
+      },
+      { rootMargin: '0px 0px -40% 0px', threshold: 0.1 }
+    );
+    sections.forEach((s) => io.observe(s));
+  }
+
+  document.querySelectorAll<HTMLDetailsElement>('[data-faq]').forEach((d) => {
+    d.addEventListener('toggle', () => {
+      if (d.open) track('trial_faq_open', { question: d.dataset.faq! });
+    });
+  });
+</script>

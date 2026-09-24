@@ -48,8 +48,8 @@ const fitChecklist = [
         Plans that scale with your team
       </h1>
       <p class="mx-auto mt-5 max-w-xl text-muted-foreground">
-        Start free and grow into governed, AI-safe self-service. Every plan starts with a quick demo on
-        your own data.
+        Start free on your own machine and grow into governed, AI-safe self-service. Team and Enterprise
+        start with a quick demo on your own data.
       </p>
     </div>
   </section>
@@ -104,7 +104,16 @@ const fitChecklist = [
               ))}
             </dl>
 
-            <CtaButton variant={tier.highlighted ? 'primary' : 'ghost'} location={`pricing-${tier.key}`} class="mt-8 w-full" />
+            {tier.key === 'free' ? (
+              <CtaButton location={`pricing-${tier.key}`} label="Start free" class="mt-8 w-full" />
+            ) : (
+              <CtaButton
+                action="demo"
+                variant={tier.highlighted ? 'primary' : 'ghost'}
+                location={`pricing-${tier.key}`}
+                class="mt-8 w-full"
+              />
+            )}
           </div>
         ))}
       </div>
@@ -152,8 +161,11 @@ const fitChecklist = [
   <section class="border-t border-border bg-strata-ink">
     <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
       <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Find the right plan for your team</h2>
-      <p class="mt-4 text-muted-foreground">See Strata on your own data and we will help you pick the tier that fits.</p>
-      <CtaButton location="pricing-closing" class="mt-8" />
+      <p class="mt-4 text-muted-foreground">Start free today, or see Strata on your own data and we will help you pick the tier that fits.</p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <CtaButton location="pricing-closing" />
+        <CtaButton action="demo" location="pricing-closing" />
+      </div>
     </div>
   </section>
 </Base>

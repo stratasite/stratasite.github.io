@@ -1,0 +1,83 @@
+---
+// Tab strip for the trial page: install path, operating system, modeling path.
+// Panels are slotted children marked `data-panel="<key>"`; the first tab is
+// open by default. A choice is remembered per group in localStorage so a
+// visitor who picks "Windows" once sees Windows everywhere on the page, and
+// is tracked as `trial_path_select` {group, choice}.
+interface Props {
+  /** Group id. Groups with the same id stay in sync across the page (e.g. `os`). */
+  group: string;
+  tabs: { key: string; label: string }[];
+  class?: string;
+}
+const { group, tabs, class: className = '' } = Astro.props;
+---
+
+<div class={`tabs ${className}`} data-tabs={group}>
+  <div role="tablist" class="flex flex-wrap gap-1 border-b border-border">
+    {tabs.map((t, i) => (
+      <button
+        type="button"
+        role="tab"
+        aria-selected={i === 0 ? 'true' : 'false'}
+        data-tab={t.key}
+        class="tab -mb-px rounded-t-md border-b-2 border-transparent px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground aria-selected:border-primary aria-selected:text-primary"
+      >
+        {t.label}
+      </button>
+    ))}
+  </div>
+  <div class="tab-panels pt-5">
+    <slot />
+  </div>
+</div>
+
+<script>
+  import { track } from '../../scripts/track';
+
+  const KEY = (group: string) => `strata.try.tab.${group}`;
+
+  function apply(root: HTMLElement, choice: string) {
+    root.querySelectorAll<HTMLElement>('[role="tab"]').forEach((b) => {
+      b.setAttribute('aria-selected', String(b.dataset.tab === choice));
+    });
+    // Only direct panels of this group: a group can nest another group.
+    const panels = root.querySelector<HTMLElement>('.tab-panels');
+    panels?.querySelectorAll<HTMLElement>(':scope > [data-panel]').forEach((p) => {
+      p.hidden = p.dataset.panel !== choice;
+    });
+  }
+
+  function select(group: string, choice: string) {
+    document.querySelectorAll<HTMLElement>(`[data-tabs="${group}"]`).forEach((root) => apply(root, choice));
+    try {
+      localStorage.setItem(KEY(group), choice);
+    } catch {
+      /* private mode: fine, the choice just isn't remembered */
+    }
+  }
+
+  // Initial state: remembered choice, else the first tab.
+  document.querySelectorAll<HTMLElement>('[data-tabs]').forEach((root) => {
+    const group = root.dataset.tabs!;
+    const first = root.querySelector<HTMLElement>('[role="tab"]')?.dataset.tab ?? '';
+    let choice = first;
+    try {
+      const saved = localStorage.getItem(KEY(group));
+      if (saved && root.querySelector(`[data-tab="${saved}"]`)) choice = saved;
+    } catch {
+      /* ignore */
+    }
+    apply(root, choice);
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement | null)?.closest<HTMLElement>('[role="tab"][data-tab]');
+    const root = btn?.closest<HTMLElement>('[data-tabs]');
+    if (!btn || !root) return;
+    const group = root.dataset.tabs!;
+    const choice = btn.dataset.tab!;
+    select(group, choice);
+    track('trial_path_select', { group, choice });
+  });
+</script>

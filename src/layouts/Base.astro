@@ -70,6 +70,10 @@ const canonical = new URL(path, site.domain).href;
       gtag('js', new Date());
       gtag('config', 'G-N28YLZN2KN');
     </script>
+    <!-- Delegated event tracking for every [data-track] element. See src/scripts/track.ts. -->
+    <script>
+      import '../scripts/track';
+    </script>
 
     <script
       type="application/ld+json"

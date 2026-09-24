@@ -55,9 +55,13 @@ const { title, summary, eyebrow, sections = [], description, video, image } = As
         <div class="mt-16 rounded-lg border border-border bg-surface-2 p-8 text-center not-prose">
           <h2 class="font-display text-2xl font-bold">See it on your own data</h2>
           <p class="mx-auto mt-2 max-w-xl text-muted-foreground">
-            The fastest way to understand Strata is a live walkthrough against a warehouse like yours.
+            Run Strata on your machine in about 15 minutes, or book a live walkthrough against a warehouse
+            like yours.
           </p>
-          <CtaButton location="article" class="mt-6" />
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-4">
+            <CtaButton location="article" />
+            <CtaButton action="demo" location="article" />
+          </div>
         </div>
       </div>
 

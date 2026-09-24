@@ -88,8 +88,9 @@ const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draf
     </ul>
 
     <!-- Right: CTA -->
-    <div class="flex items-center gap-3">
-      <CtaButton location="nav" class="hidden sm:inline-flex !px-4 !py-2 text-sm" />
+    <div class="flex items-center gap-4">
+      <CtaButton action="demo" location="nav" class="hidden lg:inline-flex !px-4 !py-2 text-sm" />
+      <CtaButton location="nav" class="!px-4 !py-2 text-sm" />
     </div>
   </nav>
 </header>

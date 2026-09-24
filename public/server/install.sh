@@ -1,27 +1,35 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════
-# Strata Enterprise — Installer
+# Strata Server — Installer
 # ═══════════════════════════════════════════════════════════════════
 #
 # Install:   curl -fsSL https://strata.do/server/install.sh | bash
-# Upgrade:   re-run the same command in the install directory
-# Env file:  curl -fsSL https://strata.do/server/env.sh | bash -s -- ./.env
+# Upgrade:   re-run the same command
 #
-# What this script does:
-#   1. Checks Docker and Docker Compose are installed and recent enough
-#   2. Prompts for database connection details and port
-#   3. Writes docker-compose.yml and .env
-#   4. Pulls the Strata image and starts the containers
+# The Strata image is self-contained: it bundles PostgreSQL, generates its
+# own secrets on first boot, and persists everything to the strata_data
+# volume. This script is the documented `docker run` with a health check
+# around it, nothing more:
 #
-# On re-run (upgrade):
-#   - Keeps your existing .env (only prompts for missing keys)
-#   - Updates docker-compose.yml to the latest version
-#   - Pulls the new image and restarts containers
+#   docker run -d -p 8080:80 -v strata_data:/data --name strata \
+#     ghcr.io/stratasite/server:latest
+#
+# Options (environment variables):
+#   PORT             Host port for the web UI (default: 8080)
+#   STRATA_VERSION   Image tag to run (default: latest)
+#   STRATA_NAME      Container name (default: strata)
+#
+# For an external PostgreSQL, SSL, or multi-container deployments, see the
+# production guide: https://strata.do/developer-docs/self-hosting
 # ═══════════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
-# ── Colours and formatting ────────────────────────────────────────
+IMAGE="ghcr.io/stratasite/server"
+MIN_DOCKER_VERSION="24"
+NAME="${STRATA_NAME:-strata}"
+VOLUME="strata_data"
+TAG="${STRATA_VERSION:-latest}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -31,125 +39,10 @@ BOLD='\033[1m'
 DIM='\033[2m'
 RESET='\033[0m'
 
-INSTALL_DIR="${STRATA_INSTALL_DIR:-$(pwd)/strata}"
-IMAGE="registry.gitlab.com/stratado/server"
-MIN_DOCKER_VERSION="24"
-MIN_COMPOSE_VERSION="2.20"
-LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
-
-# ── Helpers ───────────────────────────────────────────────────────
-
 info()    { echo -e "${BLUE}[strata]${RESET} $*"; }
 success() { echo -e "${GREEN}[strata]${RESET} $*"; }
 warn()    { echo -e "${YELLOW}[strata]${RESET} $*"; }
-fail() {
-  echo -e "${RED}[strata]${RESET} $*"
-  echo -e "${DIM}  To see what went wrong: ${LOG_CMD}${RESET}"
-  exit 1
-}
-
-prompt() {
-  local var_name="$1" description="$2" default="${3:-}" required="${4:-false}"
-  local value=""
-
-  echo "" >&2
-  echo -e "  ${BOLD}${var_name}${RESET}" >&2
-  echo -e "  ${DIM}${description}${RESET}" >&2
-
-  if [ "$required" = "true" ]; then
-    while [ -z "$value" ]; do
-      if [ -n "$default" ]; then
-        read -rp "  Enter value [${default}]: " value < /dev/tty
-        value="${value:-$default}"
-      else
-        read -rp "  Enter value: " value < /dev/tty
-      fi
-      if [ -z "$value" ]; then
-        echo -e "  ${RED}This field is required.${RESET}" >&2
-      fi
-    done
-  else
-    if [ -n "$default" ]; then
-      read -rp "  Enter value [${default}]: " value < /dev/tty
-    else
-      read -rp "  Enter value (leave empty to skip): " value < /dev/tty
-    fi
-    value="${value:-$default}"
-  fi
-
-  echo "$value"
-}
-
-prompt_secret() {
-  local var_name="$1" description="$2" required="${3:-false}"
-  local value=""
-
-  echo "" >&2
-  echo -e "  ${BOLD}${var_name}${RESET}" >&2
-  echo -e "  ${DIM}${description}${RESET}" >&2
-
-  if [ "$required" = "true" ]; then
-    while [ -z "$value" ]; do
-      read -rsp "  Enter value: " value < /dev/tty
-      echo "" >&2
-      if [ -z "$value" ]; then
-        echo -e "  ${RED}This field is required.${RESET}" >&2
-      fi
-    done
-  else
-    read -rsp "  Enter value (leave empty to skip): " value < /dev/tty
-    echo "" >&2
-  fi
-
-  echo "$value"
-}
-
-# Write a key=value to .env safely (handles special chars in values)
-write_env() {
-  local key="$1" value="$2" file="$3"
-
-  if grep -q "^${key}=" "$file" 2>/dev/null; then
-    tmpfile=$(mktemp)
-    while IFS= read -r line; do
-      if [[ "$line" == "${key}="* ]]; then
-        echo "${key}=${value}" >> "$tmpfile"
-      else
-        echo "$line" >> "$tmpfile"
-      fi
-    done < "$file"
-    mv "$tmpfile" "$file"
-  else
-    echo "${key}=${value}" >> "$file"
-  fi
-}
-
-# Resolve config value with precedence:
-#   1) .env file
-#   2) current shell environment
-# Returns empty string if neither is set.
-resolve_config_value() {
-  local key="$1" file="$2"
-  local file_value=""
-  local shell_value=""
-
-  file_value=$(grep "^${key}=" "$file" 2>/dev/null | head -1 | cut -d'=' -f2- || true)
-  if [ -n "$file_value" ]; then
-    echo "$file_value"
-    return
-  fi
-
-  shell_value="${!key-}"
-  if [ -n "$shell_value" ]; then
-    echo "$shell_value"
-    return
-  fi
-
-  echo ""
-}
-
-version_gte() {
-  printf '%s\n%s\n' "$2" "$1" | sort -V -C
-}
+fail()    { echo -e "${RED}[strata]${RESET} $*"; exit 1; }
 
 # ── Banner ────────────────────────────────────────────────────────
 
@@ -162,12 +55,12 @@ echo "  ╚════██║   ██║   ██╔══██╗██╔
 echo "  ███████║   ██║   ██║  ██║██║  ██║   ██║   ██║  ██║"
 echo "  ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝"
 echo -e "${RESET}"
-echo -e "  ${DIM}Enterprise Installer${RESET}"
+echo -e "  ${DIM}Server Installer${RESET}"
 echo ""
 
-# ── Step 1: Check Docker ─────────────────────────────────────────
+# ── Docker ────────────────────────────────────────────────────────
 
-info "Checking prerequisites..."
+info "Checking Docker..."
 
 if ! command -v docker &>/dev/null; then
   echo -e "${RED}[strata]${RESET} Docker is not installed."
@@ -175,375 +68,128 @@ if ! command -v docker &>/dev/null; then
   exit 1
 fi
 
-docker_version=$(docker version --format '{{.Server.Version}}' 2>/dev/null || echo "0.0.0")
+# The daemon has to be reachable before a version check means anything. A
+# stopped Docker Desktop or a user outside the docker group both make
+# `docker version` fail, which must not be reported as "too old".
+if ! docker_err=$(docker info 2>&1 >/dev/null); then
+  if echo "$docker_err" | grep -qi "permission denied"; then
+    echo -e "${RED}[strata]${RESET} Docker is installed but this user cannot talk to it. Re-run with sudo:"
+    echo -e "    ${BOLD}curl -fsSL https://strata.do/server/install.sh | sudo bash${RESET}"
+  else
+    echo -e "${RED}[strata]${RESET} Docker is installed but not running."
+    echo -e "  Start Docker Desktop (or ${BOLD}sudo systemctl start docker${RESET} on Linux) and re-run this script."
+  fi
+  exit 1
+fi
+
+docker_version=$(docker version --format '{{.Server.Version}}' 2>/dev/null | tr -d '[:space:]' || true)
+[ -n "$docker_version" ] || docker_version=$(docker version --format '{{.Client.Version}}' 2>/dev/null | tr -d '[:space:]' || true)
 docker_major=$(echo "$docker_version" | cut -d. -f1)
 
-if [ "$docker_major" -lt "$MIN_DOCKER_VERSION" ]; then
+if ! [[ "$docker_major" =~ ^[0-9]+$ ]]; then
+  warn "Could not read the Docker version (got '${docker_version:-nothing}'). Continuing; Strata requires Docker $MIN_DOCKER_VERSION+."
+elif [ "$docker_major" -lt "$MIN_DOCKER_VERSION" ]; then
   echo -e "${RED}[strata]${RESET} Docker $docker_version is too old. Strata requires Docker $MIN_DOCKER_VERSION+."
   echo -e "  Upgrade at ${BOLD}https://docs.docker.com/get-docker/${RESET}"
   exit 1
-fi
-success "Docker $docker_version"
-
-# ── Step 2: Check Docker Compose ─────────────────────────────────
-
-if docker compose version &>/dev/null; then
-  compose_version=$(docker compose version --short 2>/dev/null | sed 's/^v//')
 else
-  echo -e "${RED}[strata]${RESET} Docker Compose (v2) is not available."
-  echo -e "  It ships with Docker Desktop, or install the plugin: ${BOLD}https://docs.docker.com/compose/install/${RESET}"
-  exit 1
+  success "Docker $docker_version"
 fi
 
-if ! version_gte "$compose_version" "$MIN_COMPOSE_VERSION"; then
-  echo -e "${RED}[strata]${RESET} Docker Compose $compose_version is too old. Strata requires Compose $MIN_COMPOSE_VERSION+."
-  exit 1
-fi
-success "Docker Compose $compose_version"
-
-# ── Step 3: Check if this is a fresh install or upgrade ──────────
+# ── Existing install? ─────────────────────────────────────────────
+# A container with our name means this is an upgrade: keep its port, replace
+# the container, keep the volume (and therefore the data).
 
 is_upgrade=false
-if [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/.env" ]; then
+existing_port=""
+if docker container inspect "$NAME" &>/dev/null; then
   is_upgrade=true
+  existing_port=$(docker container inspect "$NAME" \
+    --format '{{range $p, $conf := .HostConfig.PortBindings}}{{(index $conf 0).HostPort}}{{end}}' 2>/dev/null | head -1 || true)
+  info "Found an existing '$NAME' container. This will upgrade it in place; your data is kept."
 fi
 
-if [ "$is_upgrade" = true ]; then
+# ── Port ──────────────────────────────────────────────────────────
+# Prompt only when there is a terminal to prompt on. `curl | bash` keeps the
+# terminal on /dev/tty even though stdin is the pipe.
+
+port="${PORT:-${existing_port:-8080}}"
+if [ -z "${PORT:-}" ] && [ -r /dev/tty ]; then
   echo ""
-  info "Existing Strata installation detected at ${BOLD}$INSTALL_DIR${RESET}"
-  info "This will upgrade your installation (your .env is preserved)."
-  echo ""
-  read -rp "  Continue with upgrade? [Y/n]: " confirm < /dev/tty
-  confirm="${confirm:-Y}"
-  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    info "Aborted."
-    exit 0
-  fi
-else
-  echo ""
-  info "Installing Strata to ${BOLD}$INSTALL_DIR${RESET}"
-  echo ""
-  read -rp "  Continue? [Y/n]: " confirm < /dev/tty
-  confirm="${confirm:-Y}"
-  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    info "Aborted."
-    exit 0
-  fi
+  echo -e "  ${BOLD}Port for the Strata web UI${RESET} ${DIM}[${port}]${RESET}"
+  read -r -p "  > " answer < /dev/tty || answer=""
+  port="${answer:-$port}"
 fi
+[[ "$port" =~ ^[0-9]+$ ]] || fail "Port must be a number, got '$port'."
 
-mkdir -p "$INSTALL_DIR"
-LOG_CMD="cd $INSTALL_DIR && docker compose logs -f"
-
-# ── Step 4: Create / update .env ─────────────────────────────────
-
-ENV_FILE="$INSTALL_DIR/.env"
-
-if [ ! -f "$ENV_FILE" ]; then
-  touch "$ENV_FILE"
-fi
-
-# ── Step 5: Prompt for required values ────────────────────────────
-#
-# Only essential config is prompted. Advanced settings (SSL, S3,
-# log level, etc.) are written with sensible defaults and can be edited
-# in .env later.
+# ── Pull ──────────────────────────────────────────────────────────
 
 echo ""
-info "Database configuration"
-echo -e "  ${DIM}Leave DB_HOST empty to use the bundled PostgreSQL (good for single-server installs).${RESET}"
-echo -e "  ${DIM}Press Enter to accept the default shown in [brackets].${RESET}"
+info "Pulling $IMAGE:$TAG..."
+docker pull "$IMAGE:$TAG" || fail "Failed to pull the image. Check your network and try again."
+success "Image ready"
 
-# Format: key|description|default|required|secret
-PROMPTS=(
-  "DB_HOST|PostgreSQL hostname or IP (leave empty to use bundled Postgres)||false|"
-  "DB_PORT|PostgreSQL port|5432|false|"
-  "DB_USERNAME|PostgreSQL username (leave empty for bundled Postgres default)||false|"
-  "DB_PASSWORD|PostgreSQL password (leave empty for bundled Postgres default)||false|secret"
-  "PORT|Port for the Strata web UI|3000|false|"
-)
-
-prompted=false
-
-for entry in "${PROMPTS[@]}"; do
-  IFS='|' read -r key description default_value required secret <<< "$entry"
-
-  current_value=$(resolve_config_value "$key" "$ENV_FILE")
-
-  # If the value already exists in .env or shell env, persist to .env and skip prompt.
-  if [ -n "$current_value" ]; then
-    write_env "$key" "$current_value" "$ENV_FILE"
-    continue
-  fi
-
-  prompted=true
-
-  if [ "$secret" = "secret" ]; then
-    new_value=$(prompt_secret "$key" "$description" "$required")
-  else
-    new_value=$(prompt "$key" "$description" "$default_value" "$required")
-  fi
-
-  write_env "$key" "$new_value" "$ENV_FILE"
-done
-
-# Write sensible defaults for non-prompted keys (only if missing)
-DEFAULTS=(
-  "STRATA_LOG_LEVEL|info"
-  "APP_HOST|localhost"
-  "APP_PROTOCOL|http"
-  "APP_INTERNAL_URL|http://web:80"
-  "STRATA_CONTAINER_PORT|80"
-  "ASSUME_SSL|false"
-  "FORCE_SSL|false"
-  "WEB_CONCURRENCY|2"
-  "WEB_THREADS|5"
-  "JOB_CONCURRENCY|4"
-  "JOB_THREADS|3"
-)
-
-for entry in "${DEFAULTS[@]}"; do
-  IFS='|' read -r key default_value <<< "$entry"
-  current_value=$(resolve_config_value "$key" "$ENV_FILE")
-  value_to_write="${current_value:-$default_value}"
-  write_env "$key" "$value_to_write" "$ENV_FILE"
-done
-
-# Generate Strata encryption secrets if not already set
-if [ -z "$(resolve_config_value "STRATA_SECRET_KEY_BASE" "$ENV_FILE")" ]; then
-  secret=$(openssl rand -hex 64)
-  write_env "STRATA_SECRET_KEY_BASE" "$secret" "$ENV_FILE"
-  success "Generated STRATA_SECRET_KEY_BASE"
-else
-  write_env "STRATA_SECRET_KEY_BASE" "$(resolve_config_value "STRATA_SECRET_KEY_BASE" "$ENV_FILE")" "$ENV_FILE"
-fi
-
-if [ -z "$(resolve_config_value "STRATA_ENCRYPTION_PRIMARY_KEY" "$ENV_FILE")" ]; then
-  secret=$(openssl rand -hex 16)
-  write_env "STRATA_ENCRYPTION_PRIMARY_KEY" "$secret" "$ENV_FILE"
-  success "Generated STRATA_ENCRYPTION_PRIMARY_KEY"
-else
-  write_env "STRATA_ENCRYPTION_PRIMARY_KEY" "$(resolve_config_value "STRATA_ENCRYPTION_PRIMARY_KEY" "$ENV_FILE")" "$ENV_FILE"
-fi
-
-if [ -z "$(resolve_config_value "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$ENV_FILE")" ]; then
-  secret=$(openssl rand -hex 16)
-  write_env "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$secret" "$ENV_FILE"
-  success "Generated STRATA_ENCRYPTION_DETERMINISTIC_KEY"
-else
-  write_env "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$(resolve_config_value "STRATA_ENCRYPTION_DETERMINISTIC_KEY" "$ENV_FILE")" "$ENV_FILE"
-fi
-
-if [ -z "$(resolve_config_value "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$ENV_FILE")" ]; then
-  secret=$(openssl rand -hex 16)
-  write_env "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$secret" "$ENV_FILE"
-  success "Generated STRATA_ENCRYPTION_KEY_DERIVATION_SALT"
-else
-  write_env "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$(resolve_config_value "STRATA_ENCRYPTION_KEY_DERIVATION_SALT" "$ENV_FILE")" "$ENV_FILE"
-fi
-
-if [ "$prompted" = false ]; then
-  success "All configuration values are set"
-else
-  echo ""
-  success "Configuration saved to .env"
-fi
-
-# ── Step 6: Write docker-compose.yml ─────────────────────────────
-# Generated after prompts so we know whether bundled or external Postgres is used.
-# Bundled (no DB_HOST): single web container handles jobs internally.
-# External DB: separate web + job containers.
-
-info "Writing docker-compose.yml..."
-
-db_host=$(resolve_config_value "DB_HOST" "$ENV_FILE")
-
-if [ -z "$db_host" ]; then
-  LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web"
-else
-  LOG_CMD="cd $INSTALL_DIR && docker compose logs -f web job"
-fi
-
-if [ -z "$db_host" ]; then
-  # Bundled Postgres — single container, jobs run in web process
-  cat > "$INSTALL_DIR/docker-compose.yml" << 'COMPOSE_EOF'
-# Strata - Docker Compose (bundled Postgres mode)
-# Managed by the Strata installer. All configuration belongs in .env.
-
-services:
-  web:
-    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
-    ports:
-      - "${PORT:-3000}:${STRATA_CONTAINER_PORT:-80}"
-    env_file: .env
-    environment:
-      RAILS_ENV: production
-      STRATA_RUN_DB_PREPARE: "true"
-      HANDLE_JOBS_IN_WEB_SERVER: "true"
-    volumes:
-      - strata_storage:/rails/storage
-      - strata_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:$${STRATA_CONTAINER_PORT:-80}/up || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 120s
-
-volumes:
-  strata_storage:
-  strata_data:
-COMPOSE_EOF
-else
-  # External Postgres — separate web + job containers
-  cat > "$INSTALL_DIR/docker-compose.yml" << 'COMPOSE_EOF'
-# Strata - Docker Compose (external Postgres mode)
-# Managed by the Strata installer. All configuration belongs in .env.
-
-services:
-  web:
-    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
-    ports:
-      - "${PORT:-3000}:${STRATA_CONTAINER_PORT:-80}"
-    env_file: .env
-    environment:
-      RAILS_ENV: production
-      STRATA_RUN_DB_PREPARE: "true"
-    volumes:
-      - strata_storage:/rails/storage
-      - strata_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:$${STRATA_CONTAINER_PORT:-80}/up || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 120s
-
-  job:
-    image: registry.gitlab.com/stratado/server:${STRATA_VERSION:-latest}
-    env_file: .env
-    environment:
-      RAILS_ENV: production
-      STRATA_RUN_DB_PREPARE: "false"
-      JOB_CONCURRENCY: "${JOB_CONCURRENCY:-4}"
-      JOB_THREADS: "${JOB_THREADS:-3}"
-    command: ["./bin/jobs"]
-    volumes:
-      - strata_storage:/rails/storage
-      - strata_data:/data
-    restart: unless-stopped
-    depends_on:
-      web:
-        condition: service_healthy
-
-volumes:
-  strata_storage:
-  strata_data:
-COMPOSE_EOF
-fi
-
-success "docker-compose.yml written"
-
-# ── Step 7: Pull image ───────────────────────────────────────────
-
-echo ""
-info "Pulling Strata image..."
-
-strata_version=$(resolve_config_value "STRATA_VERSION" "$ENV_FILE")
-pull_tag="${strata_version:-latest}"
-
-docker pull "$IMAGE:$pull_tag" || fail "Failed to pull image. Check your network and registry access."
-success "Image pulled: $IMAGE:$pull_tag"
-
-# ── Step 8: Start containers ─────────────────────────────────────
+# ── Run ───────────────────────────────────────────────────────────
 
 echo ""
 if [ "$is_upgrade" = true ]; then
-  info "Restarting Strata with the new version..."
+  info "Replacing the running container..."
+  docker rm -f "$NAME" >/dev/null
 else
   info "Starting Strata..."
 fi
 
-cd "$INSTALL_DIR"
-docker compose up -d || fail "Failed to start containers."
+docker run -d \
+  -p "${port}:80" \
+  -v "${VOLUME}:/data" \
+  --name "$NAME" \
+  --restart unless-stopped \
+  "$IMAGE:$TAG" >/dev/null || fail "Failed to start the container. Is port $port free? Set PORT=<other> and re-run."
 
-# ── Step 9: Wait for health check ────────────────────────────────
+# ── Health check ──────────────────────────────────────────────────
+# First boot prepares the bundled database, which can take a minute.
 
-port=$(resolve_config_value "PORT" "$ENV_FILE")
-port="${port:-3000}"
 health_url="http://localhost:${port}/up"
-
-info "Waiting for Strata to be ready..."
+if ! command -v curl &>/dev/null; then
+  warn "curl is not installed, so this script cannot wait for the health check."
+  echo -e "  Give it a minute, then open ${BOLD}http://localhost:${port}${RESET}"
+  exit 0
+fi
+info "Waiting for Strata to be ready (first boot can take up to a minute)..."
 
 healthy=false
-for i in $(seq 1 30); do
-  # Check if the service container has crashed
-  web_status=$(docker compose ps web --format '{{.State}}' 2>/dev/null || echo "")
-  if [ "$web_status" = "exited" ] || [ "$web_status" = "dead" ]; then
+for _ in $(seq 1 60); do
+  state=$(docker container inspect "$NAME" --format '{{.State.Status}}' 2>/dev/null || echo "")
+  if [ "$state" = "exited" ] || [ "$state" = "dead" ]; then
     echo ""
-    echo -e "${RED}═══════════════════════════════════════════════════════${RESET}"
-    echo -e "${RED}  Strata failed to start.${RESET}"
-    echo -e "${RED}═══════════════════════════════════════════════════════${RESET}"
+    echo -e "${RED}  Strata failed to start.${RESET} Recent logs:"
     echo ""
-    echo -e "  ${BOLD}Recent logs:${RESET}"
+    docker logs --tail 30 "$NAME" 2>&1 || true
     echo ""
-    docker compose logs --tail 20 web 2>/dev/null
-    echo ""
-    echo -e "  ${BOLD}How to fix:${RESET}"
-    echo -e "  1. Edit the config:          ${BOLD}nano $INSTALL_DIR/.env${RESET}"
-    echo -e "     ${DIM}(check DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD)${RESET}"
-    echo -e "  2. Restart:                  ${BOLD}cd $INSTALL_DIR && docker compose up -d${RESET}"
-    echo -e "  3. Watch logs:               ${BOLD}${LOG_CMD}${RESET}"
-    echo ""
+    echo -e "  Watch logs:   ${BOLD}docker logs -f $NAME${RESET}"
+    echo -e "  Try again:    ${BOLD}docker rm -f $NAME${RESET} then re-run this script"
     exit 1
   fi
-
-  # Check the health endpoint
-  if curl -sf "$health_url" -o /dev/null 2>/dev/null; then
+  if curl -fs "$health_url" >/dev/null 2>&1; then
     healthy=true
     break
   fi
-
-  sleep 2
+  sleep 3
 done
 
-if [ "$healthy" = false ]; then
-  echo ""
-  echo -e "${YELLOW}═══════════════════════════════════════════════════════${RESET}"
-  echo -e "${YELLOW}  Strata is still starting up.${RESET}"
-  echo -e "${YELLOW}═══════════════════════════════════════════════════════${RESET}"
-  echo ""
-  echo -e "  ${BOLD}Recent logs:${RESET}"
-  echo ""
-  docker compose logs --tail 15 web 2>/dev/null
-  echo ""
-  echo -e "  The container is running but hasn't passed the health check yet."
-  echo -e "  This can be normal on first run (database setup takes time)."
-  echo ""
-  echo -e "  ${BOLD}Watch progress:${RESET}  ${LOG_CMD}"
-  echo -e "  ${BOLD}Check health:${RESET}    curl ${health_url}"
-  echo ""
-  exit 1
-fi
-
-# ── Done ──────────────────────────────────────────────────────────
-
 echo ""
-echo -e "${GREEN}═══════════════════════════════════════════════════════${RESET}"
-
-if [ "$is_upgrade" = true ]; then
-  echo -e "${GREEN}  Strata has been upgraded successfully.${RESET}"
-else
+if [ "$healthy" = true ]; then
+  echo -e "${GREEN}═══════════════════════════════════════════════════════${RESET}"
   echo -e "${GREEN}  Strata is running.${RESET}"
+  echo -e "${GREEN}═══════════════════════════════════════════════════════${RESET}"
   echo ""
-  echo -e "  Open ${BOLD}http://localhost:${port}${RESET} to activate your license and create your admin account."
+  echo -e "  Open ${BOLD}http://localhost:${port}${RESET} and create your admin account."
+else
+  warn "Strata is still starting. Give it another minute, then open http://localhost:${port}"
 fi
-
 echo ""
-echo -e "  ${DIM}View logs:${RESET}   ${LOG_CMD}"
-echo -e "  ${DIM}Stop:${RESET}        cd $INSTALL_DIR && docker compose down"
-echo -e "  ${DIM}Config:${RESET}      $INSTALL_DIR/.env"
-echo -e "  ${DIM}Upgrade:${RESET}     re-run this installer"
-echo -e "${GREEN}═══════════════════════════════════════════════════════${RESET}"
+echo -e "  Logs:     ${BOLD}docker logs -f $NAME${RESET}"
+echo -e "  Stop:     ${BOLD}docker stop $NAME${RESET}   Start again: ${BOLD}docker start $NAME${RESET}"
+echo -e "  Upgrade:  re-run this script"
+echo -e "  Remove:   ${BOLD}docker rm -f $NAME${RESET}   Wipe data too: ${BOLD}docker volume rm $VOLUME${RESET}"
 echo ""

@@ -205,8 +205,13 @@ check_existing_installation() {
     echo ""
     
     # Ask user if they want to reinstall/upgrade (read from TTY when piped)
-    printf "Do you want to reinstall/upgrade? [y/N] "
-    read -r response < /dev/tty
+    if [ -r /dev/tty ]; then
+      printf "Do you want to reinstall/upgrade? [y/N] "
+      read -r response < /dev/tty || response=""
+    else
+      # No terminal to ask on (CI, piped stdin): upgrade, that is why the script was run.
+      response="y"
+    fi
     case "$response" in
       [yY][eE][sS]|[yY])
         print_info "Proceeding with reinstallation..."
@@ -235,23 +240,35 @@ install_gem() {
   # Check if user has write permissions to gem directory
   gem_dir=$(gem environment gemdir 2>/dev/null)
   
-  run_gem_install() {
-    if [ -n "$gem_dir" ] && [ ! -w "$gem_dir" ]; then
-      print_warning "Installing to system gem directory requires sudo."
-      print_info "Consider using a Ruby version manager (rbenv, asdf, rvm) for user-level installations."
-      echo ""
-      sudo gem install "${GEM_NAME}" --source "${GEM_SOURCE}" --pre 2>&1
+  use_sudo=false
+  if [ -n "$gem_dir" ] && [ ! -w "$gem_dir" ]; then
+    use_sudo=true
+    print_warning "Installing to system gem directory requires sudo."
+    print_info "Consider using a Ruby version manager (rbenv, asdf, rvm) for user-level installations."
+    echo ""
+    # Ask for the password up front, on the terminal, so the prompt is never
+    # swallowed by the output capture below.
+    sudo -v || { print_error "sudo authentication failed."; exit 1; }
+  fi
+  
+  # Stream the output so a slow install does not look hung, keep a copy for the
+  # error check, and record the real exit status (POSIX sh has no PIPESTATUS).
+  gem_log=$(mktemp)
+  gem_status=$(mktemp)
+  # The && / || form keeps `set -e` from aborting the subshell before the
+  # status is recorded.
+  {
+    if [ "$use_sudo" = true ]; then
+      sudo gem install "${GEM_NAME}" --source "${GEM_SOURCE}" 2>&1 && echo 0 > "$gem_status" || echo $? > "$gem_status"
     else
-      gem install "${GEM_NAME}" --source "${GEM_SOURCE}" --pre 2>&1
+      gem install "${GEM_NAME}" --source "${GEM_SOURCE}" 2>&1 && echo 0 > "$gem_status" || echo $? > "$gem_status"
     fi
-  }
+  } | tee "$gem_log"
+  gem_exit=$(cat "$gem_status")
+  gem_output=$(cat "$gem_log")
+  rm -f "$gem_log" "$gem_status"
   
-  gem_output=$(run_gem_install) || true
-  gem_exit=$?
-  
-  echo "$gem_output"
-  
-  if [ $gem_exit -ne 0 ]; then
+  if [ "$gem_exit" -ne 0 ]; then
     if echo "$gem_output" | grep -q "Could not find a valid gem"; then
       print_error "The gem '${GEM_NAME}' was not found on RubyGems.org."
       echo ""
