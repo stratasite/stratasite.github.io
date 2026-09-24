@@ -15,6 +15,7 @@
   --strata-ink-soft:    #243450;  /* secondary ink */
   --strata-ink-deep:    #14203A;  /* deepest ink: recessed panels behind ink */
   --strata-ink-line:    #2A3A57;  /* ink hairline / divider */
+  --strata-ink-night:   #0A1123;  /* near-black ink: terminal / code surfaces on ink pages */
 
   /* --- Semantic tokens (rust theme — rust is the primary background) --- */
   --background:          #BC3908;  /* rust */

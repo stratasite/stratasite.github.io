@@ -16,6 +16,8 @@ interface Props {
   /** Override the canonical/OG path (defaults to the current page path). */
   path?: string;
   image?: string;
+  /** Extra classes on <body>. Pass `dark` to render a whole page on the ink theme. */
+  bodyClass?: string;
 }
 
 const {
@@ -23,6 +25,7 @@ const {
   description = site.description,
   path = Astro.url.pathname,
   image = `${site.domain}/logo.png`,
+  bodyClass = '',
 } = Astro.props;
 
 const canonical = new URL(path, site.domain).href;
@@ -106,7 +109,7 @@ const canonical = new URL(path, site.domain).href;
       })}
     />
   </head>
-  <body class="min-h-screen bg-background text-foreground antialiased">
+  <body class={`min-h-screen bg-background text-foreground antialiased ${bodyClass}`}>
     <Nav />
     <main>
       <slot />

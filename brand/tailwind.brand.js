@@ -49,6 +49,7 @@ module.exports = {
       ink: '#1C2B45',
       'ink-soft': '#243450',
       'ink-deep': '#14203A',
+      'ink-night': '#0A1123',
     },
 
     // data-viz

@@ -17,11 +17,11 @@ const { id, step, code, class: className = '' } = Astro.props;
 
 <div class={`cmd relative ${className}`}>
   <pre
-    class="whitespace-pre-wrap [overflow-wrap:anywhere] rounded-xl border border-strata-cream/10 bg-strata-ink py-4 pl-5 pr-24 font-mono text-[0.9rem] leading-relaxed text-primary"
+    class="whitespace-pre-wrap [overflow-wrap:anywhere] rounded-xl border border-strata-cream/20 bg-strata-ink-night py-4 pl-5 pr-24 font-mono text-[0.95rem] leading-relaxed text-strata-peach"
   ><code data-cmd-text>{code}</code></pre>
   <button
     type="button"
-    class="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md border border-strata-cream/15 bg-strata-ink-soft px-2.5 py-1 text-xs font-semibold text-strata-cream transition-colors hover:bg-strata-cream/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    class="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md border border-strata-cream/20 bg-strata-ink px-2.5 py-1 text-xs font-semibold text-strata-cream transition-colors hover:bg-strata-ink-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     data-copy
     data-track="trial_command_copy"
     data-track-command={id}
