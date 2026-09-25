@@ -363,7 +363,7 @@ export const competitors: Record<string, Competitor> = {
       {
         label: 'Google Cloud estate',
         them: 'BigQuery native, Looker Studio, and Google identity out of the box.',
-        strata: 'BigQuery is not a supported engine today.',
+        strata: 'A BigQuery adapter is coming soon. Today Strata runs on Snowflake, Databricks, ClickHouse, and the rest of the adapter list.',
       },
       {
         label: 'Embedded analytics',
