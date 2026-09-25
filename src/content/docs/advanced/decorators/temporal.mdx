@@ -1,0 +1,74 @@
+---
+title: "Temporal Decorators"
+description: "Time-based calculations (YoY, MoM, etc.)."
+---
+Time-based calculations (YoY, MoM, etc.).
+
+## Overview
+
+Temporal decorators enable time-based comparisons like year-over-year (YoY), month-over-month (MoM), and other temporal calculations.
+
+## Available Decorators
+
+### Year-over-Year (YoY)
+
+Compare to same period last year.
+
+```yaml
+# Applied in query, not in model definition
+# User selects "YoY" decorator in UI
+```
+
+### Month-over-Month (MoM)
+
+Compare to previous month.
+
+```yaml
+# Applied in query, not in model definition
+```
+
+### Period-over-Period
+
+Compare to previous period (day, week, month, quarter, year).
+
+## How It Works
+
+Temporal decorators are applied at query time:
+1. User selects measure and temporal decorator
+2. Planner generates SQL with temporal calculation
+3. Returns comparison values
+
+## Use Cases
+
+### Revenue Growth
+
+```yaml
+# Measure definition
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+
+# User applies "YoY" decorator in query
+# Returns: Current year revenue vs. last year revenue
+```
+
+### Month-over-Month Growth
+
+```yaml
+# User applies "MoM" decorator
+# Returns: Current month vs. previous month
+```
+
+## Best Practices
+
+1. **Use with date dimensions** - Temporal decorators require date dimensions
+2. **Document measures** - Help users understand what can be compared
+3. **Test calculations** - Verify temporal comparisons work correctly
+
+## Next Steps
+
+- Learn about [window decorators](/docs/advanced/decorators/window/)
+- Explore [contribution decorators](/docs/advanced/decorators/contribution/)
+- Read about [snapshot measures](/docs/semantic-model/fields/measures/snapshot/)

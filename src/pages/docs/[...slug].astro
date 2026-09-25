@@ -1,0 +1,51 @@
+---
+import { getCollection } from 'astro:content';
+import Docs from '../../layouts/Docs.astro';
+import Tabs from '../../components/docs/Tabs.astro';
+import TabItem from '../../components/docs/TabItem.astro';
+import { docHref, docId, flatten, guideFor, trailFor } from '../../config/docs';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('docs', ({ data }) => !data.draft);
+  // Sidebar labels for every page, so the tree never needs its own copy.
+  const titles = Object.fromEntries(
+    entries.map((e) => [docId(e.id), e.data.sidebarLabel ?? e.data.title])
+  );
+  return entries.map((entry) => {
+    const id = docId(entry.id);
+    const route = docHref(id).replace(/^\/docs\/|\/$/g, '');
+    return {
+      params: { slug: route || undefined },
+      props: { entry, id, titles },
+    };
+  });
+}
+
+const { entry, id, titles } = Astro.props;
+const { Content, headings } = await entry.render();
+
+const guide = guideFor(id);
+const order = flatten(guide.sidebar);
+const at = order.indexOf(id);
+const link = (pid: string | undefined) =>
+  pid ? { href: docHref(pid), label: titles[pid] ?? pid } : undefined;
+const prev = at > 0 ? link(order[at - 1]) : undefined;
+const next = at >= 0 ? link(order[at + 1]) : undefined;
+const trail = trailFor(guide.sidebar, id) ?? [];
+const editUrl = `https://github.com/stratasite/stratasite.github.io/edit/main/src/content/docs/${entry.id}`;
+---
+
+<Docs
+  title={entry.data.title}
+  description={entry.data.description}
+  guide={guide}
+  id={id}
+  titles={titles}
+  headings={headings}
+  trail={trail}
+  prev={prev}
+  next={next}
+  editUrl={editUrl}
+>
+  <Content components={{ Tabs, TabItem }} />
+</Docs>

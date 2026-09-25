@@ -1,0 +1,58 @@
+---
+/**
+ * "On this page" nav for a docs page, built from the headings Astro extracts
+ * when rendering the MDX (h2 and h3 only). Scroll-spy highlights the heading
+ * currently in view, same behaviour as SectionScrollNav on feature pages.
+ */
+interface Props {
+  headings: { depth: number; slug: string; text: string }[];
+}
+const { headings } = Astro.props;
+const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+  items.length > 0 && (
+    <nav class="docs-toc docs-scroll sticky top-[9rem] hidden max-h-[calc(100vh-10rem)] overflow-y-auto text-sm lg:block" aria-label="On this page">
+      <p class="mb-3 font-display text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        On this page
+      </p>
+      <ul class="space-y-0.5 border-l border-border">
+        {items.map((h) => (
+          <li>
+            <a
+              href={`#${h.slug}`}
+              data-toc-link={h.slug}
+              class={`-ml-px block border-l border-transparent py-1 pr-2 leading-snug text-muted-foreground transition-colors hover:text-foreground ${h.depth === 3 ? 'pl-7 text-[0.8125rem]' : 'pl-4'}`}
+            >
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<script>
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+  if (links.length) {
+    const active = ['text-foreground', '!border-primary', 'font-medium'];
+    const byId = new Map(links.map((l) => [l.dataset.tocLink!, l]));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            links.forEach((l) => l.classList.remove(...active));
+            byId.get(entry.target.id)?.classList.add(...active);
+          }
+        });
+      },
+      { rootMargin: '-15% 0px -75% 0px', threshold: 0 }
+    );
+    byId.forEach((_, id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+  }
+</script>

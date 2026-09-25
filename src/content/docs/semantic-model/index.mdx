@@ -1,0 +1,137 @@
+---
+title: "Semantic Model"
+description: "Deep dive into Strata's semantic modeling capabilities."
+---
+Deep dive into Strata's semantic modeling capabilities.
+
+## Overview
+
+The semantic model is the core of Strata. It transforms raw database tables into business-friendly analytics models that enable self-service analytics.
+
+## Critical Rules
+
+Before diving into components, understand these non-negotiable design principles:
+
+:::tip[One Name, One Concept — Strata's Approach]
+**A field name identifies a single concept across your entire semantic layer.** There are no table-qualified names like `table.field_name`.
+
+Define the same name on more than one table and Strata treats every definition as that one concept. "Total Revenue" on `store_sales` and "Total Revenue" on `catalog_sales` are both valid ways to answer a query for Total Revenue. At query time the planner picks the table whose reachable dimensions cover what the query asks for, and breaks ties by table `cost` (lower wins), so you can steer the choice.
+
+The rule therefore cuts the other way: **distinct concepts need distinct names.** If "Country" means the caller's country on one table and the ship-to country on another, name them "Caller Country" and "Ship Country", or Strata will merge them.
+
+**Benefits:**
+- **Unambiguous references**: "Total Revenue" means exactly one thing, however many tables can produce it
+- **Compound measures**: `[Total Revenue] - [Total Cost]` works without table prefixes
+- **Conformed dimensions by naming**: a shared "Date" or "Customer" name is what lets tables blend
+- **AI integration**: LLMs can reference fields without disambiguation
+
+**Considerations:**
+- Names are scoped per type: "Days To Recontact" can be both a dimension (the bucket) and a measure (the average), since a query asks for one or the other
+- Naming is where you apply domain knowledge: same thing, same name; different thing, different name
+
+```yaml
+# In tbl.store_sales.yml
+- name: Total Revenue    # one concept...
+
+# In tbl.catalog_sales.yml
+- name: Total Revenue    # ...defined on a second table: either can serve it,
+                         #    chosen by the dimensions requested, then by cost
+- name: Catalog Revenue  # a different concept gets a different name
+```
+:::
+
+:::danger[No Many-to-Many Relationships]
+**`many_to_many` cardinality is not supported.** This design constraint prevents double-counting bugs and ensures predictable aggregations.
+
+**Workaround:** Use junction tables with two separate relationships.
+
+```yaml
+# ✗ NOT SUPPORTED
+users_roles:
+  cardinality: many_to_many
+
+# ✓ USE JUNCTION TABLE
+users_user_roles:
+  left: Users
+  right: User Roles
+  cardinality: one_to_many
+
+user_roles_roles:
+  left: User Roles
+  right: Roles
+  cardinality: many_to_one
+```
+
+**Why:** This approach makes relationships explicit and prevents common aggregation errors where measures get counted multiple times.
+:::
+
+## Key Components
+
+### Tables
+
+Tables define semantic metadata for physical database tables:
+- **Dimensions**: Categorical fields for grouping
+- **Measures**: Aggregatable metrics
+- **Cost**: Query optimization hints
+- **Partitions**: Data availability constraints
+
+[Learn about tables →](/docs/semantic-model/tables/)
+
+### Fields
+
+Fields are the building blocks of your semantic model:
+- **Dimensions**: Attributes for grouping and filtering
+- **Measures**: Metrics for aggregation
+- **Data Types**: string, integer, decimal, date, etc.
+- **Field format**: Currency, percent, dates, and display formatting
+
+[Learn about fields →](/docs/semantic-model/fields/dimensions/)
+
+### Expressions
+
+Expressions define how fields query the database:
+- **SQL**: Direct SQL expressions
+- **Lookups**: Dimension field indicators
+- **Arrays**: Multi-value fields
+- **Primary Keys**: Unique identifiers
+
+[Learn about expressions →](/docs/semantic-model/expressions/sql/)
+
+### Relationships
+
+Relationships define how tables join:
+- **Cardinality**: one-to-one, one-to-many, many-to-one
+- **Join Types**: inner (default), left, right
+- **Join Conditions**: SQL expressions
+
+[Learn about relationships →](/docs/semantic-model/relationships/cardinality/)
+
+## How It Works
+
+1. **Model Definition**: Data engineers define tables and relationships in YAML
+2. **Deployment**: Models are deployed to Strata server
+3. **Universe Formation**: Planner generates all possible query paths
+4. **Query Planning**: User queries are converted to optimized SQL
+5. **Execution**: SQL runs against datasources
+6. **Results**: Formatted results returned to users
+
+## Advanced (in-depth and extra)
+
+The **Advanced** subsection below covers deeper and optional semantic-model features: exclusions, inclusions, decorators, semantic routing, and cost optimization. The core basics (tables, fields, expressions, relationships, imports) are above; Advanced is for more in-depth and extra scenarios.
+
+- **Imports**: Reuse field definitions across tables
+- **Partitions**: Define data availability constraints
+- **Snapshot Measures**: Point-in-time analysis
+- **Exclusions**: Filter-based measure exclusions
+- **Inclusions**: Multi-level calculations
+- **Decorators**: Temporal, window, contribution functions
+
+[Advanced features →](/docs/advanced/)
+
+## Next Steps
+
+- Read about [tables](/docs/semantic-model/tables/)
+- Explore [dimensions](/docs/semantic-model/fields/dimensions/) and [measures](/docs/semantic-model/fields/measures/)
+- Learn about [expressions](/docs/semantic-model/expressions/sql/)
+- Understand [relationships](/docs/semantic-model/relationships/cardinality/)
+- Go deeper in [Advanced](/docs/advanced/)

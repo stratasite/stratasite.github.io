@@ -1,0 +1,1135 @@
+---
+title: "Tutorial: TPC-DS with DuckDB"
+description: "This tutorial walks you through building a semantic model for the TPC-DS benchmark using DuckDB. You will set up the Strata TPC-DS tutorial project, connect it to a DuckDB database, and complete the m"
+---
+This tutorial walks you through building a semantic model for the TPC-DS benchmark using **DuckDB**. You will set up the Strata TPC-DS tutorial project, connect it to a DuckDB database, and complete the model by adding the missing web channel tables and relationships. No cloud database or hosting is required.
+
+## Quick Start (Recommended)
+
+If you have a Strata server running locally (see [Quick Install](/docs/self-hosting/quick-install/)), the fastest way to get started is:
+
+```bash
+strata project sample
+cd tpc-ds-retail-sample
+strata deploy --skip-audit
+```
+
+`strata project sample` prompts for your server URL, opens your browser so you can sign in, and fetches an API key automatically — no manual key handling needed. (To skip the browser, pass both `--api-key` and `--server`.)
+
+`--skip-audit` skips the pre-deploy datasource connection check. The tutorial's DuckDB database is bundled **inside the Strata Docker image** at `/data/tpcds.duckdb` — the server can reach it, but the CLI running on your local machine cannot find that path and would fail the connection check before ever sending anything to the server. Skipping it is safe here; for your own projects, leave the flag off so the CLI catches connection issues early.
+
+The TPC-DS dataset is bundled in the Strata Docker image — no separate database setup needed.
+
+Open [http://localhost:8080](http://localhost:8080) to explore the deployed model, then return here to complete the learning exercise (adding the missing web channel tables).
+
+---
+
+## Manual Setup
+
+Use the steps below if you want to understand the internals, use your own DuckDB file, or connect to a remote Strata server.
+
+## Overview
+
+By the end of this tutorial you will have:
+
+- A local DuckDB database populated with TPC-DS data
+- A Strata project (cloned from [tpcds-tutorial](https://github.com/stratasite/tpcds-tutorial)) with table and relationship models for store, catalog, and inventory channels
+- Your own additions: the **web channel** tables and relationships (web_site, web_page, promotion, web_sales, web_returns) that are intentionally left out of the repository as a learning exercise
+
+## Prerequisites
+
+- **Ruby 3.4.4+** and **Git** installed
+- **Strata CLI** installed ([Installation](/docs/getting-started/installation/))
+- Familiarity with [Core concepts](/docs/getting-started/concepts/) (tables, relationships, datasources)
+
+## Step 1: Set Up DuckDB with TPC-DS Data
+
+DuckDB is an embedded analytics database that runs as a single file. The TPC-DS benchmark is available as a DuckDB extension, so you can generate the schema and data without installing a separate database server.
+
+### Install DuckDB
+
+Install the DuckDB CLI for your platform. See the [DuckDB installation guide](https://duckdb.org/docs/installation) for details.
+
+**Example (macOS with Homebrew):**
+
+```bash
+curl https://install.duckdb.org | sh
+```
+
+### Create the TPC-DS Database
+
+Create a new DuckDB database file and load the TPC-DS extension. Then generate the schema and data.
+
+1. Create and open a database file (e.g. `tpcds.duckdb` in a directory of your choice):
+
+```bash
+duckdb tpcds.duckdb
+```
+
+2. In the DuckDB shell, run:
+
+```sql
+INSTALL tpcds;
+LOAD tpcds;
+CALL dsdgen(sf=1);
+```
+
+This installs the TPC-DS extension, loads it, and generates data at scale factor 1. For schema only (no data), use `CALL dsdgen(sf=0);`. See the [DuckDB TPC-DS extension documentation](https://duckdb.org/docs/stable/core_extensions/tpcds) for more options.
+
+3. Exit the DuckDB shell (e.g. `.quit` or `Ctrl+D`).
+
+You now have a file `tpcds.duckdb` containing the full TPC-DS schema and data. Note its full path; you will use it in the next step.
+
+## Step 2: Clone the TPC-DS Tutorial Repository
+
+Clone the Strata TPC-DS tutorial project. It already contains table and relationship models for the store, catalog, and inventory channels, plus shared dimension tables.
+
+```bash
+git clone https://github.com/stratasite/tpcds-tutorial
+cd tpcds-tutorial
+```
+
+### Project Structure
+
+```
+tpcds-tutorial/
+├── project.yml          # Project configuration
+├── datasources.yml      # Datasource definitions (you will edit this)
+├── models/              # Semantic model files
+│   ├── catalog/         # Catalog channel (catalog_sales, catalog_returns, etc.)
+│   ├── common/          # Shared dimensions (date_dim, customer, item, etc.)
+│   ├── inventory/       # Inventory fact and relationships
+│   └── store/           # Store channel (store_sales, store_returns, etc.)
+├── migrations/
+└── tests/
+```
+
+The repository is **intentionally incomplete**: it does not include the **web channel** (web_sales, web_returns, web_site, web_page, promotion). You will add those in a later step.
+
+## Step 3: Configure the DuckDB Datasource
+
+The cloned project may be configured for PostgreSQL. Point it at your local DuckDB file instead.
+
+1. Open `datasources.yml`.
+2. Set the `tpcds` datasource to use the DuckDB adapter and the path to your database file. Use an absolute path to avoid path issues.
+
+**Example `datasources.yml`:**
+
+```yaml
+tpcds:
+  name: TPC-DS (DuckDB)
+  adapter: duckdb
+  tier: hot
+  query_timeout: 3600
+  file: /path/to/your/tpcds.duckdb
+```
+
+Replace `/path/to/your/tpcds.duckdb` with the actual path to the `tpcds.duckdb` file you created in Step 1. For more options, see the [DuckDB adapter](/docs/semantic-model/adapters/duckdb/) reference.
+
+## Step 4: Test the Connection
+
+Make sure you are inside the `tpcds-tutorial` directory, then verify that Strata CLI can connect to your DuckDB database:
+
+```bash
+strata datasource test tpcds
+```
+
+You should see a success message. If not, check that the `file` path in `datasources.yml` is correct and that the file exists.
+
+Optional: list tables in the datasource to confirm TPC-DS tables are present:
+
+```bash
+strata datasource tables tpcds
+```
+
+## Step 5: Explore Existing Tables and Relationships
+
+Before adding new content, skim the existing models to understand the patterns.
+
+- **Fact tables** (e.g. `models/store/tbl.store_sales.yml`, `models/catalog/tbl.catalog_sales.yml`) have `cost: 100` and define measures with aggregations like `sum(ss_quantity)`.
+- **Dimension tables** (e.g. `models/common/tbl.date_dim.yml`, `models/common/tbl.customer.yml`) have `cost: 10` and define dimensions with `sql` expressions pointing at physical columns.
+- **Relationship files** (e.g. `models/store/rel.store.yml`) define `many_to_one` relationships from fact tables to dimension tables using the table display names and key columns.
+
+The same patterns apply to the web channel tables you will add next.
+
+## Step 6: Deploy and Explore the Web UI
+
+Before adding your own tables, let's deploy the existing model to your Strata server and see it in action. This gives you a visual understanding of what the semantic model looks like when deployed.
+
+### 6a. Configure the Server URL and API Key
+
+You can skip this step entirely: the first `strata deploy` prompts for anything missing. It asks for the server URL (saved to `project.yml`), then offers **Sign in via browser (recommended)** — the CLI opens your browser, you sign in, and it fetches and saves an API key to `.strata` automatically.
+
+To configure manually instead (or for non-interactive environments like CI):
+
+**Server URL** — Configure the Strata server URL in **`project.yml`** (not in `.strata`). Open `project.yml` and set the `server` key:
+
+```yaml
+server: https://your-strata-server.com
+```
+
+Replace `https://your-strata-server.com` with the URL of your Strata server (e.g. `http://localhost:8080` for a local instance). The tpcds-tutorial repo includes `server: http://localhost:8080` by default; change it if your server runs elsewhere.
+
+**API key** — Store your Strata API key in **`.strata`** (gitignored). Create `.strata` if it doesn't exist and add:
+
+```yaml
+api_key: your_api_key_here
+```
+
+Get the API key from your Strata web app: open your project, go to **Settings → API Keys**, and create or copy a key. See [Deployment](/docs/cli/deployment/) for more.
+
+### 6b. Run Audit on the Existing Model
+
+Before deploying, verify that the existing model is valid:
+
+```bash
+strata audit
+```
+
+This checks for errors in table definitions, relationships, and datasource configurations. The existing model should pass without issues.
+
+### 6c. Deploy to the Server
+
+Deploy the semantic model to your Strata server:
+
+```bash
+strata deploy
+```
+
+This pushes your table definitions, relationships, and datasource configurations to the server. You'll see a summary of what's being deployed.
+
+### 6d. Explore the Web UI
+
+Open your Strata server URL in a browser and sign in. You should now see the deployed project there:
+
+- **Query Builder**: Try building a simple query — select a measure from Store Sales (e.g., total quantity) and a dimension from Date (e.g., year) to see the star schema in action
+
+{/* TODO: Add screenshots of the Web UI showing the schema browser, relationship graph, and query builder */}
+
+Take a moment to explore the existing store, catalog, and inventory channels in the UI. This is what your web channel additions will look like once you complete the exercise and deploy again.
+
+## Step 7: Add the Web Channel Tables
+
+The TPC-DS benchmark includes a **web channel**: fact tables `web_sales` and `web_returns`, and dimension tables `web_site`, `web_page`, and `promotion`. These are not in the tutorial repository; you will add them now.
+
+### 7a. Add the Web Site Dimension Table
+
+Use the CLI to create the table from the database:
+
+```bash
+strata create table web/web_site
+```
+
+This creates `models/web/tbl.web_site.yml`. Edit the generated file to set `name: Web Site`, `cost: 10`, and add dimensions for columns like `web_site_id`, `web_name`, `web_class`, etc. Follow the same style as `tbl.store.yml`.
+
+If the AI-generated file needs corrections or is missing fields, copy-paste the reference content below.
+
+<details>
+<summary>Complete `tbl.web_site.yml` content (click to expand)</summary>
+
+```yaml
+name: Web Site
+physical_name: web_site
+datasource: tpcds
+cost: 10
+
+fields:
+
+  - type: dimension
+    name: Web Site ID
+    description: Business key for web site
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_site_id
+
+  - type: dimension
+    name: Web Site Name
+    description: Name of the web site
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_name
+
+  - type: dimension
+    name: Web Site Class
+    description: Class of the web site
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_class
+
+  - type: dimension
+    name: Web Site Manager
+    description: Manager of the web site
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_manager
+
+  - type: dimension
+    name: Web Market ID
+    description: Market identifier for the web site
+    data_type: integer
+    expression:
+      lookup: true
+      sql: web_mkt_id
+
+  - type: dimension
+    name: Web Market Class
+    description: Market class of the web site
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_mkt_class
+
+  - type: dimension
+    name: Web Market Description
+    description: Description of the market
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_mkt_desc
+
+  - type: dimension
+    name: Web Market Manager
+    description: Manager of the market
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_market_manager
+
+  - type: dimension
+    name: Web Company ID
+    description: Company identifier for the web site
+    data_type: integer
+    expression:
+      lookup: true
+      sql: web_company_id
+
+  - type: dimension
+    name: Web Company Name
+    description: Name of the company
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_company_name
+
+  - type: dimension
+    name: Web Site City
+    description: City where the web site is headquartered
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_city
+
+  - type: dimension
+    name: Web Site County
+    description: County where the web site is headquartered
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_county
+
+  - type: dimension
+    name: Web Site State
+    description: State where the web site is headquartered
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_state
+
+  - type: dimension
+    name: Web Site ZIP
+    description: ZIP code of the web site
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_zip
+
+  - type: dimension
+    name: Web Site Country
+    description: Country where the web site is headquartered
+    data_type: string
+    expression:
+      lookup: true
+      sql: web_country
+
+  - type: dimension
+    name: Web Site GMT Offset
+    description: GMT offset for the web site location
+    data_type: decimal
+    expression:
+      lookup: true
+      sql: web_gmt_offset
+
+  - type: dimension
+    name: Web Site Tax Percentage
+    description: Tax percentage applied at the web site
+    data_type: decimal
+    expression:
+      lookup: true
+      sql: web_tax_percentage
+```
+
+</details>
+
+### 7b. Add the Web Page Dimension Table
+
+Use the CLI to create the table:
+
+```bash
+strata create table web/web_page
+```
+
+Edit the generated `models/web/tbl.web_page.yml` to set `name: Web Page`, `cost: 10`, and add dimensions for columns like `wp_web_page_id`, `wp_url`, `wp_type`, etc.
+
+If the AI-generated file needs corrections or is missing fields, copy-paste the reference content below.
+
+<details>
+<summary>Complete `tbl.web_page.yml` content (click to expand)</summary>
+
+```yaml
+name: Web Page
+physical_name: web_page
+datasource: tpcds
+cost: 10
+
+fields:
+
+  - type: dimension
+    name: Web Page ID
+    description: Business key for web page
+    data_type: string
+    expression:
+      lookup: true
+      sql: wp_web_page_id
+
+  - type: dimension
+    name: Web Page Autogen Flag
+    description: Whether the page was auto-generated
+    data_type: string
+    expression:
+      lookup: true
+      sql: wp_autogen_flag
+
+  - type: dimension
+    name: Web Page URL
+    description: URL of the web page
+    data_type: string
+    expression:
+      lookup: true
+      sql: wp_url
+
+  - type: dimension
+    name: Web Page Type
+    description: Type of web page
+    data_type: string
+    expression:
+      lookup: true
+      sql: wp_type
+
+  - type: dimension
+    name: Web Page Character Count
+    description: Number of characters on the page
+    data_type: integer
+    expression:
+      lookup: true
+      sql: wp_char_count
+
+  - type: dimension
+    name: Web Page Link Count
+    description: Number of links on the page
+    data_type: integer
+    expression:
+      lookup: true
+      sql: wp_link_count
+
+  - type: dimension
+    name: Web Page Image Count
+    description: Number of images on the page
+    data_type: integer
+    expression:
+      lookup: true
+      sql: wp_image_count
+
+  - type: dimension
+    name: Web Page Max Ad Count
+    description: Maximum number of ads on the page
+    data_type: integer
+    expression:
+      lookup: true
+      sql: wp_max_ad_count
+```
+
+</details>
+
+### 7c. Add the Promotion Dimension Table
+
+Use the CLI to create the table:
+
+```bash
+strata create table web/promotion
+```
+
+Edit the generated `models/web/tbl.promotion.yml` to set `name: Promotion`, `cost: 10`, and add dimensions for columns like `p_promo_id`, `p_promo_name`, `p_channel_*`, etc.
+
+If the AI-generated file needs corrections or is missing fields, copy-paste the reference content below.
+
+<details>
+<summary>Complete `tbl.promotion.yml` content (click to expand)</summary>
+
+```yaml
+name: Promotion
+physical_name: promotion
+datasource: tpcds
+cost: 10
+
+fields:
+
+  - type: dimension
+    name: Promotion ID
+    description: Business key for promotion
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_promo_id
+
+  - type: dimension
+    name: Promotion Name
+    description: Name of the promotion
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_promo_name
+
+  - type: dimension
+    name: Promotion Cost
+    description: Cost of running the promotion
+    data_type: decimal
+    expression:
+      lookup: true
+      sql: p_cost
+
+  - type: dimension
+    name: Promotion Response Target
+    description: Target response rate for the promotion
+    data_type: integer
+    expression:
+      lookup: true
+      sql: p_response_target
+
+  - type: dimension
+    name: Promotion Channel Direct Mail
+    description: Whether promotion uses direct mail channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_dmail
+
+  - type: dimension
+    name: Promotion Channel Email
+    description: Whether promotion uses email channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_email
+
+  - type: dimension
+    name: Promotion Channel Catalog
+    description: Whether promotion uses catalog channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_catalog
+
+  - type: dimension
+    name: Promotion Channel TV
+    description: Whether promotion uses TV channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_tv
+
+  - type: dimension
+    name: Promotion Channel Radio
+    description: Whether promotion uses radio channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_radio
+
+  - type: dimension
+    name: Promotion Channel Press
+    description: Whether promotion uses press channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_press
+
+  - type: dimension
+    name: Promotion Channel Event
+    description: Whether promotion uses event channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_event
+
+  - type: dimension
+    name: Promotion Channel Demo
+    description: Whether promotion uses demo channel
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_channel_demo
+
+  - type: dimension
+    name: Promotion Discount Active
+    description: Whether discount is currently active
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_discount_active
+
+  - type: dimension
+    name: Promotion Purpose
+    description: Purpose of the promotion
+    data_type: string
+    expression:
+      lookup: true
+      sql: p_purpose
+```
+
+</details>
+
+### 7d. Add the Web Sales Fact Table
+
+Use the CLI to create the fact table:
+
+```bash
+strata create table web/web_sales
+```
+
+Edit the generated `models/web/tbl.web_sales.yml` to set `name: Web Sales`, `cost: 100` (fact tables have higher cost), and add measures with aggregations like `sum(ws_quantity)`, `sum(ws_sales_price)`, `sum(ws_net_profit)`, etc. Follow the same style as `tbl.store_sales.yml` or `tbl.catalog_sales.yml`.
+
+If the AI-generated file needs corrections or is missing fields, copy-paste the reference content below.
+
+<details>
+<summary>Complete `tbl.web_sales.yml` content (click to expand)</summary>
+
+```yaml
+name: Web Sales
+physical_name: web_sales
+datasource: tpcds
+cost: 100
+
+fields:
+
+  - type: dimension
+    name: Web Order Number
+    description: Order number for web sale
+    data_type: integer
+    expression:
+      sql: ws_order_number
+
+  - type: measure
+    name: Web Quantity
+    description: Quantity of items sold via web
+    data_type: integer
+    expression:
+      sql: sum(ws_quantity)
+
+  - type: measure
+    name: Web Wholesale Cost
+    description: Wholesale cost for web items
+    data_type: decimal
+    expression:
+      sql: sum(ws_wholesale_cost)
+
+  - type: measure
+    name: Web List Price
+    description: List price of web items
+    data_type: decimal
+    expression:
+      sql: sum(ws_list_price)
+
+  - type: measure
+    name: Web Sales Price
+    description: Actual sales price of web items
+    data_type: decimal
+    expression:
+      sql: sum(ws_sales_price)
+
+  - type: measure
+    name: Web Extended Discount Amount
+    description: Extended discount amount for web sales
+    data_type: decimal
+    expression:
+      sql: sum(ws_ext_discount_amt)
+
+  - type: measure
+    name: Web Extended Sales Price
+    description: Extended sales price of web items
+    data_type: decimal
+    expression:
+      sql: sum(ws_ext_sales_price)
+
+  - type: measure
+    name: Web Extended Wholesale Cost
+    description: Extended wholesale cost of web items
+    data_type: decimal
+    expression:
+      sql: sum(ws_ext_wholesale_cost)
+
+  - type: measure
+    name: Web Extended List Price
+    description: Extended list price of web items
+    data_type: decimal
+    expression:
+      sql: sum(ws_ext_list_price)
+
+  - type: measure
+    name: Web Extended Tax
+    description: Extended tax amount on web sales
+    data_type: decimal
+    expression:
+      sql: sum(ws_ext_tax)
+
+  - type: measure
+    name: Web Coupon Amount
+    description: Coupon amount applied to web sales
+    data_type: decimal
+    expression:
+      sql: sum(ws_coupon_amt)
+
+  - type: measure
+    name: Web Extended Ship Cost
+    description: Extended shipping cost for web orders
+    data_type: decimal
+    expression:
+      sql: sum(ws_ext_ship_cost)
+
+  - type: measure
+    name: Web Net Paid
+    description: Net amount paid for web sales
+    data_type: decimal
+    expression:
+      sql: sum(ws_net_paid)
+
+  - type: measure
+    name: Web Net Paid Including Tax
+    description: Net paid including tax for web sales
+    data_type: decimal
+    expression:
+      sql: sum(ws_net_paid_inc_tax)
+
+  - type: measure
+    name: Web Net Paid Including Ship
+    description: Net paid including shipping for web sales
+    data_type: decimal
+    expression:
+      sql: sum(ws_net_paid_inc_ship)
+
+  - type: measure
+    name: Web Net Paid Including Ship and Tax
+    description: Net paid including shipping and tax
+    data_type: decimal
+    expression:
+      sql: sum(ws_net_paid_inc_ship_tax)
+
+  - type: measure
+    name: Web Net Profit
+    description: Net profit from web sales
+    data_type: decimal
+    expression:
+      sql: sum(ws_net_profit)
+```
+
+</details>
+
+### 7e. Add the Web Returns Fact Table
+
+Use the CLI to create the fact table:
+
+```bash
+strata create table web/web_returns
+```
+
+Edit the generated `models/web/tbl.web_returns.yml` to set `name: Web Returns`, `cost: 100`, and add measures like `sum(wr_return_quantity)`, `sum(wr_return_amt)`, `sum(wr_net_loss)`, etc. Follow the same style as `tbl.catalog_returns.yml`.
+
+If the AI-generated file needs corrections or is missing fields, copy-paste the reference content below.
+
+<details>
+<summary>Complete `tbl.web_returns.yml` content (click to expand)</summary>
+
+```yaml
+name: Web Returns
+physical_name: web_returns
+datasource: tpcds
+cost: 100
+
+fields:
+
+  - type: dimension
+    name: Web Return Order Number
+    description: Order number for web return
+    data_type: integer
+    expression:
+      sql: wr_order_number
+
+  - type: measure
+    name: Web Return Quantity
+    description: Quantity of items returned from web
+    data_type: integer
+    expression:
+      sql: sum(wr_return_quantity)
+
+  - type: measure
+    name: Web Return Amount
+    description: Total return amount for web
+    data_type: decimal
+    expression:
+      sql: sum(wr_return_amt)
+
+  - type: measure
+    name: Web Return Tax
+    description: Tax amount on web returns
+    data_type: decimal
+    expression:
+      sql: sum(wr_return_tax)
+
+  - type: measure
+    name: Web Return Amount Including Tax
+    description: Return amount including tax for web
+    data_type: decimal
+    expression:
+      sql: sum(wr_return_amt_inc_tax)
+
+  - type: measure
+    name: Web Return Fee
+    description: Fee charged on web returns
+    data_type: decimal
+    expression:
+      sql: sum(wr_fee)
+
+  - type: measure
+    name: Web Return Ship Cost
+    description: Shipping cost for web returns
+    data_type: decimal
+    expression:
+      sql: sum(wr_return_ship_cost)
+
+  - type: measure
+    name: Web Refunded Cash
+    description: Cash refunded to customer for web returns
+    data_type: decimal
+    expression:
+      sql: sum(wr_refunded_cash)
+
+  - type: measure
+    name: Web Reversed Charge
+    description: Charge reversed on credit card for web returns
+    data_type: decimal
+    expression:
+      sql: sum(wr_reversed_charge)
+
+  - type: measure
+    name: Web Account Credit
+    description: Account credit issued for web returns
+    data_type: decimal
+    expression:
+      sql: sum(wr_account_credit)
+
+  - type: measure
+    name: Web Net Loss
+    description: Net loss from web returns
+    data_type: decimal
+    expression:
+      sql: sum(wr_net_loss)
+```
+
+</details>
+
+## Step 8: Add Relationships for the Web Channel
+
+Use the CLI to create a relationship file:
+
+```bash
+strata create relation web/web
+```
+
+This creates `models/web/rel.web.yml`. Edit it to define `many_to_one` relationships from **Web Sales** and **Web Returns** to the dimension tables (Date, Time, Item, Customer, Web Site, Web Page, Promotion, etc.).
+
+Use the same structure as `models/store/rel.store.yml` or `models/catalog/rel.catalog.yml`: set `datasource: tpcds`, then for each relationship set `left`, `right`, `sql` (e.g. `left.ws_sold_date_sk = right.d_date_sk`), and `cardinality: many_to_one`. Use the **display names** of the tables (e.g. "Web Sales", "Date", "Item") so Strata can resolve them.
+
+You can copy-paste the reference content below.
+
+<details>
+<summary>Complete `rel.web.yml` content (click to expand)</summary>
+
+```yaml
+datasource: tpcds
+
+# Web Sales to Date Dimension (sold date)
+web_sales_sold_date:
+  left: Web Sales
+  right: Date
+  sql: left.ws_sold_date_sk = right.d_date_sk
+  cardinality: many_to_one
+
+# Web Sales to Time Dimension (sold time)
+web_sales_sold_time:
+  left: Web Sales
+  right: Time
+  sql: left.ws_sold_time_sk = right.t_time_sk
+  cardinality: many_to_one
+
+# Web Sales to Item Dimension
+web_sales_item:
+  left: Web Sales
+  right: Item
+  sql: left.ws_item_sk = right.i_item_sk
+  cardinality: many_to_one
+
+# Web Sales to Billed Customer
+web_sales_billed_customer:
+  left: Web Sales
+  right: Billed Customer
+  sql: left.ws_bill_customer_sk = right.c_customer_sk
+  cardinality: many_to_one
+
+# Web Sales to Billed Customer Demographics
+web_sales_billed_customer_demographics:
+  left: Web Sales
+  right: Billed Customer Demographics
+  sql: left.ws_bill_cdemo_sk = right.cd_demo_sk
+  cardinality: many_to_one
+
+# Web Sales to Billed Household Demographics
+web_sales_billed_household_demographics:
+  left: Web Sales
+  right: Billed Household Demographics
+  sql: left.ws_bill_hdemo_sk = right.hd_demo_sk
+  cardinality: many_to_one
+
+# Web Sales to Billed Customer Address
+web_sales_billed_customer_address:
+  left: Web Sales
+  right: Billed Customer Address
+  sql: left.ws_bill_addr_sk = right.ca_address_sk
+  cardinality: many_to_one
+
+# Web Sales to Shipped Customer
+web_sales_customer:
+  left: Web Sales
+  right: Customer
+  sql: left.ws_ship_customer_sk = right.c_customer_sk
+  cardinality: many_to_one
+
+# Web Sales to Shipped Customer Demographics
+web_sales_customer_demographics:
+  left: Web Sales
+  right: Customer Demographics
+  sql: left.ws_ship_cdemo_sk = right.cd_demo_sk
+  cardinality: many_to_one
+
+# Web Sales to Shipped Household Demographics
+web_sales_household_demographics:
+  left: Web Sales
+  right: Household Demographics
+  sql: left.ws_ship_hdemo_sk = right.hd_demo_sk
+  cardinality: many_to_one
+
+# Web Sales to Shipped Customer Address
+web_sales_customer_address:
+  left: Web Sales
+  right: Customer Address
+  sql: left.ws_ship_addr_sk = right.ca_address_sk
+  cardinality: many_to_one
+
+# Web Sales to Web Page
+web_sales_web_page:
+  left: Web Sales
+  right: Web Page
+  sql: left.ws_web_page_sk = right.wp_web_page_sk
+  cardinality: many_to_one
+
+# Web Sales to Web Site
+web_sales_web_site:
+  left: Web Sales
+  right: Web Site
+  sql: left.ws_web_site_sk = right.web_site_sk
+  cardinality: many_to_one
+
+# Web Sales to Promotion
+web_sales_promotion:
+  left: Web Sales
+  right: Promotion
+  sql: left.ws_promo_sk = right.p_promo_sk
+  cardinality: many_to_one
+
+# Web Sales to Ship Mode
+web_sales_ship_mode:
+  left: Web Sales
+  right: Ship Mode
+  sql: left.ws_ship_mode_sk = right.sm_ship_mode_sk
+  cardinality: many_to_one
+
+# Web Sales to Warehouse
+web_sales_warehouse:
+  left: Web Sales
+  right: Warehouse
+  sql: left.ws_warehouse_sk = right.w_warehouse_sk
+  cardinality: many_to_one
+
+# Web Returns to Date Dimension (returned date)
+web_returns_date:
+  left: Web Returns
+  right: Date
+  sql: left.wr_returned_date_sk = right.d_date_sk
+  cardinality: many_to_one
+
+# Web Returns to Time Dimension (return time)
+web_returns_returned_time:
+  left: Web Returns
+  right: Time
+  sql: left.wr_returned_time_sk = right.t_time_sk
+  cardinality: many_to_one
+
+# Web Returns to Item Dimension
+web_returns_item:
+  left: Web Returns
+  right: Item
+  sql: left.wr_item_sk = right.i_item_sk
+  cardinality: many_to_one
+
+# Web Returns to Refunded Customer
+web_returns_refunded_customer:
+  left: Web Returns
+  right: Customer
+  sql: left.wr_refunded_customer_sk = right.c_customer_sk
+  cardinality: many_to_one
+
+# Web Returns to Refunded Customer Demographics
+web_returns_refunded_customer_demographics:
+  left: Web Returns
+  right: Customer Demographics
+  sql: left.wr_refunded_cdemo_sk = right.cd_demo_sk
+  cardinality: many_to_one
+
+# Web Returns to Refunded Household Demographics
+web_returns_refunded_household_demographics:
+  left: Web Returns
+  right: Household Demographics
+  sql: left.wr_refunded_hdemo_sk = right.hd_demo_sk
+  cardinality: many_to_one
+
+# Web Returns to Refunded Customer Address
+web_returns_refunded_customer_address:
+  left: Web Returns
+  right: Customer Address
+  sql: left.wr_refunded_addr_sk = right.ca_address_sk
+  cardinality: many_to_one
+
+# Web Returns to Returning Customer
+web_returns_returning_customer:
+  left: Web Returns
+  right: Returning Customer
+  sql: left.wr_returning_customer_sk = right.c_customer_sk
+  cardinality: many_to_one
+
+# Web Returns to Returning Customer Demographics
+web_returns_returning_customer_demographics:
+  left: Web Returns
+  right: Returning Customer Demographics
+  sql: left.wr_returning_cdemo_sk = right.cd_demo_sk
+  cardinality: many_to_one
+
+# Web Returns to Returning Household Demographics
+web_returns_returning_household_demographics:
+  left: Web Returns
+  right: Returning Household Demographics
+  sql: left.wr_returning_hdemo_sk = right.hd_demo_sk
+  cardinality: many_to_one
+
+# Web Returns to Returning Customer Address
+web_returns_returning_customer_address:
+  left: Web Returns
+  right: Returning Customer Address
+  sql: left.wr_returning_addr_sk = right.ca_address_sk
+  cardinality: many_to_one
+
+# Web Returns to Web Page
+web_returns_web_page:
+  left: Web Returns
+  right: Web Page
+  sql: left.wr_web_page_sk = right.wp_web_page_sk
+  cardinality: many_to_one
+
+# Web Returns to Reason
+web_returns_reason:
+  left: Web Returns
+  right: Reason
+  sql: left.wr_reason_sk = right.r_reason_sk
+  cardinality: many_to_one
+```
+
+</details>
+
+After creating all the files, your `models/web/` directory should contain:
+
+```
+models/web/
+├── tbl.web_site.yml
+├── tbl.web_page.yml
+├── tbl.promotion.yml
+├── tbl.web_sales.yml
+├── tbl.web_returns.yml
+└── rel.web.yml
+```
+
+## Step 9: Run Audit and Fix Issues
+
+Validate the full semantic model:
+
+```bash
+strata audit
+```
+
+Fix any reported errors (e.g. typos in table names, missing relationships, or invalid SQL). Keep running `strata audit` until it passes.
+
+## Step 10: Deploy and See Your Changes in the Web UI
+
+Now that you've added the web channel tables and relationships, deploy your updated model to see the changes:
+
+```bash
+strata deploy
+```
+
+Return to your Strata server in the browser and refresh. You should now see:
+
+- **New Query Options**: You can now build queries using Web Sales measures and dimensions from your new tables
+
+{/* TODO: Add screenshot of the relationship graph showing the complete model with web channel */}
+
+Compare the before and after — your additions have expanded the semantic model to cover all four TPC-DS channels (store, catalog, inventory, and web).
+
+See [Deployment](/docs/cli/deployment/) for more details on server URL configuration, API keys, and Git requirements.
+
+## Summary
+
+You have:
+
+1. Installed DuckDB and created a local TPC-DS database using the [DuckDB TPC-DS extension](https://duckdb.org/docs/stable/core_extensions/tpcds).
+2. Cloned the [tpcds-tutorial](https://github.com/stratasite/tpcds-tutorial) repository and configured it to use your DuckDB file.
+3. Explored the existing store, catalog, and inventory models.
+4. Deployed the existing model and explored it in the Strata Web UI.
+5. Added the missing web channel tables (web_site, web_page, promotion, web_sales, web_returns) and relationships.
+6. Ran `strata audit` and deployed to see your additions in the Web UI.
+
+## Next Steps
+
+- [TPC-DS Tutorial (Examples)](/docs/examples/tpcds-tutorial/) — Deeper dive into the TPC-DS model and patterns
+- [Star schema pattern](/docs/examples/patterns/star-schema/) — How fact and dimension tables relate
+- [CLI Reference](/docs/cli/) — All Strata CLI commands
+- [Semantic Model](/docs/semantic-model/tables/) — Tables, fields, and relationships in detail

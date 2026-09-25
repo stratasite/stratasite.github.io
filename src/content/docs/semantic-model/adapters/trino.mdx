@@ -1,0 +1,83 @@
+---
+title: "Trino Adapter"
+description: "Connect to Trino/Presto clusters."
+---
+Connect to Trino/Presto clusters.
+
+## Configuration
+
+```yaml
+trino_cluster:
+  adapter: trino
+  name: Trino Cluster
+  tier: warm
+  query_timeout: 3600
+  
+  # Required
+  host: trino.example.com
+  catalog: hive
+  username: admin
+  
+  # Optional
+  port: 8080              # Default: 8080
+  schema: default
+  ssl: false              # Default: false
+  
+  # Credentials (set via strata datasource auth)
+  # password:
+```
+
+## Required Fields
+
+- **host** - Trino coordinator hostname or IP
+- **catalog** - Catalog name (e.g., `hive`, `mysql`, `postgresql`)
+- **username** - Username for connection
+
+## Optional Fields
+
+- **port** - Port number (default: `8080`)
+- **schema** - Schema name
+- **ssl** - Enable SSL (default: `false`)
+- **password** - Set via `strata datasource auth`
+
+## Example
+
+```yaml
+trino_cluster:
+  adapter: trino
+  name: Trino Cluster
+  tier: warm
+  query_timeout: 3600
+  host: trino.example.com
+  port: 8080
+  catalog: hive
+  schema: default
+  username: admin
+  ssl: true
+```
+
+## Authentication
+
+Set credentials securely:
+
+```bash
+strata datasource auth trino_cluster
+```
+
+## SSL Configuration
+
+Enable SSL for secure connections:
+
+```yaml
+ssl: true
+```
+
+## Best Practices
+
+1. **Use SSL in production** - Encrypt connections
+2. **Set appropriate tier** - Match performance characteristics
+3. **Configure catalog** - Match your Trino setup
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

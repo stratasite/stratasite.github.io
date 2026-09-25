@@ -1,0 +1,174 @@
+---
+title: "Tables"
+description: "Learn how to create semantic table models from your database tables."
+---
+Learn how to create semantic table models from your database tables.
+
+:::tip
+Modeling a whole schema at once? A coding agent can author these files from the project's `AGENTS.md` instead. See [Building Your Model](/docs/cli/building-your-model/).
+:::
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Create semantic table models using the CLI
+- Understand the interactive table creation workflow
+- Configure table metadata (name, cost, partitions)
+- Use AI-powered field generation
+
+## Prerequisites
+
+- Strata CLI installed
+- A Strata project initialized
+- At least one datasource configured
+- Access to a database table
+
+## Step 1: Start Table Creation
+
+Run the create table command:
+
+```bash
+strata create table [TABLE_PATH]
+```
+
+**Examples:**
+```bash
+# Simple table name
+strata create table orders
+
+# Nested path (creates models/sales/tbl.orders.yml)
+strata create table sales/orders
+
+# With schema prefix
+strata create table contact/dse.call_center_d
+```
+
+If you don't provide a path, the CLI will:
+1. List all tables in your datasource
+2. Let you search and select interactively
+3. Prompt for the model path
+
+To list existing table models in your project: `strata table list` (alias: `strata t list`).
+
+## Step 2: Select Datasource
+
+If you have multiple datasources, specify one:
+
+```bash
+strata create table orders -d my_datasource
+```
+
+Or let the CLI prompt you to select one.
+
+## Step 3: Table Discovery
+
+The CLI will:
+1. **Check table existence**: Verify the table exists in your database
+2. **Fetch metadata**: Retrieve column names and data types
+3. **Display summary**: Show how many columns were found
+
+If the table isn't found, you can proceed anyway (useful for tables you'll create later).
+
+## Step 4: AI Field Generation
+
+If AI is configured, the CLI will:
+- Analyze column names and types
+- Suggest appropriate field names and descriptions
+- Recommend dimension vs measure types
+- Consider existing model patterns for consistency
+
+**Example AI suggestions:**
+- `order_id` → Dimension "Order ID" (integer, primary key)
+- `order_date` → Dimension "Order Date" (date)
+- `total_amount` → Measure "Total Amount" (decimal, sum)
+
+If AI isn't available, the CLI falls back to rule-based generation.
+
+## Step 5: Interactive Field Editor
+
+The field editor opens where you can:
+- **Review suggested fields**: See AI-generated or rule-based suggestions
+- **Edit field properties**: Name, description, type, expression
+- **Add new fields**: Define additional fields manually
+- **Remove fields**: Delete unwanted fields
+- **Regenerate with AI**: Ask AI to regenerate suggestions
+
+**Field Editor Commands:**
+- `e` - Edit field
+- `a` - Add new field
+- `d` - Delete field
+- `r` - Regenerate with AI
+- `s` - Save and continue
+
+## Step 6: Configure Table Metadata
+
+After defining fields, configure table-level settings:
+
+**Table Name**: Display name used in queries (defaults to physical table name)
+
+**Description**: Optional description of the table's purpose
+
+**Cost**: Numeric value influencing table selection (lower = preferred)
+- Dimension tables: `cost: 10`
+- Fact tables: `cost: 100`
+
+**Partitions**: Optional data availability constraints (see [Partitions guide](/docs/semantic-model/partitions/))
+
+## Step 7: Save Model File
+
+The CLI generates a YAML file in your `models/` directory:
+
+**Path Examples:**
+- `strata create table orders` → `models/tbl.orders.yml`
+- `strata create table sales/orders` → `models/sales/tbl.orders.yml`
+- `strata create table contact/dse.call_center_d` → `models/contact/tbl.dse.call_center_d.yml`
+
+## Complete Example
+
+Here's what a generated table model looks like:
+
+```yaml
+name: Store Sales
+physical_name: store_sales
+datasource: tpcds
+cost: 100
+
+fields:
+  - type: dimension
+    name: Store Ticket number
+    description: Actual ticket number of an order
+    data_type: integer
+    expression:
+      primary_key: true
+      sql: ss_ticket_number
+
+  - type: measure
+    name: Store Quantity
+    description: Quantity of items sold at a store
+    data_type: integer
+    expression:
+      sql: sum(ss_quantity)
+
+  - type: measure
+    name: Store Sales Price
+    description: Actual sales price of items sold
+    data_type: decimal
+    expression:
+      sql: sum(ss_sales_price)
+```
+
+## Tips
+
+1. **Use nested paths** to organize related tables (e.g., `sales/orders`, `sales/customers`)
+2. **Review AI suggestions** carefully - they're helpful but may need refinement
+3. **Set appropriate costs** - lower for dimension tables, higher for fact tables
+4. **Add descriptions** to help business users understand fields
+5. **Edit the YAML file** directly after creation for fine-tuning
+
+## Next Steps
+
+- Learn about [field types and expressions](/docs/semantic-model/fields-and-types/)
+- Set up [relationships](/docs/cli/relationships/) between tables
+- Configure [datasources](/docs/semantic-model/datasources/) for multiple databases
+- Read the [table schema reference](/docs/semantic-model/tables/) for all options
+- Compare both authoring paths in [Building Your Model](/docs/cli/building-your-model/)

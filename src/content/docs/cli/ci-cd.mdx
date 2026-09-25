@@ -1,0 +1,324 @@
+---
+title: "CI/CD"
+description: "Automate Strata deployments with continuous integration and delivery."
+---
+Automate Strata deployments with continuous integration and delivery.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Set up automated deployments
+- Configure CI/CD pipelines
+- Use deployment flags for automation
+- Handle secrets securely
+
+## Overview
+
+CI/CD automates the deployment of your semantic models, ensuring:
+- **Consistency** - Same process every time
+- **Reliability** - Automated validation and testing
+- **Speed** - Deploy without manual steps
+- **Safety** - Run audits and tests automatically
+
+:::note
+The interactive browser sign-in that `strata deploy` offers locally does not work in CI — there is no browser or TTY. Write the API key into the `.strata` file from a CI secret instead, as shown below.
+:::
+
+## Basic CI/CD Setup
+
+### GitHub Actions Example
+
+```yaml
+name: Deploy Strata Model
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+      
+      - name: Install Strata CLI
+        run: gem install strata-cli
+      
+      - name: Configure API Key
+        run: |
+          echo "api_key: ${{ secrets.STRATA_API_KEY }}" > .strata
+      
+      - name: Deploy
+        run: strata deploy --yes
+```
+
+### GitLab CI Example
+
+```yaml
+deploy:
+  image: ruby:3.4.4
+  before_script:
+    - gem install strata-cli
+    - |
+      cat > .strata << EOF
+      api_key: ${STRATA_API_KEY}
+      EOF
+  script:
+    - strata deploy --yes
+  only:
+    - main
+```
+
+## Deployment Flags for CI/CD
+
+### --yes (Skip Confirmation)
+
+Required for non-interactive deployments:
+
+```bash
+strata deploy --yes
+```
+
+### --skip-audit (Optional)
+
+Skip pre-deployment audits (not recommended):
+
+```bash
+strata deploy --yes --skip-audit
+```
+
+### --force (Force Deployment)
+
+Deploy even if no files changed:
+
+```bash
+strata deploy --yes --force
+```
+
+### --environment (Environment Selection)
+
+Deploy to specific environment:
+
+```bash
+strata deploy --yes --environment production
+```
+
+## Secure Secret Management
+
+### GitHub Secrets
+
+1. Go to repository Settings → Secrets and variables → Actions
+2. Add secret: `STRATA_API_KEY`
+3. Reference in workflow:
+
+```yaml
+- name: Configure API Key
+  run: |
+    echo "api_key: ${{ secrets.STRATA_API_KEY }}" > .strata
+```
+
+### GitLab CI Variables
+
+1. Go to Settings → CI/CD → Variables
+2. Add variable: `STRATA_API_KEY` (masked)
+3. Reference in `.gitlab-ci.yml`:
+
+```yaml
+script:
+  - |
+    cat > .strata << EOF
+    api_key: ${STRATA_API_KEY}
+    EOF
+```
+
+### Environment-Specific Secrets
+
+For multiple environments:
+
+```yaml
+- name: Configure API Keys
+  run: |
+    cat > .strata << EOF
+    api_key: ${{ secrets.STRATA_API_KEY }}
+    environments:
+      production:
+        api_key: ${{ secrets.STRATA_PROD_API_KEY }}
+      staging:
+        api_key: ${{ secrets.STRATA_STAGING_API_KEY }}
+    EOF
+```
+
+## Complete CI/CD Pipeline
+
+### With Testing
+
+```yaml
+name: Deploy Strata Model
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+      - run: gem install strata-cli
+      - run: strata audit
+
+  deploy:
+    needs: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+      - run: gem install strata-cli
+      - name: Configure API Key
+        run: |
+          echo "api_key: ${{ secrets.STRATA_API_KEY }}" > .strata
+      - name: Deploy
+        run: strata deploy --yes
+```
+
+### Multi-Environment
+
+```yaml
+name: Deploy Strata Model
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+      - run: gem install strata-cli
+      - name: Configure API Key
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            ENV="production"
+          else
+            ENV="staging"
+          fi
+          echo "api_key: ${{ secrets.STRATA_API_KEY }}" > .strata
+      - name: Deploy
+        run: strata deploy --yes --environment $ENV
+```
+
+## Best Practices
+
+1. **Run audits first** - Catch issues before deployment
+2. **Use secrets** - Never commit API keys
+3. **Test in staging** - Deploy to staging before production
+4. **Monitor deployments** - Check deployment status
+5. **Use --yes flag** - Required for automation
+6. **Version control** - Keep all model files in Git
+
+## Deployment Workflow
+
+### Recommended Flow
+
+1. **Development** - Make changes locally
+2. **Commit** - Commit to feature branch
+3. **Pull Request** - Open PR (optional: run audits in CI)
+4. **Merge** - Merge to main/staging
+5. **Auto-Deploy** - CI/CD deploys automatically
+6. **Monitor** - Check deployment status
+
+### Branch Strategy
+
+- **main** → Production environment
+- **staging** → Staging environment
+- **feature branches** → Development (manual deploy)
+
+## Troubleshooting
+
+### CI/CD Deployment Fails
+
+**Check:**
+- API key is set correctly
+- Server URL is configured
+- Git repository is initialized
+- Model files are valid
+
+**Solution:**
+- Verify secrets are set
+- Run `strata audit` locally
+- Check CI/CD logs
+
+### Authentication Errors
+
+**Check:**
+- API key format is correct
+- `.strata` file permissions (should be 0600)
+- API key has correct permissions
+
+**Solution:**
+- Verify secret value
+- Check API key in Strata server
+- Regenerate API key if needed
+
+## Advanced Patterns
+
+### Conditional Deployment
+
+Deploy only on specific conditions:
+
+```yaml
+- name: Deploy
+  if: github.ref == 'refs/heads/main'
+  run: strata deploy --yes --environment production
+```
+
+### Deployment Notifications
+
+Notify on deployment completion:
+
+```yaml
+- name: Notify
+  if: always()
+  run: |
+    if [ $? -eq 0 ]; then
+      echo "Deployment succeeded"
+    else
+      echo "Deployment failed"
+    fi
+```
+
+### Rollback Strategy
+
+Keep previous deployments for rollback:
+
+```yaml
+- name: Tag Deployment
+  if: success()
+  run: |
+    git tag "deploy-$(date +%Y%m%d-%H%M%S)"
+    git push --tags
+```
+
+## Next Steps
+
+- Learn about [deployment](/docs/cli/deployment/) details
+- Read about [testing](/docs/cli/tests/) in CI/CD
+- Explore [audit commands](/docs/cli/audit/)

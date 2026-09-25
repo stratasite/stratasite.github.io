@@ -1,0 +1,92 @@
+---
+title: "Window Decorators"
+description: "Moving averages, ranking, and window functions."
+---
+Moving averages, ranking, and window functions.
+
+## Overview
+
+Window decorators enable window functions like moving averages, running totals, ranking, and lead/lag calculations.
+
+## Available Decorators
+
+### Moving Average
+
+Calculate moving average over a window.
+
+```yaml
+# Applied in query, not in model definition
+# User selects "Moving Average" decorator
+```
+
+### Running Total
+
+Calculate running/cumulative total.
+
+```yaml
+# Applied in query
+```
+
+### Ranking
+
+Rank values (rank, dense_rank, percent_rank).
+
+```yaml
+# Applied in query
+```
+
+### Lead/Lag
+
+Access previous/next values.
+
+```yaml
+# Applied in query
+```
+
+## How It Works
+
+Window decorators are applied at query time:
+1. User selects measure and window decorator
+2. Planner generates SQL with window function
+3. Returns windowed values
+
+## Use Cases
+
+### Moving Average
+
+```yaml
+- type: measure
+  name: Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+
+# User applies "7-day moving average" decorator
+# Returns: 7-day moving average of revenue
+```
+
+### Running Total
+
+```yaml
+# User applies "Running Total" decorator
+# Returns: Cumulative sum over time
+```
+
+### Ranking
+
+```yaml
+# User applies "Rank" decorator
+# Returns: Ranked values (1, 2, 3, ...)
+```
+
+## Best Practices
+
+1. **Use with date dimensions** - Window functions often require ordering by date
+2. **Document measures** - Help users understand window options
+3. **Test calculations** - Verify window functions work correctly
+
+## Next Steps
+
+- Learn about [temporal decorators](/docs/advanced/decorators/temporal/)
+- Explore [contribution decorators](/docs/advanced/decorators/contribution/)
+- Read about [snapshot measures](/docs/semantic-model/fields/measures/snapshot/)

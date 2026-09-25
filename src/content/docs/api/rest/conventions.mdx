@@ -1,0 +1,116 @@
+---
+title: "Conventions"
+description: "Shared rules for all Strata API v1 endpoints."
+---
+Shared rules for all Strata API v1 endpoints.
+
+## Base URL
+
+All endpoints live under:
+
+```
+{server}/api/v1
+```
+
+Examples:
+
+- Local: `http://localhost:8080/api/v1`
+- Production: `https://your-server.example.com/api/v1`
+
+The default response format is JSON. Send `Accept: application/json` on every request.
+
+## Versioning
+
+The current API version is **v1**, encoded in the URL path (`/api/v1/...`). Breaking changes will introduce a new version path.
+
+## Project identifiers
+
+Path parameters like `{project_id}` accept either the project's numeric database ID or its **uid** (the slug used in URLs and CLI commands, e.g. `tpcds`).
+
+## Branch scoping
+
+Most project-scoped endpoints (fields, tables, queries, SQL preview) operate on a **branch** — a deployed snapshot of the semantic model.
+
+| Parameter | Location | Default |
+|-----------|----------|---------|
+| `branch` | Query string | Production branch for the project |
+
+Examples:
+
+```bash
+# Use production branch (default)
+GET /api/v1/projects/tpcds/fields
+
+# Target a specific branch
+GET /api/v1/projects/tpcds/fields?branch=dev_branch
+```
+
+Branch resolution errors:
+
+| HTTP | Code | When |
+|------|------|------|
+| 404 | `branch_not_found` | `?branch=` uid does not exist |
+| 422 | `no_production_branch` | No branch specified and project has no production branch |
+
+:::tip
+Omit `branch` in production integrations unless you intentionally query a staging branch.
+:::
+
+## Pagination
+
+List endpoints return a pagination envelope:
+
+```json
+{
+  "results": [ ... ],
+  "page": 1,
+  "total_pages": 5,
+  "total_count": 412,
+  "limit": 100
+}
+```
+
+| Parameter | Description | Default | Max |
+|-----------|-------------|---------|-----|
+| `page` | Page number (1-based) | 1 | — |
+| `limit` | Items per page | varies | see endpoint |
+
+Per-endpoint limits:
+
+| Endpoint | Default limit | Max limit |
+|----------|---------------|-----------|
+| Fields, Tables | 20 | 1000 |
+| Queries | 25 | 50 |
+| Result rows (`limit` on result fetch) | 25 | 100 |
+
+## Shallow routes
+
+Some query and result endpoints omit `project_id` from the path because the query ID is globally unique:
+
+```
+GET /api/v1/queries/{id}
+GET /api/v1/queries/{id}/sql
+GET /api/v1/queries/{id}/result
+DELETE /api/v1/queries/{id}
+```
+
+These still require project membership (resolved from the query record).
+
+## Timestamps
+
+All timestamps are ISO 8601 strings in UTC (e.g. `"2026-06-15T14:30:00Z"`).
+
+## Field references
+
+Query and search endpoints accept **semantic field names** (e.g. `"Web Net Paid"`, `"State"`), not warehouse column names. The server resolves names to internal UIDs within the project and branch scope.
+
+See [Query spec](/docs/api/rest/query-spec/) for projection and filter syntax.
+
+## Error responses
+
+Two error formats exist — see [Errors](/docs/api/rest/errors/) for the full reference.
+
+## Next steps
+
+- [Query spec](/docs/api/rest/query-spec/) — build query payloads
+- [Quickstart](/docs/api/rest/quickstart/) — put it all together

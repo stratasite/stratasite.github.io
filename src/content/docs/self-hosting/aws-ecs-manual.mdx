@@ -1,0 +1,210 @@
+---
+title: "Deploy Strata on AWS ECS"
+description: "This guide walks through deploying Strata on AWS ECS using Express Mode — the fastest path to a production deployment. Express Mode auto-provisions the load balancer, SSL certificate, networking, auto"
+---
+This guide walks through deploying Strata on AWS ECS using **Express Mode** — the fastest path to a production deployment. Express Mode auto-provisions the load balancer, SSL certificate, networking, auto-scaling, and monitoring.
+
+## Prerequisites
+
+- AWS account with ECS permissions
+- PostgreSQL endpoint accessible from your VPC (host, port, username, password). The database user needs `CREATEDB` privilege.
+- Strata container image registry credentials (provided with your license)
+- Strata license key (provided with purchase)
+
+## Step 1: Store Secrets in AWS Secrets Manager
+
+Open the **Secrets Manager** console and create each secret as a **Plaintext** string.
+
+### Registry credentials
+
+Store as a single JSON secret — ECS uses this to pull the Strata image:
+
+```json
+{"username":"your_registry_username","password":"your_registry_token"}
+```
+
+### Application secrets
+
+Generate the encryption secrets locally:
+
+```bash
+curl -fsSL https://strata.do/self-hosting/env.sh | bash -s -- ./.env
+```
+
+This creates a `.env` file with all encryption secrets pre-generated. Create a separate Secrets Manager secret for each of the following, using the values from the generated `.env`:
+
+| Secret name | Value |
+|---|---|
+| `DB_PASSWORD` | Your PostgreSQL password |
+| `LICENSE_KEY` | Your Strata license key |
+| `STRATA_SECRET_KEY_BASE` | From generated `.env` |
+| `STRATA_ENCRYPTION_PRIMARY_KEY` | From generated `.env` |
+| `STRATA_ENCRYPTION_DETERMINISTIC_KEY` | From generated `.env` |
+| `STRATA_ENCRYPTION_KEY_DERIVATION_SALT` | From generated `.env` |
+
+Note the ARN of each secret — you'll reference them in Step 3.
+
+## Step 2: Create an EFS File System
+
+Strata uses EFS for persistent file storage in ECS deployments. Set `STORAGE_BACKEND=efs` in your environment variables so Strata writes to the mounted EFS volume.
+
+1. Open the **EFS** console → **Create file system**
+2. Enable encryption at rest
+3. After creation, go to **Access points** → **Create access point**:
+   - POSIX user: UID `0`, GID `0`
+   - Root directory path: `/storage`
+   - Owner UID: `0`, Owner GID: `0`
+   - Permissions: `755`
+4. Note the **File system ID** and **Access point ID**
+
+## Step 3: Create an ECS Express Mode Service
+
+1. Open the **ECS** console → **Create service** (Express Mode)
+2. Fill in the basic configuration:
+   - **Image URI**: `ghcr.io/stratasite/server:<tag>` (use a specific release tag)
+   - **Private registry**: Enable and provide the ARN of your registry credentials secret
+   - **Task execution role**: Create new or select existing
+   - **Infrastructure role**: Create new or select existing
+
+3. Expand **Additional configuration** and set:
+
+   **Container port**: `8080`
+
+   **Health check path**: `/up`
+
+   **Environment variables** (type: Environment variable):
+
+   | Key | Value |
+   |---|---|
+   | `STRATA_CONTAINER_PORT` | `8080` |
+   | `STRATA_RUN_DB_PREPARE` | `true` |
+   | `WEB_CONCURRENCY` | `2` |
+   | `WEB_THREADS` | `5` |
+   | `STORAGE_BACKEND` | `efs` |
+   | `DB_HOST` | Your PostgreSQL host |
+   | `DB_PORT` | `5432` |
+   | `DB_USERNAME` | Your PostgreSQL username |
+
+   **Secrets** (type: Secrets Manager):
+
+   | Key | Value (secret ARN) |
+   |---|---|
+   | `DB_PASSWORD` | ARN of your DB_PASSWORD secret |
+   | `LICENSE_KEY` | ARN of your LICENSE_KEY secret |
+   | `STRATA_SECRET_KEY_BASE` | ARN of your STRATA_SECRET_KEY_BASE secret |
+   | `STRATA_ENCRYPTION_PRIMARY_KEY` | ARN of your STRATA_ENCRYPTION_PRIMARY_KEY secret |
+   | `STRATA_ENCRYPTION_DETERMINISTIC_KEY` | ARN of your STRATA_ENCRYPTION_DETERMINISTIC_KEY secret |
+   | `STRATA_ENCRYPTION_KEY_DERIVATION_SALT` | ARN of your STRATA_ENCRYPTION_KEY_DERIVATION_SALT secret |
+
+   **CPU**: 2 vCPU, **Memory**: 4 GB (recommended minimum)
+
+4. Click **Create**
+
+## Step 4: Add EFS Volume
+
+Express Mode doesn't support EFS volumes in the initial setup UI, so you'll add it after creation.
+
+1. Go to **Task Definitions** → find the task definition created by Express Mode → **Create new revision**
+2. Under **Volumes**, add a volume:
+   - Volume type: **EFS**
+   - File system ID: your EFS file system ID
+   - Access point ID: your access point ID
+   - Transit encryption: **Enabled**
+3. Under **Container definitions**, edit the Strata container and add a mount point:
+   - Source volume: the volume you just created
+   - Container path: `/mnt/efs`
+4. Save the new revision
+5. Go back to your **ECS service** → **Update** → select the new task definition revision → enable **Force new deployment** → **Update service**
+
+:::warning
+The EFS security group must allow inbound **NFS (TCP 2049)** from the ECS task security group. Without this rule, the container will fail to mount the file system.
+:::
+
+## Step 5: Validate
+
+Check **CloudWatch Logs** for the Strata service. A healthy startup looks like:
+
+```
+[Strata] EFS detected at /mnt/efs
+[Strata] PostgreSQL is ready.
+[Strata] Preparing databases...
+[Strata] Databases ready.
+```
+
+Open the service URL shown in the ECS service details page. Complete the **Setup Wizard** to create your admin account.
+
+## Step 6: Add a job ECS service
+
+Background jobs should **not** run inside the web task. Use the **same image** with a second ECS service named e.g. `strata-job` (no load balancer).
+
+### 6a. Create a job task definition
+
+1. **Task Definitions** → **Create new task definition** (or duplicate the web task definition).
+2. Use the same image, CPU (2 vCPU), and memory (4 GB) as web.
+3. **Container command** (override the default):
+
+   ```
+   ./bin/jobs
+   ```
+
+4. **Remove** the container port mapping — job tasks do not receive HTTP traffic.
+5. Add the same **EFS volume** and mount at `/mnt/efs` (exports and file storage may read shared files).
+6. **Environment variables** — same `DB_*` and secrets as web, plus:
+
+   | Key | Value |
+   |---|---|
+   | `STRATA_RUN_DB_PREPARE` | `false` |
+   | `JOB_CONCURRENCY` | `4` |
+   | `JOB_THREADS` | `3` |
+
+7. Do **not** attach this task definition to the Application Load Balancer.
+
+### 6b. Create the job ECS service
+
+1. **ECS** → **Create service** (standard mode on the same cluster/VPC as web).
+2. **Task definition**: the job revision from 6a.
+3. **Desired count**: start with `2` (tune after monitoring queue latency).
+4. **Networking**: same VPC/subnets as web; security group allows **outbound** to PostgreSQL and EFS (NFS 2049). No inbound rules from the internet are required.
+5. **Load balancer**: none.
+
+### 6c. Deploy order
+
+1. Deploy or update **web** first and confirm `[Strata] Databases ready.` in logs.
+2. Deploy **job** tasks. Logs should show `Skipping database prepare (STRATA_RUN_DB_PREPARE=false).`
+
+### 6d. Scaling
+
+| Goal | Knob |
+|------|------|
+| More HTTP throughput | Increase **web** service `desiredCount` and/or `WEB_CONCURRENCY` |
+| More background throughput | Increase **job** service `desiredCount` and/or `JOB_CONCURRENCY` |
+
+Users still use **one URL** (the web service ALB). Job tasks are internal-only.
+
+See [Performance and scaling](/docs/self-hosting/performance-scaling/) for connection budgeting and load tests.
+
+## Upgrading
+
+1. Go to **Task Definitions** → create a new revision for **web** and **job** task definitions with the new image tag.
+2. Update the **web** ECS service first → **Force new deployment**.
+3. Update the **job** ECS service → **Force new deployment**.
+
+ECS performs a rolling deployment per service. Web tasks run migrations via `db:prepare`; job tasks skip them.
+
+## Rollback
+
+If you need to roll back, update the ECS service to use the previous task definition revision. ECS redeploys with the prior configuration.
+
+## Additional Configuration
+
+These are optional and not required for the initial deployment.
+
+**SSL** — Express Mode provisions an SSL certificate automatically. If you need to configure SSL behavior behind a custom proxy, see [SSL & Reverse Proxy](/docs/self-hosting/ssl-reverse-proxy/).
+
+**Custom domain** — Create a CNAME record pointing your domain to the ALB DNS name (shown in the ECS service details).
+
+**S3 storage instead of EFS** — Set `STORAGE_BACKEND=amazon` along with S3 credentials. See [Environment Variables](/docs/self-hosting/environment-variables/#amazon-s3--s3-compatible) for the full list.
+
+**ECS Exec for debugging** — Enable ECS Exec on the service to open a shell session in a running container for troubleshooting.
+
+**Full environment variable reference** — See [Environment Variables](/docs/self-hosting/environment-variables/).

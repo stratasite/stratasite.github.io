@@ -1,0 +1,97 @@
+---
+/**
+ * REST API reference, rendered at build time from public/docs/openapi/
+ * strata-api-v1.yaml on the same Docs shell as every other page. The sidebar
+ * lists endpoints by tag and the component schemas; the right-hand nav
+ * follows the headings. The YAML stays the source of truth and is linked for
+ * download.
+ */
+import Docs from '../../layouts/Docs.astro';
+import Operation from '../../components/docs/api/Operation.astro';
+import SchemaTable from '../../components/docs/api/SchemaTable.astro';
+import { guides, type SidebarItem } from '../../config/docs';
+import { exampleFor, info, renderDescription, schemas, serverUrl, tags } from '../../data/openapi';
+
+const spec = '/docs/openapi/strata-api-v1.yaml';
+const guide = guides.find((g) => g.id === 'api-reference')!;
+
+const sidebar: SidebarItem[] = [
+  { label: 'Overview', href: '#overview' },
+  ...tags.map((t, i) => ({
+    label: t.name,
+    href: `#${t.id}`,
+    open: i === 0,
+    items: t.operations.map((o) => ({ label: o.summary, href: `#${o.id}` })),
+  })),
+  {
+    label: 'Schemas',
+    href: '#schemas',
+    items: schemas.map((s) => ({ label: s.name, href: `#${s.id}` })),
+  },
+];
+
+const headings = [
+  ...tags.flatMap((t) => [
+    { depth: 2, slug: t.id, text: t.name },
+    ...t.operations.map((o) => ({ depth: 3, slug: o.id, text: o.summary })),
+  ]),
+  { depth: 2, slug: 'schemas', text: 'Schemas' },
+];
+
+const json = (v: unknown) => JSON.stringify(v, null, 2);
+---
+
+<Docs
+  title="REST API Reference"
+  description="Every Strata REST API v1 endpoint, parameter, request, and response schema."
+  guide={guide}
+  id="api-reference"
+  titles={{}}
+  headings={headings}
+  trail={[]}
+  sidebar={sidebar}
+>
+  <div id="overview">
+    <Fragment set:html={renderDescription(info.description)} />
+    <p>
+      Base URL <code>{serverUrl}</code>. Version {info.version}. This page is generated from the
+      <a href={spec} download>OpenAPI specification</a>, which you can load into any client. The
+      <a href="/docs/api/rest/">REST API guide</a> covers the concepts behind these endpoints; the
+      <a href="/docs/api/rest/query-spec/">query spec</a> page explains projections, filters, calculations, and segments in prose.
+    </p>
+  </div>
+
+  {tags.map((t) => (
+    <section class="api-tag" id={t.id}>
+      <h2 id={`${t.id}-title`}>{t.name}</h2>
+      {t.description && <Fragment set:html={renderDescription(t.description)} />}
+      <ul class="api-index not-prose">
+        {t.operations.map((o) => (
+          <li>
+            <a href={`#${o.id}`}>
+              <span class={`api-method api-method-${o.method}`}>{o.method}</span>
+              <code>{o.path}</code>
+              <span class="api-index-summary">{o.summary}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      {t.operations.map((o) => (
+        <Operation op={o} />
+      ))}
+    </section>
+  ))}
+
+  <section class="api-tag" id="schemas">
+    <h2 id="schemas-title">Schemas</h2>
+    <p>The objects the endpoints above accept and return.</p>
+    {schemas.map((s) => (
+      <section class="api-schema" id={s.id}>
+        <h3 id={`${s.id}-title`}>{s.name}</h3>
+        {s.schema.description && <Fragment set:html={renderDescription(s.schema.description)} />}
+        <SchemaTable schema={s.schema} />
+        <pre class="api-example"><code>{json(exampleFor(s.schema))}</code></pre>
+      </section>
+    ))}
+  </section>
+</Docs>

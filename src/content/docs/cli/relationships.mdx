@@ -1,0 +1,245 @@
+---
+title: "Relationships"
+description: "Define joins between tables to enable cross-table queries."
+---
+Define joins between tables to enable cross-table queries.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Create relationship definition files
+- Understand cardinality types
+- Write join conditions
+- Configure relationship options
+
+## What are Relationships?
+
+Relationships define how tables join together in the semantic model. They enable queries that span multiple tables.
+
+**Key points:**
+- Relationships are defined in separate files (`rel.*.yml`)
+- One relationship file can contain multiple relationships
+- Relationships are scoped to a single datasource
+- Strata does not support many-to-many joins
+
+## Creating Relationship Files
+
+Use the CLI to create a relationship file:
+
+```bash
+strata create relation sales/orders
+```
+
+This creates `models/sales/rel.orders.yml`.
+
+## Relationship Structure
+
+```yaml
+datasource: my_datasource
+
+relationship_name:
+  left: Left Table Name
+  right: Right Table Name
+  sql: left.column = right.column
+  cardinality: many_to_one
+```
+
+### Required Fields
+
+- **datasource**: The datasource key these relationships belong to
+- **left**: The left table name (must match table `name` in `tbl.*.yml`)
+- **right**: The right table name
+- **sql**: The join condition (SQL expression)
+- **cardinality**: Relationship type
+
+## Cardinality Types
+
+### many_to_one
+
+Most common type. Many rows in left table match one row in right table.
+
+**Example:** Many orders belong to one customer
+
+```yaml
+orders_customer:
+  left: Orders
+  right: Customer
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+```
+
+### one_to_many
+
+One row in left table matches many rows in right table.
+
+**Example:** One customer has many orders
+
+```yaml
+customer_orders:
+  left: Customer
+  right: Orders
+  sql: left.id = right.customer_id
+  cardinality: one_to_many
+```
+
+### one_to_one
+
+One row in left table matches one row in right table.
+
+**Example:** One user has one profile
+
+```yaml
+user_profile:
+  left: User
+  right: User Profile
+  sql: left.id = right.user_id
+  cardinality: one_to_one
+```
+
+**Note:** Strata does not support `many_to_many` relationships.
+
+## Join Types
+
+By default, relationships use INNER joins. Specify join type with the `join` field:
+
+```yaml
+store_returns_reason:
+  left: Store Returns
+  right: Reason
+  join: left
+  sql: left.sr_reason_sk = right.r_reason_sk
+  cardinality: many_to_one
+```
+
+**Supported join types:**
+- `left` - LEFT JOIN (optional relationship)
+- `right` - RIGHT JOIN
+- `inner` - INNER JOIN (default)
+- `full` - FULL OUTER JOIN
+
+## Compound Joins
+
+Join on multiple columns:
+
+```yaml
+user_roles:
+  left: Users
+  right: Roles
+  sql: left.id = right.user_id AND left.tenant_id = right.tenant_id
+  cardinality: one_to_many
+```
+
+## Measure Expansion
+
+For many-to-one relationships, you can allow measure expansion:
+
+```yaml
+orders_customer:
+  left: Orders
+  right: Customer
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+  allow_measure_expansion: true
+```
+
+**Warning:** This can cause overcounting. Use carefully.
+
+## Complete Example
+
+```yaml
+datasource: tpcds
+
+# Store Sales to Date Dimension
+store_sales_sold_date:
+  left: Store Sales
+  right: Date
+  sql: left.ss_sold_date_sk = right.d_date_sk
+  cardinality: many_to_one
+
+# Store Sales to Customer Dimension
+store_sales_customer:
+  left: Store Sales
+  right: Customer
+  sql: left.ss_customer_sk = right.c_customer_sk
+  cardinality: many_to_one
+
+# Store Sales to Store Dimension
+store_sales_store:
+  left: Store Sales
+  right: Store
+  sql: left.ss_store_sk = right.s_store_sk
+  cardinality: many_to_one
+
+# Store Returns to Reason (optional, left join)
+store_returns_reason:
+  left: Store Returns
+  right: Reason
+  join: left
+  sql: left.sr_reason_sk = right.r_reason_sk
+  cardinality: many_to_one
+```
+
+## Best Practices
+
+1. **Group related relationships** in the same file (e.g., all store channel relationships)
+2. **Use descriptive names** for relationships (e.g., `store_sales_customer` not `rel1`)
+3. **Match table names exactly** - use the `name` field from table definitions
+4. **Prefer many_to_one** for fact-to-dimension relationships
+5. **Use left joins** for optional relationships (e.g., nullable foreign keys)
+6. **Avoid measure expansion** unless you understand the implications
+
+## Common Patterns
+
+### Star Schema
+Fact table joins to multiple dimension tables:
+
+```yaml
+datasource: warehouse
+
+# Fact to dimensions
+sales_date:
+  left: Sales
+  right: Date
+  sql: left.sale_date_id = right.date_id
+  cardinality: many_to_one
+
+sales_customer:
+  left: Sales
+  right: Customer
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+
+sales_product:
+  left: Sales
+  right: Product
+  sql: left.product_id = right.id
+  cardinality: many_to_one
+```
+
+### Snowflake Schema
+Dimension table joins to another dimension:
+
+```yaml
+datasource: warehouse
+
+# Fact to dimension
+sales_customer:
+  left: Sales
+  right: Customer
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+
+# Dimension to dimension
+customer_address:
+  left: Customer
+  right: Address
+  sql: left.address_id = right.id
+  cardinality: many_to_one
+```
+
+## Next Steps
+
+- Learn about [cardinality types](/docs/semantic-model/relationships/cardinality/) in detail
+- Understand [join types](/docs/semantic-model/relationships/join-types/)
+- [Cardinality and join types](/docs/semantic-model/relationships/cardinality/)
+- Explore [advanced features](/docs/advanced/) like exclusions and decorators

@@ -1,0 +1,27 @@
+---
+/**
+ * The search field that sits as the last segment of the docs pill bar. Just
+ * markup: SearchPanel.astro owns the results and the behaviour, and finds this
+ * input by its data attribute.
+ */
+---
+
+<label class="relative z-10 flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors focus-within:text-primary">
+  <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path
+      fill-rule="evenodd"
+      d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.45 4.39l3.33 3.33a.75.75 0 11-1.06 1.06l-3.33-3.33A7 7 0 012 9z"
+      clip-rule="evenodd"
+    />
+  </svg>
+  <input
+    type="search"
+    class="w-36 bg-transparent text-sm text-foreground caret-primary outline-none placeholder:text-muted-foreground sm:w-56 md:w-72"
+    placeholder="Search docs"
+    autocomplete="off"
+    spellcheck="false"
+    aria-label="Search documentation"
+    data-docs-search-input
+  />
+  <kbd class="hidden rounded border border-border bg-background px-1.5 font-mono text-[0.7rem] text-muted-foreground sm:inline">⌘K</kbd>
+</label>

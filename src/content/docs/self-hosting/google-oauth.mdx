@@ -1,0 +1,212 @@
+---
+title: "Google Sheets Export"
+description: "Strata can export reports to Google Sheets after your organization configures a Google OAuth application and each exporting user connects their Google account."
+---
+Strata can export reports to Google Sheets after your organization configures a Google OAuth application and each exporting user connects their Google account.
+
+This setup is required once per Strata server. Users then authorize Strata with their own Google account before running a Sheets export.
+
+:::note
+This is a **Sheets export integration, not a sign-in method**. It authorizes Strata to write to a user's Google Sheets — it does not let users log in with Google. To configure login, see [Authentication & SSO](/docs/self-hosting/authentication/) (Google works as an [OpenID Connect](/docs/self-hosting/authentication/oidc/) provider).
+:::
+
+## What Strata Uses
+
+Strata uses the uploaded OAuth client JSON to start Google's OAuth flow. The connected user's Google token is then used to:
+
+- create a Google Sheets spreadsheet for an export
+- open an existing export spreadsheet on later runs
+- add, clear, delete, and resize sheet tabs
+- write report rows into sheet ranges
+- store the spreadsheet URL back on the Strata export
+
+Strata currently requests these Google scopes:
+
+| Scope | Why it is needed |
+|---|---|
+| `https://www.googleapis.com/auth/spreadsheets` | Create spreadsheets, manage sheets/tabs, clear ranges, resize columns, and write cell values. |
+| `https://www.googleapis.com/auth/drive` | Create and manage the exported spreadsheet in the user's Google Drive. |
+
+:::warning
+Google classifies the full Drive scope as a restricted scope. For an app used only inside your Google Workspace organization, choose an internal audience where possible. For an external/public app, Google may require OAuth verification and a security assessment before production use.
+:::
+
+## Prerequisites
+
+- You can administer a Google Cloud project owned by your organization.
+- You know the public Strata URL that users open in their browser.
+- Strata is reachable over the same protocol and host you will register with Google, for example `https://strata.example.com`.
+- Your Strata server's `APP_HOST` and `APP_PROTOCOL` match the public URL users use to access Strata.
+
+The OAuth callback URL must be:
+
+```text
+https://YOUR_STRATA_HOST/integrations/google/callback
+```
+
+For example:
+
+```text
+https://strata.example.com/integrations/google/callback
+```
+
+Use `http://...` only for a local or non-TLS test environment.
+
+## 1. Create or Select a Google Cloud Project
+
+1. Open the [Google Cloud console](https://console.cloud.google.com/).
+2. Select an existing organization-owned project or create a new project for Strata.
+3. Make sure the project is owned by the organization that will administer the integration.
+
+Use a dedicated project if your organization wants billing, API usage, OAuth verification, and credential ownership separated from other systems.
+
+## 2. Enable the Required APIs
+
+In the selected Google Cloud project:
+
+1. Go to **APIs & Services > Library**.
+2. Enable **Google Sheets API**.
+3. Enable **Google Drive API**.
+
+Both APIs are required. The Sheets API is used for spreadsheet and tab operations. The Drive API is used because exported spreadsheets are created and stored in the connected user's Google Drive.
+
+## 3. Configure the OAuth Consent Screen
+
+1. Go to **Google Auth platform > Branding**.
+2. If the Google Auth platform is not configured, click **Get started**.
+3. Enter the app information users should see when connecting Google:
+   - App name: for example `Strata`
+   - User support email
+   - Developer contact email
+4. Choose the audience:
+   - **Internal**: use this when Strata is only for users in your Google Workspace organization.
+   - **External**: use this when users outside your Google Workspace organization must connect Google.
+5. Save the consent configuration.
+
+For an external app, keep the app in testing until your administrator is ready to publish it. Add test users while testing. External apps that request sensitive or restricted scopes may show an unverified app warning until Google's verification process is complete.
+
+## 4. Add OAuth Scopes
+
+In **Google Auth platform > Data Access**, add these scopes:
+
+```text
+https://www.googleapis.com/auth/spreadsheets
+https://www.googleapis.com/auth/drive
+```
+
+Save the scope configuration.
+
+:::note
+Google recommends choosing the narrowest scopes an app can use. Strata's current Sheets export implementation needs spreadsheet write access and Drive access for exported files. Do not substitute read-only scopes; exports will fail when Strata tries to create or update spreadsheets.
+:::
+
+## 5. Create a Web OAuth Client
+
+1. Go to **Google Auth platform > Clients**.
+2. Click **Create Client**.
+3. Set **Application type** to **Web application**.
+4. Name the client, for example `Strata Server`.
+5. Under **Authorized redirect URIs**, add your Strata callback URL:
+
+   ```text
+   https://YOUR_STRATA_HOST/integrations/google/callback
+   ```
+
+6. If Google asks for an authorized JavaScript origin, add the Strata origin without a path:
+
+   ```text
+   https://YOUR_STRATA_HOST
+   ```
+
+7. Click **Create**.
+
+The redirect URI must exactly match the public Strata URL, including protocol, host, port if any, and path. A mismatch causes Google to reject the connection flow before users can authorize Strata.
+
+## 6. Download the OAuth Client JSON
+
+After creating the web client:
+
+1. Open the client in **Google Auth platform > Clients**.
+2. Download the OAuth client JSON.
+3. Confirm the JSON has a top-level `web` object with `client_id` and `client_secret`.
+
+The file should look like this shape:
+
+```json
+{
+  "web": {
+    "client_id": "...apps.googleusercontent.com",
+    "client_secret": "...",
+    "redirect_uris": [
+      "https://YOUR_STRATA_HOST/integrations/google/callback"
+    ]
+  }
+}
+```
+
+Do not upload a service account key. Strata expects an OAuth 2.0 Web Client JSON file because exports run as the connected Google user.
+
+## 7. Upload the JSON in Strata
+
+In Strata:
+
+1. Sign in as a system administrator.
+2. Open **System Settings**.
+3. Open **Google OAuth**.
+4. Upload the OAuth 2.0 Web Client JSON downloaded from Google Cloud.
+5. Save the settings.
+6. Restart all Strata application servers if Strata shows the restart warning after saving.
+
+The settings page validates that the file is valid JSON and includes `web.client_id` and `web.client_secret`.
+
+## 8. Connect a User Account
+
+Each Strata user who exports to Google Sheets must connect Google once:
+
+1. Open a report export flow in Strata.
+2. Click **Connect Google** when prompted.
+3. Choose the Google account that should own the exported spreadsheets.
+4. Approve the requested Sheets and Drive permissions.
+5. Return to Strata and run the export.
+
+Exports are created in the connected user's Google Drive. Later runs reuse the saved spreadsheet when possible and update its sheet tabs.
+
+## Troubleshooting
+
+### Google says the redirect URI is invalid
+
+Check that the OAuth client includes the exact callback URL:
+
+```text
+https://YOUR_STRATA_HOST/integrations/google/callback
+```
+
+Also confirm `APP_HOST`, `APP_PROTOCOL`, your reverse proxy, and the browser URL all agree on the same public host and protocol.
+
+### Users see an unverified app warning
+
+This is controlled by Google. Internal Google Workspace apps are usually the simplest option for organization-only deployments. External apps that request sensitive or restricted scopes may require Google OAuth verification before production use.
+
+### Strata says Google Sheets is not configured
+
+Upload the OAuth 2.0 Web Client JSON in **System Settings > Google OAuth**. If settings changed while servers were already running, restart all Strata application servers.
+
+### Strata says Google authorization is missing or expired
+
+The user needs to connect Google again. Ask the user to start the export flow and click **Connect Google**.
+
+### Exports fail when writing to Sheets
+
+Confirm the Google Cloud project has both **Google Sheets API** and **Google Drive API** enabled, and confirm the OAuth app includes both required scopes:
+
+```text
+https://www.googleapis.com/auth/spreadsheets
+https://www.googleapis.com/auth/drive
+```
+
+## Google References
+
+- [Configure the OAuth consent screen and choose scopes](https://developers.google.com/workspace/guides/configure-oauth-consent)
+- [Create access credentials](https://developers.google.com/workspace/guides/create-credentials)
+- [Choose Google Sheets API scopes](https://developers.google.com/sheets/api/scopes)
+- [Choose Google Drive API scopes](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)

@@ -1,0 +1,75 @@
+---
+title: "Data Types"
+description: "The eight data types a field can declare, and which warehouse types they map to."
+---
+The eight data types a field can declare, and which warehouse types they map to.
+
+## Reference
+
+| `data_type` | Warehouse types | Use for | Notes |
+|---|---|---|---|
+| `string` | VARCHAR, TEXT, CHAR | names, descriptions, codes, categories, status values | Keep order numbers and SKUs as strings unless you do math on them |
+| `integer` | INT, INTEGER, SMALLINT | counts, quantities, years, small IDs | 32-bit range |
+| `bigint` | BIGINT | large IDs, epoch timestamps, large counts | 64-bit range |
+| `decimal` | DECIMAL, NUMERIC, FLOAT, DOUBLE | money, percentages, ratios, averages, measurements | Precision follows the warehouse; use it for every monetary value |
+| `date` | DATE | dates without a time part | Declares `grains`: `day`, `week`, `month`, `quarter`, `year` |
+| `date_time` | TIMESTAMP, DATETIME | timestamps, event times | Declares `grains`, plus `raw`, `second`, `minute`, `hour` |
+| `boolean` | BOOLEAN, BOOL | flags, yes/no fields | Values `true`, `false`, `NULL` |
+| `binary` | BLOB, BINARY, BYTEA | binary payloads | Rare; store a URL or path as a `string` instead |
+
+A measure's `data_type` describes the aggregate's result: `count(*)` is an `integer`, `sum(amount)` a `decimal`.
+
+## Examples
+
+```yaml
+- type: dimension
+  name: Order ID
+  data_type: integer
+  expression:
+    primary_key: true
+    sql: order_id
+
+- type: dimension
+  name: Order Date
+  data_type: date
+  grains: [day, week, month, quarter, year]
+  expression:
+    sql: order_date
+
+- type: dimension
+  name: Created At
+  data_type: date_time
+  grains: [raw, hour, day, week, month]
+  expression:
+    sql: created_at
+
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  format: currency:2
+  expression:
+    sql: sum(amount)
+```
+
+## Grains
+
+`date` and `date_time` fields list the granularities users can group and filter by. Strata truncates the column to the chosen grain in SQL; grains that aren't listed aren't offered.
+
+| Grain | Applies to |
+|---|---|
+| `raw` | `date_time` only: the untruncated value |
+| `second`, `minute`, `hour` | `date_time` only |
+| `day`, `week`, `month`, `quarter`, `year` | both |
+
+## Guidelines
+
+- **Match the column.** Mismatches surface as cast errors at query time, not at deploy.
+- **`decimal` for money, never a float column type name.** Currency formatting comes from `format`, not the type. See [Formatters](/docs/semantic-model/fields/formatters/).
+- **List only useful grains.** A daily inventory table has no business offering `hour`.
+- **Prefer `integer` for IDs** unless the column is a BIGINT.
+
+## Next Steps
+
+- [Fields and Types](/docs/semantic-model/fields-and-types/) - properties every field can set
+- [Dimensions](/docs/semantic-model/fields/dimensions/) and [Measures](/docs/semantic-model/fields/measures/)
+- [Formatters](/docs/semantic-model/fields/formatters/) - display formats

@@ -1,0 +1,298 @@
+---
+title: "Deployment"
+description: "Deploy your semantic model to a Strata server for production use."
+---
+Deploy your semantic model to a Strata server for production use.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Deploy projects to Strata servers
+- Understand the deployment process
+- Monitor deployment progress
+- Check deployment status
+- Handle deployment errors
+
+## Git-Based Deployment
+
+Strata uses a **Git-based workflow** where your semantic models are YAML files in a Git repository. This enables:
+
+| Capability | Description |
+|------------|-------------|
+| Version history | Full Git history of all changes |
+| Code review | PR-based workflows before deployment |
+| Branching | Test changes safely in feature branches |
+| Rollback | Simple `git revert` to undo changes |
+| CI/CD | Integrate with GitHub Actions, GitLab CI, etc. |
+| Collaboration | Merge-based workflows with conflict resolution |
+| Audit trail | Complete Git log with commit messages |
+
+**Branch-based development workflow:**
+1. Create a feature branch for your changes
+2. Make and test modifications locally
+3. Deploy branch to staging environment
+4. Get code review from teammates
+5. Merge to main and deploy to production
+
+This treats your semantic layer as **infrastructure as code** — the same rigorous workflows used for application development.
+
+## Prerequisites
+
+- Strata project initialized
+- Semantic models defined
+- A Strata account on the target server
+- Git repository initialized (for version tracking)
+
+You do **not** need to configure a server URL or API key up front. If either is missing, `strata deploy` prompts for the server URL (saved to `project.yml`) and then asks how you'd like to authenticate: **Sign in via browser (recommended)** — the CLI opens your browser and fetches an API key automatically once you sign in — or paste an API key manually (from your Strata web app under **Settings → API Keys**, or from your Strata administrator). Either way the key is saved to `.strata` (gitignored) for future runs.
+
+## Basic Deployment
+
+Deploy your project to the Strata server:
+
+```bash
+strata deploy
+```
+
+This will:
+1. **Run audits** - Validate YAML syntax, models, and connections
+2. **Check Git status** - Ensure working directory is clean
+3. **Create archive** - Package model files for upload
+4. **Upload to server** - Send archive to Strata server
+5. **Monitor progress** - Track deployment status
+
+## Deployment Process
+
+### 1. Pre-Deployment Checks
+
+The CLI automatically runs:
+
+- **Syntax validation** - YAML files are valid
+- **Model validation** - Table and relationship definitions are correct
+- **Connection tests** - Datasources are accessible
+
+Skip audits (not recommended):
+```bash
+strata deploy --skip-audit
+```
+
+### 2. Git Status Validation
+
+The CLI checks:
+- Working directory is clean (no uncommitted changes)
+- Current branch matches production branch (if configured)
+
+Force deployment (bypass checks):
+```bash
+strata deploy --force
+```
+
+### 3. Archive Creation
+
+Before building the archive, the CLI refreshes external imports (if any) so the deployment includes the latest imported content.
+
+The CLI creates an archive containing:
+- Model files (`models/**/*.yml`)
+- Migration files (`migrations/*.yml`)
+- Test files (`tests/*.yml`)
+- Configuration files (`project.yml`, `datasources.yml`)
+
+**Incremental deployment:**
+- Only changed files are included (if previous deployment exists)
+- Faster uploads for small changes
+
+**Full deployment:**
+- All files included (first deployment or if no previous deployment)
+
+### 4. Upload and Processing
+
+The archive is uploaded to the Strata server, which:
+- Validates all files
+- Builds the semantic model
+- Generates universe paths
+- Runs tests (if defined)
+- Updates the deployed model
+
+### 5. Monitoring
+
+The CLI monitors deployment progress:
+- Shows current stage (validating, building, testing, etc.)
+- Displays test results (if tests exist)
+- Reports completion or errors
+
+## Deployment Options
+
+### Environment Selection
+
+Deploy to a specific environment:
+
+```bash
+strata deploy --environment production
+```
+
+Environments are configured in `project.yml`:
+```yaml
+environments:
+  production:
+    server: https://strata.example.com
+    api_key: prod_key_here
+  staging:
+    server: https://staging.strata.example.com
+    api_key: staging_key_here
+```
+
+### Skip Confirmation
+
+Useful for CI/CD (non-interactive):
+
+```bash
+strata deploy --yes
+```
+
+### Force Deployment
+
+Deploy even if no files changed:
+
+```bash
+strata deploy --force
+```
+
+## Checking Deployment Status
+
+Check the status of the latest deployment:
+
+```bash
+strata deploy status
+```
+
+This shows:
+- Deployment ID
+- Current status (queued, pending, succeeded, failed)
+- Current stage (validating, building, testing, finished)
+- Test results (if available)
+
+## Deployment Stages
+
+1. **Queued** - Waiting to start
+2. **Validating** - Checking YAML syntax and structure
+3. **Building** - Creating semantic model
+4. **Testing** - Running test files (if any)
+5. **Finished** - Deployment complete
+
+## Deployment Statuses
+
+- **succeeded** - Deployment completed successfully
+- **failed** - Deployment failed (check errors)
+- **cancelled** - Deployment was cancelled
+- **pending** - Deployment in progress
+- **queued** - Waiting to start
+
+## Configuration
+
+### project.yml
+
+```yaml
+name: My Project
+server: https://strata.example.com
+production_branch: main
+project_id: 123  # Auto-populated after first deployment
+```
+
+### .strata (Local Secrets Only)
+
+Your Strata **API key** and other secrets live in `.strata` (gitignored). The browser sign-in flow writes this file for you the first time you run `strata deploy`, so you normally never edit it by hand. Manual editing is mainly for non-interactive environments (CI) or per-environment keys: get a key from your Strata web app (**Settings → API Keys**) and add it as below. **Do not put the server URL here** — the server URL belongs in `project.yml` (see above).
+
+```yaml
+api_key: your_api_key_here
+
+environments:
+  production:
+    api_key: prod_key_here
+  staging:
+    api_key: staging_key_here
+```
+
+## Deployment architecture and infrastructure
+
+The `strata deploy` command publishes your **semantic model** to a running Strata server. In most production setups:
+
+- The Strata server itself runs in a container (for example, Docker or Kubernetes) and hosts the Strata application and API only.
+- You are responsible for providing:
+  - A production-grade **database** for the Strata server (typically PostgreSQL).
+  - Object storage (such as S3, GCS, or Azure Blob) if you use features that store files or exports.
+
+Configuration for a deployed Strata server is provided via a combination of:
+
+- A server‑side configuration file, and/or
+- Environment variables for:
+  - Database connection (host, port, database, user, password, SSL).
+  - Email (SMTP) settings.
+  - Public host URL and any proxy headers.
+  - Storage backend configuration (bucket names, credentials, regions).
+
+The CLI does not manage this infrastructure; it assumes the server is reachable at the URL in `project.yml` and that the server has already been configured with the appropriate database and storage backends.
+
+## Best Practices
+
+1. **Run audits first** - Fix issues before deploying
+2. **Commit changes** - Keep Git history clean
+3. **Test locally** - Validate models before deployment
+4. **Monitor deployments** - Watch for errors
+5. **Use environments** - Separate staging and production
+6. **Review test results** - Ensure tests pass
+
+## Troubleshooting
+
+### Deployment Fails
+
+**Check:**
+- YAML syntax errors
+- Model validation errors
+- Datasource connection issues
+- Missing required fields
+
+**Solution:**
+- Run `strata audit` to identify issues
+- Fix errors in model files
+- Retry deployment
+
+### Deploy Job Breaks Mid-Run
+
+If the deployment fails partway through for any reason (transient error, server issue, network blip, or anything else), the deployment is marked as **failed** and the error is recorded. You will see this immediately when checking status (e.g. `strata deploy status` or in the Strata web app).
+
+**What happens:** The server updates the deployment record to `failed` and stores the error message. The branch is left in a failed state until the next deployment runs. There is no partial or stuck state that blocks retries.
+
+**Solution:** Run `strata deploy` again. The next deployment runs from scratch as a new deployment. Retrying deploy is safe and is the way to recover from a failed run—no manual cleanup is required.
+
+### Tests Fail
+
+**Check:**
+- Test assertions match generated SQL
+- Field names are correct
+- Test files are valid
+
+**Solution:**
+- Review test output
+- Update test expectations
+- Fix model definitions
+
+### Connection Errors
+
+**Check:**
+- Server URL is correct
+- API key is valid
+- Network connectivity
+
+**Solution:**
+- Verify `project.yml` server URL
+- Re-authenticate: remove the `api_key` line from `.strata` and run `strata deploy` — it will offer browser sign-in again. (A placeholder value of `YOUR_STRATA_API_KEY` is treated as no key.)
+- Test network connection
+
+## CI/CD Integration
+
+For automated deployments, see the [CI/CD guide](/docs/cli/ci-cd/).
+
+## Next Steps
+
+- Learn about [CI/CD workflows](/docs/cli/ci-cd/)
+- Read about [testing](/docs/cli/tests/)
+- Explore [audit commands](/docs/cli/audit/)

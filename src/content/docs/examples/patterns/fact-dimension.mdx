@@ -1,0 +1,79 @@
+---
+title: "Fact-Dimension Pattern"
+description: "Core pattern for modeling fact and dimension tables."
+---
+Core pattern for modeling fact and dimension tables.
+
+## Overview
+
+The fact-dimension pattern is the foundation of dimensional modeling. Facts are events/transactions, dimensions are descriptive attributes.
+
+## Fact Tables
+
+Facts represent business events or transactions.
+
+**Characteristics:**
+- Higher cost (100)
+- Many rows
+- Contain measures (aggregatable metrics)
+- Foreign keys to dimensions
+
+**Example:**
+```yaml
+name: Orders
+cost: 100
+
+fields:
+  - type: measure
+    name: Total Revenue
+    expression:
+      sql: sum(amount)
+```
+
+## Dimension Tables
+
+Dimensions provide context for facts.
+
+**Characteristics:**
+- Lower cost (10)
+- Fewer rows
+- Contain dimensions (categorical fields)
+- Primary keys
+
+**Example:**
+```yaml
+name: Customer
+cost: 10
+
+fields:
+  - type: dimension
+    name: Customer ID
+    expression:
+      primary_key: true
+      sql: customer_id
+```
+
+## Relationships
+
+Facts join to dimensions:
+
+```yaml
+orders_customer:
+  left: Orders
+  right: Customer
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+```
+
+## Best Practices
+
+1. **Fact cost: 100** - Higher cost
+2. **Dimension cost: 10** - Lower cost
+3. **Many-to-one** - Fact to dimension
+4. **Primary keys** - On dimensions
+5. **Measures in facts** - Aggregatable metrics
+
+## Next Steps
+
+- [Learn star schema](/docs/examples/patterns/star-schema/)
+- [Explore TPC-DS tutorial](/docs/examples/tpcds-tutorial/)

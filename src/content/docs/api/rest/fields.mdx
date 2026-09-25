@@ -1,0 +1,132 @@
+---
+title: "Fields"
+description: "Discover and search semantic fields (dimensions and measures)."
+---
+Discover and search semantic fields (dimensions and measures).
+
+## List fields
+
+```
+GET /api/v1/projects/{project_id}/fields
+```
+
+**Auth:** Project member
+
+**Query parameters:**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `branch` | Branch uid | Production branch |
+| `page` | Page number | 1 |
+| `limit` | Results per page (max 1000) | 20 |
+| `q` | Search term (name/description) | — |
+| `relevance` | Hybrid semantic search when `true` (requires `q`) | `false` |
+| `type` | Filter: `dimension` or `measure` | all |
+| `sort` | Sort: `smart` (by rank, highest first), `name` (A to Z), `desc` (name, Z to A). Ignored when `q` is given: search results come back in match order | `smart` |
+| `constraints` | Field name(s) — return fields joinable with these | — |
+
+### Keyword search
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/fields?q=State&limit=50"
+```
+
+### Hybrid relevance search
+
+Ranks results by semantic similarity (useful for natural-language discovery):
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/fields?q=revenue&relevance=true&limit=25"
+```
+
+### Filter by type
+
+```bash
+# Dimensions only, sorted by name
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/fields?type=dimension&sort=name&limit=100"
+
+# Measures only
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/fields?type=measure&sort=smart"
+```
+
+### Related fields (constraints)
+
+Return fields that can be queried together with a given field:
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/fields?constraints=State&sort=smart&limit=100"
+```
+
+Pass multiple constraints as repeated parameters or an array.
+
+**Response:** `200 OK`
+
+```json
+{
+  "results": [
+    {
+      "uid": "state",
+      "name": "State",
+      "description": "Customer state",
+      "semantic_type": "dimension",
+      "data_type": "string",
+      "display_type": "default",
+      "rank": 85,
+      "updated_at": "2026-06-01T12:00:00Z"
+    }
+  ],
+  "page": 1,
+  "total_pages": 5,
+  "total_count": 412,
+  "limit": 100
+}
+```
+
+Blank and false attributes are omitted, so a field that isn't hidden has no `hidden` key and a field without synonyms has no `synonyms` key. Keys that appear when set: `hidden`, `synonyms`, `snapshot` (`beginning`/`ending` on snapshot measures), `extended_blend_group`.
+
+**Errors:**
+
+| HTTP | Code | When |
+|------|------|------|
+| 422 | `invalid_param` | Invalid `type` or `sort` (`sort=rank` is refused; use `smart`) |
+| 422 | `invalid_query_construction` | Unknown or ambiguous constraint field |
+
+## Show field
+
+```
+GET /api/v1/projects/{project_id}/fields/{id}
+```
+
+**Auth:** Project member
+
+**Parameters:**
+
+| Name | In | Description |
+|------|-----|-------------|
+| `id` | path | Field uid |
+| `branch` | query | Branch uid |
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/fields/state"
+```
+
+**Response:** `200 OK` — single field object (same shape as list items)
+
+**Errors:**
+
+| HTTP | When |
+|------|------|
+| 404 | Field not found on branch |
+
+## Related
+
+- [Tables](/docs/api/rest/tables/)
+- [Query spec](/docs/api/rest/query-spec/)

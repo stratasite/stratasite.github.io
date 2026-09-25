@@ -1,0 +1,103 @@
+---
+title: "Date and DateTime Dimensions"
+description: "Use date and datetime dimensions for time-based grouping and filtering."
+---
+Use `date` and `date_time` dimensions for time-based grouping and filtering.
+
+## Overview
+
+- **`date`** — Date without time (e.g. order date, birth date). Format: YYYY-MM-DD.
+- **`date_time`** — Timestamp with time (e.g. created_at, event time). Format: YYYY-MM-DD HH:MM:SS.
+
+Define them as dimensions and set **grains** to control how users can group and filter.
+
+## Grains
+
+Grains are the granularities you allow for a date or date_time dimension.
+
+```yaml
+- type: dimension
+  name: Order Date
+  data_type: date
+  grains:
+    - day
+    - week
+    - month
+    - quarter
+    - year
+  expression:
+    sql: order_date
+```
+
+**Available grains:**
+
+| Grain     | Typical use      | `date` | `date_time` |
+|-----------|------------------|--------|-------------|
+| `raw`     | Original value   | —      | ✓           |
+| `second`  | Second-level    | —      | ✓           |
+| `minute`  | Minute-level    | —      | ✓           |
+| `hour`    | Hour-level      | —      | ✓           |
+| `day`     | Day-level       | ✓      | ✓           |
+| `week`    | Week-level      | ✓      | ✓           |
+| `month`   | Month-level     | ✓      | ✓           |
+| `quarter` | Quarter-level   | ✓      | ✓           |
+| `year`    | Year-level      | ✓      | ✓           |
+
+For `date_time`, you can include `raw`, `second`, `minute`, and `hour` when you need sub-day precision.
+
+## Date Dimension Example
+
+```yaml
+- type: dimension
+  name: Order Date
+  description: Date when order was placed
+  data_type: date
+  grains:
+    - day
+    - week
+    - month
+    - quarter
+    - year
+  expression:
+    sql: order_date
+```
+
+## DateTime Dimension Example
+
+```yaml
+- type: dimension
+  name: Created At
+  description: When the record was created
+  data_type: date_time
+  grains:
+    - raw
+    - hour
+    - day
+    - week
+    - month
+  expression:
+    sql: created_at
+```
+
+## When to Use date vs date_time
+
+- **`date`** — Order date, ship date, birth date, any dimension where time-of-day does not matter.
+- **`date_time`** — Created at, updated at, event time, any dimension where hour/minute/second can be used for grouping or filtering.
+
+## Formatting and Filtering
+
+- Use [field format](/docs/semantic-model/fields/formatters/) for display (e.g. `date:short`, custom `pattern`).
+- For high-cardinality timestamps, set `disable_value_listing: true` to avoid loading large value lists in filters.
+
+## Best Practices
+
+1. **Set grains** — Only include grains you need; they affect grouping and filtering.
+2. **Prefer `date` when time is irrelevant** — Simpler and more efficient.
+3. **Use `date_time` for events** — When users need hour or minute level.
+4. **Disable value listing** for high-cardinality `date_time` dimensions.
+
+## Next Steps
+
+- [Dimensions](/docs/semantic-model/fields/dimensions/)
+- [Data types](/docs/semantic-model/fields/data-types/#date-and-datetime-grains)
+- [Field format](/docs/semantic-model/fields/formatters/)

@@ -1,0 +1,52 @@
+---
+title: "Tutorial"
+description: "Bootstrap the Strata TPC-DS tutorial project on your local machine with a single command."
+---
+Bootstrap the Strata TPC-DS tutorial project on your local machine with a single command.
+
+## Usage
+
+```bash
+strata project sample
+```
+
+The command prompts for your Strata server URL (default `http://localhost:8080`), then opens your browser so you can sign in — the CLI fetches an API key automatically once you do. No manual key handling required.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-a`, `--api-key` | No | Strata API key. Pass together with `--server` to skip the browser sign-in (e.g. in scripts). |
+| `-s`, `--server` | No | Strata server URL. Prompted for if omitted. |
+
+## What it does
+
+1. Prompts for the server URL and signs you in via browser (unless both `--api-key` and `--server` are given).
+2. Clones the [tpc-ds-retail-sample](https://github.com/stratasite/tpc-ds-retail-sample) into a `tpc-ds-retail-sample/` directory in the current working directory.
+3. Initialises a fresh Git repository with an initial commit.
+4. Creates a `.strata` config file (git-ignored, permissions `0600`) containing your API key and the server URL.
+5. Sets the project ID in `project.yml` so you can deploy immediately.
+
+## After running
+
+```bash
+cd tpc-ds-retail-sample
+strata deploy
+```
+
+Then open [http://localhost:8080](http://localhost:8080) in your browser to explore the deployed model.
+
+## Prerequisites
+
+- Strata CLI installed — see [Installation](/docs/getting-started/installation/)
+- A running Strata server — see [Quick Install](/docs/self-hosting/quick-install/)
+- Git installed
+
+## Notes
+
+- The TPC-DS dataset is bundled inside the Strata Docker image at `/data/tpcds.duckdb` — no separate database setup required.
+- If a `tpc-ds-retail-sample/` directory already exists in the current folder, the command re-uses it and skips cloning.
+- Browser sign-in waits up to 5 minutes for you to complete authentication, then times out.
+
+## Next steps
+
+- [Tutorial walkthrough](/docs/getting-started/tutorial/) — build on the tutorial model by adding the missing web channel tables
+- [CLI Reference](/docs/cli/) — all Strata CLI commands

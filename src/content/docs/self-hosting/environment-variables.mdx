@@ -1,0 +1,216 @@
+---
+title: "Environment Variables"
+description: "Complete reference for all environment variables supported by Strata Server. Variables marked as Required must be set for the application to start. All others have sensible defaults and can be configu"
+---
+Complete reference for all environment variables supported by Strata Server. Variables marked as **Required** must be set for the application to start. All others have sensible defaults and can be configured as needed.
+
+## Environment Template
+
+Preferred: generate a ready-to-edit `.env` with Strata secrets created locally:
+
+```bash
+curl -fsSL https://strata.do/self-hosting/env.sh | bash -s -- ./.env
+```
+
+## Secret Generation Reference
+
+For manual and cloud deployments, generate the Strata encryption secrets before deployment.
+
+Expected formats:
+
+- `STRATA_SECRET_KEY_BASE`: hex string, 128 characters (`openssl rand -hex 64`)
+- `STRATA_ENCRYPTION_PRIMARY_KEY`: hex string, 32 characters (`openssl rand -hex 16`)
+- `STRATA_ENCRYPTION_DETERMINISTIC_KEY`: hex string, 32 characters (`openssl rand -hex 16`)
+- `STRATA_ENCRYPTION_KEY_DERIVATION_SALT`: hex string, 32 characters (`openssl rand -hex 16`)
+
+Generate all four at once:
+
+```bash
+STRATA_SECRET_KEY_BASE=$(openssl rand -hex 64)
+STRATA_ENCRYPTION_PRIMARY_KEY=$(openssl rand -hex 16)
+STRATA_ENCRYPTION_DETERMINISTIC_KEY=$(openssl rand -hex 16)
+STRATA_ENCRYPTION_KEY_DERIVATION_SALT=$(openssl rand -hex 16)
+```
+
+## Database (Required)
+
+These connect Strata to your PostgreSQL instance. Strata uses four databases (primary, queue, cache, cable) and all share the same connection credentials.
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DB_HOST` | Yes | `localhost` | PostgreSQL hostname or IP address |
+| `DB_PORT` | No | `5432` | PostgreSQL port |
+| `DB_USERNAME` | No | `postgres` | PostgreSQL username |
+| `DB_PASSWORD` | No | `postgres` | PostgreSQL password |
+
+:::info
+The database user needs `CREATEDB` privilege for Strata to auto-create its four databases on first start. If your user cannot create databases, create them manually — see [Production Deployment](/docs/self-hosting/production-deployment/#1-prepare-postgresql).
+:::
+
+:::note[License key]
+The license key is entered via the web UI on first login and stored in the database. No environment variable is needed.
+:::
+
+## Application
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PORT` | No | `3000` | Host port for the web UI (mapped to container `STRATA_CONTAINER_PORT`) |
+| `STRATA_CONTAINER_PORT` | No | `80` | Container HTTP listen port for Strata runtime. Set to `8080` on ECS Fargate — non-root containers cannot bind to ports below 1024. |
+| `APP_HOST` | No | `localhost` | Application hostname, used in email links and URL generation |
+| `APP_PROTOCOL` | No | `https` | Protocol for generated URLs (`http` or `https`) |
+| `STRATA_SECRET_KEY_BASE` | Yes | Auto-generated on first boot (single-node only) | Strata application secret for encrypting sessions, cookies, and signed tokens. All nodes must share the same value in [multi-node deployments](/docs/self-hosting/production-deployment/#multi-instance-deployment). Generate with `openssl rand -hex 64`. |
+| `STRATA_ENCRYPTION_PRIMARY_KEY` | Yes | Auto-generated on first boot (single-node only) | Primary key used for Strata data-at-rest encryption (for example datasource credentials). Generate with `openssl rand -hex 16`. |
+| `STRATA_ENCRYPTION_DETERMINISTIC_KEY` | Yes | Auto-generated on first boot (single-node only) | Deterministic key used by Strata encryption for deterministic encrypted attributes. Generate with `openssl rand -hex 16`. |
+| `STRATA_ENCRYPTION_KEY_DERIVATION_SALT` | Yes | Auto-generated on first boot (single-node only) | Salt used by Strata encryption key derivation. Generate with `openssl rand -hex 16`. |
+| `STRATA_VERSION` | No | `latest` | Docker image tag to use. Set to a specific version (e.g., `1.0.0`) to pin releases. |
+
+## SSL
+
+Configure these based on your reverse proxy setup. See [SSL & Reverse Proxy](/docs/self-hosting/ssl-reverse-proxy/) for detailed setup instructions.
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ASSUME_SSL` | No | `false` | Trust `X-Forwarded-Proto` header from your reverse proxy. Set to `true` when behind an SSL-terminating proxy. |
+| `FORCE_SSL` | No | `false` | Redirect HTTP requests to HTTPS. Set to `true` when using SSL. |
+
+:::tip
+Once you have a reverse proxy terminating SSL, set both `ASSUME_SSL=true` and `FORCE_SSL=true`.
+:::
+
+## Storage
+
+Strata stores uploaded files (attachments, exports) using the backend set by `STORAGE_BACKEND`. The default is `local` — files are stored on the container's local disk, which works fine for a single container but **files will be inaccessible if you run multiple web replicas**. Switch to a shared backend (EFS, cloud object storage) whenever you run more than one container or need files to survive container replacement.
+
+### EFS (ECS Deployments)
+
+Set `STORAGE_BACKEND=efs` to store files on an EFS volume mounted at `/mnt/efs`. Strata will prepare the storage directory automatically when the volume is present. See [AWS ECS Deployment](/docs/self-hosting/aws-ecs-manual/#step-2-create-an-efs-file-system) for mount setup instructions.
+
+### Common
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `STORAGE_BACKEND` | No | `local` | Where Strata stores uploaded files: `local` (container's local disk — default, single-container only), `efs` (EFS volume at `/mnt/efs`), `amazon` (S3 or S3-compatible), `google` (GCS), or `microsoft` (Azure Blob) |
+
+### Amazon S3 / S3-Compatible
+
+Set these when `STORAGE_BACKEND=amazon`. Strata uses these credentials to read and write uploaded files directly to your bucket — no intermediate storage on the container.
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AWS_ACCESS_KEY_ID` | Yes | — | AWS access key ID (or compatible provider credentials) |
+| `AWS_SECRET_ACCESS_KEY` | Yes | — | AWS secret access key |
+| `AWS_REGION` | No | `us-east-1` | AWS region |
+| `S3_BUCKET` | Yes | — | S3 bucket name |
+| `S3_ENDPOINT` | No | — | Custom endpoint for S3-compatible services (MinIO, DigitalOcean Spaces, Backblaze B2, etc.) |
+
+### Google Cloud Storage
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GCS_PROJECT` | Yes | — | Google Cloud project ID |
+| `GCS_CREDENTIALS` | Yes | — | Service account JSON key (inline JSON string or file path) |
+| `GCS_BUCKET` | Yes | — | GCS bucket name |
+
+### Azure Blob Storage
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AZURE_STORAGE_ACCOUNT` | Yes | — | Azure storage account name |
+| `AZURE_STORAGE_ACCESS_KEY` | Yes | — | Azure storage access key |
+| `AZURE_STORAGE_CONTAINER` | Yes | — | Azure blob container name |
+
+### Example: EFS
+
+```bash
+STORAGE_BACKEND=efs
+```
+
+### Example: AWS S3
+
+```bash
+STORAGE_BACKEND=amazon
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_REGION=us-east-1
+S3_BUCKET=strata-uploads
+```
+
+### Example: MinIO
+
+```bash
+STORAGE_BACKEND=amazon
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_REGION=us-east-1
+S3_BUCKET=strata
+S3_ENDPOINT=http://minio.internal:9000
+```
+
+### Example: Google Cloud Storage
+
+```bash
+STORAGE_BACKEND=google
+GCS_PROJECT=my-gcp-project
+GCS_CREDENTIALS=/path/to/service-account.json
+GCS_BUCKET=strata-uploads
+```
+
+### Example: Azure Blob Storage
+
+```bash
+STORAGE_BACKEND=microsoft
+AZURE_STORAGE_ACCOUNT=stratastorage
+AZURE_STORAGE_ACCESS_KEY=your_access_key
+AZURE_STORAGE_CONTAINER=strata-uploads
+```
+
+## Performance
+
+### Web container
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `WEB_CONCURRENCY` | No | `2` | Worker **processes** per web container. Use `2` on 4 vCPU / 8 GB tasks. |
+| `WEB_THREADS` | No | `5` | **Threads** per worker process. Request capacity ≈ `WEB_CONCURRENCY × WEB_THREADS`. Also sets the database pool when `DB_POOL_SIZE` is unset. |
+| `DB_POOL_SIZE` | No | falls back to `WEB_THREADS`, then `5` | Database connection pool size per process. Omit in normal deployments so pool tracks `WEB_THREADS`. |
+| `STRATA_RUN_DB_PREPARE` | No | `true` | Set to `false` on the job container so only the web container runs migrations on boot. |
+| `STRATA_LOG_LEVEL` | No | `info` | Log verbosity: `debug`, `info`, `warn`, `error`, `fatal`. |
+
+### Job container
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `JOB_CONCURRENCY` | No | `1` | Worker **processes** per job container. Default in the installer is `4`. |
+| `JOB_THREADS` | No | `3` | **Threads** per job process. Job capacity ≈ `JOB_CONCURRENCY × JOB_THREADS`. |
+| `STRATA_RUN_DB_PREPARE` | No | `true` | Must be `false` on the `job` service. |
+
+### Database connection pool
+
+Each worker process in the `web` and `job` containers has its **own** database connection pool. The pool size is resolved at boot:
+
+1. `DB_POOL_SIZE` — optional override (advanced)
+2. else `WEB_THREADS`
+3. else `5`
+
+**Rule of thumb:** leave `DB_POOL_SIZE` unset and set only `WEB_THREADS` on **web**. Pool should match threads per process (`pool` ≥ concurrent request threads in that process). Set `DB_POOL_SIZE` explicitly only after profiling (never lower than thread count).
+
+On **job** containers, pool uses the same fallback; default pool **5** is enough for default `JOB_THREADS=3`.
+
+### Sizing notes
+
+- **Postgres connections** scale with replicas: each web task uses up to `WEB_CONCURRENCY ×` (effective pool size) connections per database role when pools are active. Strata uses four databases (primary, queue, cache, cable) — plan headroom accordingly.
+- Scale **web task count** for HTTP RPS; scale **job task count** and `JOB_CONCURRENCY` for job throughput.
+- See [Performance and scaling](/docs/self-hosting/performance-scaling/) for capacity formulas and load-test guidance.
+
+:::tip
+For a server with 4+ CPU cores and 8+ GB RAM, a good starting point is `WEB_CONCURRENCY=2` and `WEB_THREADS=5` on web, plus a separate `job` service with `JOB_CONCURRENCY=4` and `JOB_THREADS=3`.
+:::
+
+### Advanced: single-container (monolith) production
+
+Standard deployments use separate `web` and `job` containers. For single-container setups (e.g. the Docker quick-start), background jobs can optionally run inside the web container.
+
+| Variable | When to set |
+|----------|-------------|
+| `HANDLE_JOBS_IN_WEB_SERVER` | Set to `true` on the web container to process background jobs inside it — use only when running without a separate `job` container. |

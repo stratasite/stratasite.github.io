@@ -1,0 +1,91 @@
+---
+title: "OpenID Connect (OIDC)"
+description: "Strata can delegate sign-in to any OpenID Connect provider (Okta, Microsoft Entra ID, Google, Auth0, Keycloak, and others). This page covers the values Strata needs and what to register back at your I"
+---
+Strata can delegate sign-in to any OpenID Connect provider (Okta, Microsoft Entra ID, Google, Auth0, Keycloak, and others). This page covers the values Strata needs and what to register back at your IdP.
+
+For shared behavior — how users are auto-created, license seats, and the break-glass password fallback — see [Authentication & SSO](/docs/self-hosting/authentication/).
+
+## How it works
+
+1. A user clicks **Sign in with SSO** on the Strata login page.
+2. Strata redirects the user to your IdP's authorization endpoint.
+3. The user authenticates at the IdP and is redirected back to Strata's redirect URI with an authorization code.
+4. Strata exchanges the code for tokens, reads the user's email and name, and signs them in (creating the account on first login).
+
+Strata uses **OIDC discovery**: it fetches your provider's configuration from `ISSUER/.well-known/openid-configuration`, so you only supply the issuer, client ID, and client secret. Strata requests the `openid email profile` scopes.
+
+## What to register at your IdP
+
+Create a confidential OAuth 2.0 / OIDC client at your IdP with:
+
+- **Redirect URI**:
+
+  ```text
+  https://YOUR_STRATA_HOST/auth/oidc/callback
+  ```
+
+- **Client authentication**: enabled (confidential client, so it issues a client secret).
+- **Grant type**: authorization code.
+
+Copy the client ID and client secret for the next step.
+
+## Fields in Strata
+
+In **System Settings → SSO**, choose method **OpenID Connect (OIDC)** and fill in:
+
+| Field | Required | What it is / where to get it |
+|---|---|---|
+| **Issuer URL** | Yes | The **full** OIDC issuer, including any realm/tenant path — for example `https://idp.example.com/realms/acme`, not just `https://idp.example.com`. |
+| **Client ID** | Yes | The client ID from the OAuth client you created. |
+| **Client secret** | Yes | The client secret from that client. Stored encrypted at rest. |
+| **Redirect URI** | No | Defaults to `https://YOUR_STRATA_HOST/auth/oidc/callback`. Set only to override. |
+
+Click **Save SSO settings**, then restart all Strata application servers.
+
+:::note
+The **Issuer URL** must exactly match the `issuer` value your provider publishes in its discovery document. A common mistake is using the provider's base URL and omitting the realm/tenant path.
+:::
+
+:::warning
+Use an `https://` issuer in production. Strata follows the issuer's scheme, so an `http://` issuer is only appropriate for an internal, non-TLS test IdP.
+:::
+
+## Google Workspace
+
+Google is a standard OIDC provider, so "Sign in with Google" needs no special setup — it's just OIDC:
+
+- **Issuer URL**: `https://accounts.google.com`
+- **Client ID / Client secret**: from a Google Cloud OAuth 2.0 client (scopes `openid email profile`)
+- Register the redirect URI `https://YOUR_STRATA_HOST/auth/oidc/callback` on that client
+
+This is separate from the [Google Sheets Export](/docs/self-hosting/google-oauth/) integration — use a distinct OAuth client, since sign-in should not request Drive/Sheets scopes.
+
+## Troubleshooting
+
+### Discovery fails with a 404
+
+The **Issuer URL** is missing its realm/tenant path. Strata requests `ISSUER/.well-known/openid-configuration`; use the full issuer (for example `.../realms/acme`), not the provider's base host.
+
+### Discovery fails with an SSL error ("record layer failure")
+
+The issuer's scheme doesn't match how the IdP is served. An IdP served over plain HTTP needs an `http://` issuer; an HTTPS IdP needs `https://`. Strata follows the issuer's scheme, so correct the issuer URL to match.
+
+### The IdP shows "invalid parameter: redirect_uri"
+
+Register the exact redirect URI on the OAuth client:
+
+```text
+https://YOUR_STRATA_HOST/auth/oidc/callback
+```
+
+Confirm `APP_HOST` and `APP_PROTOCOL` match the public URL users browse to.
+
+### Login fails on a blank email
+
+Ensure the client is granted the `email` scope (and `profile` for names) and that the user has an email in the IdP. Strata requests `openid email profile`.
+
+## References
+
+- [OpenID Connect specifications](https://openid.net/developers/specs/)
+- [omniauth_openid_connect](https://github.com/omniauth/omniauth_openid_connect) — the library Strata uses

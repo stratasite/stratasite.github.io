@@ -1,0 +1,109 @@
+---
+title: "Join Types"
+description: "Specify join types for relationships."
+---
+Specify join types for relationships.
+
+## Overview
+
+By default, relationships use INNER joins. You can specify different join types to handle optional relationships.
+
+## Join Type Options
+
+### inner (Default)
+
+Returns only rows that match in both tables.
+
+```yaml
+orders_customer:
+  left: Orders
+  right: Customer
+  join: inner  # Optional, this is the default
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+```
+
+**Use cases:**
+- Required relationships
+- Most common case
+- Default if not specified
+
+### left
+
+Returns all rows from left table, NULLs for non-matching right rows.
+
+```yaml
+store_returns_reason:
+  left: Store Returns
+  right: Reason
+  join: left
+  sql: left.sr_reason_sk = right.r_reason_sk
+  cardinality: many_to_one
+```
+
+**Use cases:**
+- Optional relationships
+- Nullable foreign keys
+- When right table may not exist
+
+### right
+
+Returns all rows from right table, NULLs for non-matching left rows.
+
+```yaml
+products_categories:
+  left: Products
+  right: Categories
+  join: right
+  sql: left.category_id = right.id
+  cardinality: many_to_one
+```
+
+**Use cases:**
+- Less common
+- When you want all categories, even without products
+
+:::note[Full Outer Join Not Supported]
+Relationship join types in Strata are restricted to `inner`, `left`, and `right` in the server model—`full` (FULL OUTER) is not a valid value. If you need all rows from both tables regardless of match, consider:
+- Using two separate LEFT joins and combining results (e.g. in a view or downstream)
+- Restructuring your model to avoid the need for full outer joins
+:::
+
+## Common Patterns
+
+### Required Relationship (INNER)
+
+```yaml
+sales_customer:
+  left: Sales
+  right: Customer
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+  # join: inner (default, not needed)
+```
+
+### Optional Relationship (LEFT)
+
+```yaml
+orders_promotion:
+  left: Orders
+  right: Promotion
+  join: left
+  sql: left.promotion_id = right.id
+  cardinality: many_to_one
+```
+
+**Why LEFT?** Not all orders have promotions, but we want all orders.
+
+## Best Practices
+
+1. **Use INNER by default** - Most relationships are required
+2. **Use LEFT for optional** - When right table may not have matches
+3. **Use RIGHT sparingly** - Less common, can be confusing
+4. **Document join types** - Add comments explaining why
+
+## Next Steps
+
+- Learn about [cardinality](/docs/semantic-model/relationships/cardinality/)
+- Read the [relationships guide](/docs/cli/relationships/)
+- Explore [relationship schema reference](/docs/semantic-model/relationships/cardinality/)

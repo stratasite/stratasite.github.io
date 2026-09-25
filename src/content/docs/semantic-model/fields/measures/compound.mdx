@@ -1,0 +1,155 @@
+---
+title: "Compound Measures"
+description: "Measures written as a formula over other measures and dimensions by name, across fact domains."
+---
+Measures written as a formula over other measures and dimensions by name, across fact domains.
+
+## Overview
+
+A compound measure's expression references other fields in square brackets instead of table columns:
+
+```yaml
+- type: measure
+  name: Profit Margin
+  data_type: decimal
+  format: percent:1
+  expression:
+    sql: ([Total Revenue] - [Total Cost]) / nullif([Total Revenue], 0)
+```
+
+The formula is resolved at **query time**. Each referenced measure is planned as itself, on whatever table serves it best for the dimensions requested, and the formula is applied to the results. That is what makes a compound measure different from a [standard measure](/docs/semantic-model/fields/measures/) with arithmetic inside one aggregate: the pieces don't have to come from the same table, or the same fact.
+
+## Spanning fact domains
+
+Referenced measures can live on **different fact tables in different domains**. `[Store Revenue]` from store sales, `[Web Revenue]` from web sales, `[Support Tickets]` from a service fact: a compound measure can combine any of them.
+
+```yaml
+- type: measure
+  name: Tickets per 1000 Orders
+  data_type: decimal
+  expression:
+    sql: 1000.0 * [Support Tickets] / nullif([Order Count], 0)
+```
+
+When a query groups this by `Customer Segment` and `Month`, the planner aggregates orders in the orders universe, tickets in the support universe, each to that grain, blends the two on the conformed dimensions with a full outer join, and then evaluates the division. No row-level join between the facts is ever generated, so the result cannot fan out. This is the same [automatic blending](/docs/getting-started/concepts/) every multi-measure query gets; the compound measure just packages it under one name.
+
+## Referencing dimensions
+
+A formula may also reference **dimensions**, most often inside a conditional aggregate or a `CASE`:
+
+```yaml
+- type: measure
+  name: Premium Share of Revenue
+  data_type: decimal
+  format: percent:1
+  expression:
+    sql: sum(case when [Customer Tier] = 'Premium' then [Order Amount] else 0 end) / nullif([Total Revenue], 0)
+```
+
+```yaml
+- type: measure
+  name: Weekend Orders
+  data_type: integer
+  expression:
+    sql: count(case when [Day of Week] in ('Sat', 'Sun') then 1 end)
+```
+
+Here `[Customer Tier]` and `[Day of Week]` are dimensions. A referenced dimension is resolved separately within each universe the formula's measures are defined on, so it doesn't have to sit on the fact table itself: it can be anywhere along the join path. `[Customer Tier]` reached from store sales through Customer, and from web sales through the same Customer dimension, resolves to the right joined column in each sub-query.
+
+## The restrictions
+
+There are two, and neither is about tables or universes.
+
+**Every field in the formula must belong to the same datasource.** The formula is evaluated by one engine, so `[Store Revenue]` on Snowflake and `[Support Tickets]` on Postgres cannot be combined in a compound measure. Different fact domains within one datasource are fine, which is the common case.
+
+**Every dimension a formula references must be reachable from every fact domain the formula involves.** Reachable means anywhere in that fact's universe, along its join path, not necessarily on the fact table. A compound measure that reads `[Store Revenue]` and `[Web Revenue]` may reference `[Customer Tier]` if both the store sales universe and the web sales universe can reach the Customer dimension, however many joins away. A dimension that only one side can reach makes the formula unanswerable, and Strata refuses it at validation rather than guessing.
+
+This rule is about dimensions written *into the formula*. The dimensions a user *groups by* at query time are handled differently: a component that can't reach one of them is auto-leveled, as described next.
+
+There is no requirement that the referenced measures share a table or a universe.
+
+## Auto-leveled compound measures
+
+When a compound measure spans fact domains, the query's dimensions may not all be reachable from every component. Rather than refuse the query, Strata **auto-levels** the components that can't reach a dimension: that dimension is excluded from that component's aggregation, and the final blend joins only on the dimensions the components have in common.
+
+Take `Tickets per 1000 Orders` from above, and a query grouped by `Month` and `Contact Channel`:
+
+- `[Support Tickets]` lives on the support fact, which reaches `Contact Channel`. It aggregates by `Month` and `Contact Channel`.
+- `[Order Count]` lives on the orders fact, which has no path to `Contact Channel`. It is auto-leveled: `Contact Channel` is dropped from its grouping and it aggregates by `Month` only.
+- The two are joined on the common dimension, `Month`, and the formula is applied. Each channel's ticket count is divided by that month's total order count.
+
+| Month | Contact Channel | Support Tickets | Order Count (leveled) | Tickets per 1000 Orders |
+|---|---|---|---|---|
+| 2026-08 | Chat | 420 | 91,000 | 4.6 |
+| 2026-08 | Email | 310 | 91,000 | 3.4 |
+| 2026-08 | Phone | 180 | 91,000 | 2.0 |
+
+The leveled component repeats across the dimension it can't see, which is exactly the fixed-denominator behavior a rate like this wants. It is the same mechanism as an [exclusion](/docs/advanced/exclusions/), applied automatically and only to the components that need it. A component that can reach every dimension is never leveled.
+
+Two things to keep in mind:
+
+- **Auto-leveling applies to query-time grouping, not to dimensions written into the formula.** A dimension referenced inside the expression must be reachable from every component (the rule above).
+- **A leveled component is a total over the missing dimension, not a per-row value.** For a rate that is the intent. For a sum or difference across domains, groups are only meaningful on dimensions both sides reach, so be explicit in the measure's description about which dimensions it should be grouped by.
+
+## Chaining
+
+Compound measures can reference other compound measures. The dependency chain is resolved when the query is built, so definition order in YAML doesn't matter. Circular references (`A` → `B` → `A`) are invalid.
+
+```yaml
+fields:
+  - type: measure
+    name: Total Revenue
+    data_type: decimal
+    expression:
+      sql: sum(amount)
+
+  - type: measure
+    name: Total Cost
+    data_type: decimal
+    expression:
+      sql: sum(cost)
+
+  - type: measure
+    name: Profit
+    data_type: decimal
+    expression:
+      sql: "[Total Revenue] - [Total Cost]"
+
+  - type: measure
+    name: Profit Margin
+    data_type: decimal
+    format: percent:1
+    expression:
+      sql: "[Profit] / nullif([Total Revenue], 0)"
+```
+
+Bracketed references mix freely with SQL functions and constants:
+
+```yaml
+- type: measure
+  name: Adjusted Profit Margin
+  data_type: decimal
+  format: percent:1
+  expression:
+    sql: ([Profit] - coalesce([Refunds], 0)) / nullif([Total Revenue], 0)
+```
+
+## Where the formula lives
+
+Compound measures are the modeled, governed form of a formula: deployed with the project and available to every report. The same syntax is available at analysis time as a [calculation](/docs/getting-started/concepts/#calculations) on a single view, with `@m` and `@d` suffixes to disambiguate a name shared by a dimension and a measure. A calculation everyone keeps rebuilding is a candidate to promote here.
+
+Decorators (year-over-year, moving average, percent of total) work on compound measures as they do on any other measure.
+
+## Guidelines
+
+1. **Reference by name, not by table.** The planner picks the table; the formula shouldn't assume one.
+2. **Guard denominators** with `nullif(..., 0)`.
+3. **Stay within one datasource, and keep dimension references to ones every involved fact can reach.** If a dimension is specific to one fact, model the conditional part as a standard measure on that fact and reference that measure instead.
+4. **Prefer a chain of small measures** over one long formula; each piece is reusable and easier to test.
+
+## Next Steps
+
+- [Measures](/docs/semantic-model/fields/measures/)
+- [Core Concepts: blending and universes](/docs/getting-started/concepts/)
+- [Universe formation](/docs/advanced/universe-formation/)
+- [Expressions](/docs/semantic-model/expressions/sql/)

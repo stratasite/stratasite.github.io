@@ -1,0 +1,32 @@
+---
+/** Previous / next page links at the foot of a docs page, in sidebar order. */
+interface Props {
+  prev?: { href: string; label: string };
+  next?: { href: string; label: string };
+}
+const { prev, next } = Astro.props;
+
+const card =
+  'group flex flex-col gap-1 rounded-lg border border-border bg-surface p-4 transition-colors hover:border-strata-peach/50';
+---
+
+{
+  (prev || next) && (
+    <nav class="not-prose mt-14 grid gap-4 sm:grid-cols-2" aria-label="Pagination">
+      {prev ? (
+        <a href={prev.href} class={card} rel="prev">
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Previous</span>
+          <span class="font-display font-semibold text-foreground group-hover:text-primary">{prev.label}</span>
+        </a>
+      ) : (
+        <span />
+      )}
+      {next && (
+        <a href={next.href} class={`${card} text-right`} rel="next">
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next</span>
+          <span class="font-display font-semibold text-foreground group-hover:text-primary">{next.label}</span>
+        </a>
+      )}
+    </nav>
+  )
+}

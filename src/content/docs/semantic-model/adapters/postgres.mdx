@@ -1,0 +1,92 @@
+---
+title: "PostgreSQL Adapter"
+description: "Connect to PostgreSQL databases."
+---
+Connect to PostgreSQL databases.
+
+## Configuration
+
+```yaml
+warehouse:
+  adapter: postgres
+  name: Production Warehouse
+  tier: hot
+  query_timeout: 3600
+  
+  # Required
+  host: db.example.com
+  database: analytics
+  username: postgres
+  
+  # Optional
+  port: 5432              # Default: 5432
+  schema: public          # Default: public
+  ssl: false              # Default: false
+  
+  # Credentials (set via strata datasource auth)
+  # password:
+```
+
+## Required Fields
+
+- **host** - PostgreSQL server hostname or IP
+- **database** - Database name
+- **username** - Username for connection
+
+## Optional Fields
+
+- **port** - Port number (default: `5432`)
+- **schema** - Schema name (default: `public`)
+- **ssl** - Enable SSL (default: `false`)
+- **password** - Set via `strata datasource auth`
+
+## Example
+
+```yaml
+warehouse:
+  adapter: postgres
+  name: Production Warehouse
+  tier: hot
+  query_timeout: 3600
+  host: db.example.com
+  port: 5432
+  database: analytics
+  schema: public
+  ssl: true
+  username: strata_user
+```
+
+## Authentication
+
+Set credentials securely:
+
+```bash
+strata datasource auth warehouse
+```
+
+## SSL Configuration
+
+Enable SSL for secure connections:
+
+```yaml
+ssl: true
+```
+
+For advanced SSL options, use `extra_connection_params`:
+
+```yaml
+extra_connection_params:
+  sslmode: require
+  connect_timeout: 10
+```
+
+## Best Practices
+
+1. **Use SSL in production** - Encrypt connections
+2. **Set appropriate tier** - Match performance characteristics
+3. **Use connection pooling** - Handled automatically
+4. **Set timeouts** - Prevent long-running queries
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

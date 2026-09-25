@@ -1,0 +1,116 @@
+---
+title: "Errors"
+description: "How the Strata API reports failures."
+---
+How the Strata API reports failures.
+
+## Structured errors (recommended format)
+
+Most semantic, query, and result endpoints return:
+
+```json
+{
+  "status": "invalid",
+  "errors": [
+    {
+      "code": "invalid_query_construction",
+      "message": "No field named 'Not A Real Field'"
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `status` | Machine-readable outcome: `unauthorized`, `forbidden`, `not_found`, `invalid`, `error`, etc. |
+| `errors` | Array of `{ code, message }` objects |
+
+Some responses include extra fields (e.g. `poll_url`, `id`, `sql`) alongside `status` and `errors`.
+
+The project, branch, deployment, and cache endpoints that the CLI uses predate this format and return `{ "errors": ["message"] }` with plain strings, or `{ "message": "…" }` on a project delete.
+
+## HTTP status codes
+
+| Code | Meaning | Common codes |
+|------|---------|--------------|
+| 400 | Bad request | `missing_param` |
+| 401 | Missing or invalid API key; a `WWW-Authenticate` header points OAuth clients at the resource metadata | `unauthorized` |
+| 403 | Authenticated but not permitted | `forbidden` |
+| 404 | Resource not found | `resource_not_found`, `branch_not_found` |
+| 422 | Invalid parameters or query spec | `invalid_param`, `invalid_query_construction`, `no_production_branch` |
+| 500 | Server error | `internal_error` |
+
+## Query lifecycle statuses
+
+Query create/re-run responses include a top-level `status` field (not the same as HTTP status):
+
+| `status` | HTTP | Meaning |
+|----------|------|---------|
+| `created` | 201 | Query saved; no execution attempted |
+| `pending` | 202 | Execution queued or running; poll for results |
+| `succeeded` | 201 | Execution finished; inline `result` included |
+| `failed` | 201 | Execution or SQL generation failed |
+| `invalid` | 422 | Spec could not be resolved |
+
+Pending responses include `poll_url` pointing to `GET /api/v1/queries/{id}/result`.
+
+## Common error codes
+
+| Code | When |
+|------|------|
+| `unauthorized` | Missing or invalid API key |
+| `forbidden` | Not a project member, or insufficient role |
+| `resource_not_found` | Record does not exist |
+| `branch_not_found` | Unknown `?branch=` uid |
+| `no_production_branch` | No production branch configured |
+| `invalid_param` | Bad query parameter (e.g. `type=foo`) |
+| `invalid_query_construction` | Unknown or ambiguous field name, unknown spec key, or a combination the planner refuses (a dimension the measure's fact can't reach, measures from two datasources) |
+| `invalid_params` | Validation failure |
+| `sql_generation_error` | SQL could not be generated |
+| `execution_failed` | Query ran but warehouse execution failed |
+| `missing_param` | Required body parameter missing |
+
+## Examples
+
+### 401 — missing API key
+
+```bash
+curl https://your-server.example.com/api/v1/projects/tpcds/fields
+```
+
+```json
+{
+  "status": "unauthorized",
+  "errors": [
+    { "code": "unauthorized", "message": "Invalid or missing API key" }
+  ]
+}
+```
+
+### 422 — unknown field in query spec
+
+```json
+{
+  "status": "invalid",
+  "errors": [
+    { "code": "invalid_query_construction", "message": "No field named 'Not A Real Field'" }
+  ]
+}
+```
+
+### 404 — unknown branch
+
+```json
+{
+  "status": "not_found",
+  "errors": [
+    { "code": "branch_not_found", "message": "Could not find branch 'does-not-exist'" }
+  ]
+}
+```
+
+## Next steps
+
+- [Query spec](/docs/api/rest/query-spec/) — avoid `invalid_query_construction`
+- [Queries](/docs/api/rest/queries/) — handle `pending` and polling
+- [API Reference](/docs/api-reference/) — interactive OpenAPI interface

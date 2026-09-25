@@ -1,0 +1,194 @@
+---
+title: "Datasources"
+description: "Configure database connections and understand tier behavior."
+---
+Configure database connections and understand tier behavior.
+
+## What are Datasources?
+
+Datasources connect Strata to your databases. They define:
+- Database adapter (PostgreSQL, Snowflake, MySQL, etc.)
+- Connection details (host, port, database, schema)
+- Authentication credentials
+- **Tier** (hot, warm, cold) — influences query routing and performance
+
+For CLI commands to add, test, and manage datasources, see [Managing Datasources](/docs/cli/datasources/).
+
+## Tier Configuration
+
+Strata supports three tiers. They control which datasource is preferred when the same data or compatible tables exist in more than one place, and how query cost is estimated.
+
+### hot
+
+Primary datasource for fast, frequently accessed data. Highest priority for query routing.
+
+Use for:
+- Primary data warehouse
+- Main OLAP or analytics database
+- Data that must respond quickly
+
+```yaml
+warehouse:
+  adapter: postgres
+  tier: hot
+  # ... connection details
+```
+
+### warm
+
+Secondary datasource for less frequently accessed or moderately slower data. Used when a hot-tier source is unavailable or when the planner chooses it for cost or availability.
+
+Use for:
+- Replicas or read replicas
+- Archived but still reasonably fast data
+- Secondary databases
+
+```yaml
+archive:
+  adapter: postgres
+  tier: warm
+  # ... connection details
+```
+
+### cold
+
+Archive or slow-access data. Used as a last resort when hot or warm tiers cannot satisfy the query.
+
+Use for:
+- S3/Athena or object-store–backed query engines
+- Historical or infrequently queried data
+- Data lakes with higher latency
+
+```yaml
+historical:
+  adapter: athena
+  tier: cold
+  # ... connection details
+```
+
+## Adding a Datasource
+
+### Via CLI
+
+```bash
+strata datasource add [ADAPTER]
+```
+
+Examples: `strata datasource add postgres`, `strata datasource add snowflake`, `strata datasource add mysql`.
+
+The CLI prompts for: datasource key, display name, adapter-specific settings, credentials, and tier.
+
+### Manual Configuration
+
+Edit `datasources.yml`:
+
+```yaml
+warehouse:
+  adapter: postgres
+  name: Production Warehouse
+  description: Main data warehouse
+  tier: hot
+  query_timeout: 3600
+  host: warehouse.example.com
+  port: 5432
+  database: analytics
+  schema: public
+  ssl: true
+  username: strata_user
+  # password: (set via strata datasource auth)
+```
+
+## Setting Credentials
+
+Credentials are stored in `.strata` (gitignored):
+
+```bash
+strata datasource auth warehouse
+```
+
+## Testing Connections
+
+```bash
+strata datasource test warehouse
+```
+
+Verifies connection parameters, authentication, and database accessibility.
+
+## Supported Adapters
+
+1. **PostgreSQL** — [postgres](/docs/semantic-model/adapters/postgres/)
+2. **Snowflake** — [snowflake](/docs/semantic-model/adapters/snowflake/)
+3. **MySQL** — [mysql](/docs/semantic-model/adapters/mysql/)
+4. **SQL Server** — [sqlserver](/docs/semantic-model/adapters/sqlserver/)
+5. **Athena** — [athena](/docs/semantic-model/adapters/athena/)
+6. **Trino** — [trino](/docs/semantic-model/adapters/trino/)
+7. **DuckDB** — [duckdb](/docs/semantic-model/adapters/duckdb/)
+8. **Druid** — [druid](/docs/semantic-model/adapters/druid/)
+
+## Semantic model and data source scoping
+
+Each table in your semantic model belongs to **exactly one datasource**:
+
+- Relationships are defined **within** a datasource; cross-datasource joins are not supported.
+- Universes and query plans are built per datasource, and **every query runs in exactly one datasource**. Strata does not merge results across datasources.
+- Compound measures and automatic data blending operate **inside a single datasource**: you cannot build one measure that mixes fields from Snowflake and Postgres, for example.
+
+What multiple datasources are for is **routing**, not blending. Define the same tables and measures in more than one datasource (a Snowflake warehouse of record and a ClickHouse hot tier, say), and the planner picks the datasource that can satisfy the whole query, preferring by partition, tier, and cost. See [Semantic Routing](/docs/advanced/semantic-routing/). A project can also model unrelated domains in different warehouses, as long as no single query needs both.
+
+## Runtime engines and SQLite
+
+Strata targets modern analytical databases as runtime engines:
+
+- Production deployments typically use engines like **PostgreSQL**, **Snowflake**, **Athena**, **Trino**, or similar warehouses.
+- Lightweight engines like **DuckDB** are great for local development, tutorials, and integration tests.
+
+While it is technically possible to point a datasource at **SQLite** or other single-node engines, this is best reserved for demos or experimentation:
+
+- Many advanced SQL features (JSON/`JSONB`, window functions, date/time helpers) behave differently or are missing.
+- Performance and concurrency characteristics are usually not suitable for shared production workloads.
+
+For production, prefer a fully supported warehouse adapter and treat SQLite-style engines as development conveniences only.
+
+## Query Timeout
+
+```yaml
+warehouse:
+  adapter: postgres
+  query_timeout: 3600  # seconds (1 hour)
+  # ... connection details
+```
+
+## Best Practices
+
+1. **Use descriptive keys** — e.g. `warehouse`, not `db1`
+2. **Set tiers to match performance** — hot for primary, cold for S3/Athena-style sources
+3. **Store credentials in `.strata`** — never commit them
+4. **Test connections** — run `strata datasource test` before deploy
+5. **Set timeouts** — avoid unbounded long-running queries
+6. **Use SSL in production**
+
+## Security
+
+- Credentials in `.strata` (gitignored)
+- File permissions 0600 (owner only)
+- API keys not accepted on the command line
+- Remote credentials stored encrypted on the server
+
+### Auth and row-level security (enterprise / forward-looking)
+
+For enterprise deployments, Strata is designed to work alongside warehouse-level security controls:
+
+- **Per-user database credentials** (for example, Snowflake OAuth, SSO, or delegated tokens) can be used so that queries run under each user’s own identity.
+- **Row-level security (RLS)** policies defined in the warehouse continue to apply, and semantic measures should be modeled assuming those policies are in effect.
+
+Exact configuration options for per-user auth and advanced security vary by adapter and may evolve over time. When in doubt:
+
+- Keep sensitive access rules in the warehouse itself.
+- Use the semantic model for consistent metric definitions and query routing, not as a replacement for RLS.
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) — CLI commands
+- [Adapters](/docs/semantic-model/adapters/) — Adapter-specific configuration
+- [Semantic Routing](/docs/advanced/semantic-routing/) — how the planner chooses a datasource
+- [cost-optimization](/docs/advanced/cost-optimization/)

@@ -1,0 +1,209 @@
+---
+title: "Quickstart"
+description: "Run your first query against the Strata API in a few minutes."
+---
+Run your first query against the Strata API in a few minutes.
+
+:::tip[API Reference]
+Need full request/response schema while following this walkthrough? Open [API Reference](/docs/api-reference/) in a new tab.
+:::
+
+## Prerequisites
+
+- A Strata server with a deployed project (this guide uses the TPC-DS fixture project `tpcds`)
+- An API key — see [Authentication](/docs/api/rest/authentication/)
+
+## Setup
+
+Export your credentials:
+
+```bash
+export BASE_URL="http://localhost:8080"
+export API_KEY="your_api_key_here"
+export PROJECT_ID="tpcds"
+```
+
+Replace values for your environment.
+
+`PROJECT_ID` is the project's uid (the slug in the web app URL, `tpcds` here) or its numeric id, which is the `project_id` in a CLI project's `project.yml`.
+
+## Step 1: Discover fields
+
+Search for revenue-related measures using hybrid relevance ranking:
+
+```bash
+curl -s -H "Authorization: Bearer $API_KEY" \
+     -H "Accept: application/json" \
+     "$BASE_URL/api/v1/projects/$PROJECT_ID/fields?q=revenue&relevance=true&limit=10" | jq .
+```
+
+Example response envelope:
+
+```json
+{
+  "results": [
+    {
+      "uid": "web_net_paid",
+      "name": "Web Net Paid",
+      "semantic_type": "measure",
+      "data_type": "decimal",
+      "rank": 92,
+      "updated_at": "2026-06-01T12:00:00Z"
+    }
+  ],
+  "page": 1,
+  "total_pages": 1,
+  "total_count": 3,
+  "limit": 10
+}
+```
+
+Note the field names — you will use `"State"` and `"Web Net Paid"` in the query spec.
+
+## Step 2: Preview SQL (optional)
+
+Validate your spec before creating a query:
+
+```bash
+curl -s -X POST \
+     -H "Authorization: Bearer $API_KEY" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     "$BASE_URL/api/v1/projects/$PROJECT_ID/sql" \
+     -d '{
+       "spec": {
+         "projections": [
+           { "field": "State", "axis": "x" },
+           { "field": "Web Net Paid", "axis": "y" }
+         ],
+         "filters": [
+           { "field": "State", "predicate": "equals", "value": "CA" }
+         ]
+       }
+     }' | jq .
+```
+
+Response:
+
+```json
+{
+  "sql": "SELECT ...",
+  "errors": []
+}
+```
+
+This does **not** create a query record.
+
+## Step 3: Create and execute a query
+
+Create a query and ask the server to wait for results before responding. `wait_timeout` is capped at 3 seconds; omit it and the response comes back as soon as the query is queued:
+
+```bash
+curl -s -X POST \
+     -H "Authorization: Bearer $API_KEY" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     "$BASE_URL/api/v1/projects/$PROJECT_ID/queries" \
+     -d '{
+       "name": "Revenue by State",
+       "wait_timeout": 3,
+       "use_cache": true,
+       "limit": 25,
+       "spec": {
+         "projections": [
+           { "field": "State", "axis": "x" },
+           { "field": "Web Net Paid", "axis": "y" }
+         ],
+         "filters": [
+           { "field": "State", "predicate": "equals", "value": "CA" }
+         ]
+       }
+     }' | jq .
+```
+
+### Fast completion (201 succeeded)
+
+If the query finishes within `wait_timeout`:
+
+```json
+{
+  "id": 42,
+  "name": "Revenue by State",
+  "status": "succeeded",
+  "spec": { "projections": [ ... ], "filters": [ ... ] },
+  "errors": [],
+  "result": {
+    "id": 108,
+    "status": "succeeded",
+    "row_count": 1,
+    "columns": ["State", "Web Net Paid"],
+    "rows": [["CA", 12345.67]]
+  }
+}
+```
+
+### Still running (202 pending)
+
+If the query needs more time:
+
+```json
+{
+  "id": 42,
+  "name": "Revenue by State",
+  "status": "pending",
+  "poll_url": "/api/v1/queries/42/result",
+  "errors": [],
+  "result": {
+    "id": 108,
+    "status": "queued",
+    "query_id": 42
+  }
+}
+```
+
+Save the `id` values for polling.
+
+## Step 4: Poll for results
+
+When status is `pending`, poll until settled:
+
+```bash
+export QUERY_ID=42
+
+curl -s -H "Authorization: Bearer $API_KEY" \
+     -H "Accept: application/json" \
+     "$BASE_URL/api/v1/queries/$QUERY_ID/result?limit=25" | jq .
+```
+
+| HTTP | Meaning |
+|------|---------|
+| 202 | Still running — wait and retry |
+| 200 | Finished — `rows` included when `status` is `succeeded` |
+
+## Step 5: Export as CSV (optional)
+
+Fetch a completed result as CSV:
+
+```bash
+export RESULT_ID=108
+
+curl -s -H "Authorization: Bearer $API_KEY" \
+     -H "Accept: text/csv" \
+     -L "$BASE_URL/api/v1/projects/$PROJECT_ID/results/$RESULT_ID.csv" \
+     -o result.csv
+```
+
+## What you learned
+
+1. **Authenticate** with Bearer API keys
+2. **Discover** fields with search and relevance ranking
+3. **Preview SQL** without persisting a query
+4. **Create queries** using semantic field names in `spec`
+5. **Handle async execution** with `wait_timeout` and polling
+6. **Export results** as JSON or CSV
+
+## Next steps
+
+- [Query spec](/docs/api/rest/query-spec/) — filters, decorators, disambiguation
+- [Fields](/docs/api/rest/fields/) — search modes and constraints
+- [API Reference](/docs/api-reference/) — interactive OpenAPI interface

@@ -1,0 +1,106 @@
+---
+title: "Snowflake Adapter"
+description: "Connect to Snowflake data warehouses."
+---
+Connect to Snowflake data warehouses.
+
+## Configuration
+
+```yaml
+snowflake_dw:
+  adapter: snowflake
+  name: Snowflake Data Warehouse
+  tier: hot
+  query_timeout: 3600
+  
+  # Required
+  account_identifier: myorg-myaccount
+  database: ANALYTICS_DB
+  auth_mode: pat  # pat, kp, oauth
+  
+  # Optional
+  warehouse: COMPUTE_WH
+  schema: PUBLIC
+  role: ACCOUNTADMIN
+  
+  # Credentials (set via strata datasource auth)
+  # personal_access_token: (for PAT)
+  # username: (for KP)
+  # private_key: (for KP)
+```
+
+## Required Fields
+
+- **account_identifier** - Snowflake account identifier (e.g., `myorg-myaccount.us-east-1`)
+- **database** - Database name
+- **auth_mode** - Authentication mode: `pat`, `kp`, or `oauth`
+
+## Optional Fields
+
+- **warehouse** - Warehouse name
+- **schema** - Schema name (default: `PUBLIC`)
+- **role** - Role name (default: `ACCOUNTADMIN`)
+
+## Authentication Modes
+
+### Personal Access Token (PAT)
+
+```yaml
+auth_mode: pat
+# personal_access_token: (set via strata datasource auth)
+```
+
+### Key Pair (KP)
+
+```yaml
+auth_mode: kp
+username: john_doe
+# private_key: /path/to/private_key.pem (set via strata datasource auth)
+```
+
+### OAuth
+
+```yaml
+auth_mode: oauth
+oauth_client_id: MYCLIENTID
+oauth_client_secret: MYCLIENTSECRET
+oauth_redirect_uri: https://localhost:3420/callback
+oauth_scope: SCOPE  # Optional
+```
+
+**Note:** OAuth requires additional setup. See [Snowflake OAuth documentation](https://docs.snowflake.com/en/user-guide/oauth-custom).
+
+## Example
+
+```yaml
+snowflake_dw:
+  adapter: snowflake
+  name: Snowflake Data Warehouse
+  tier: hot
+  query_timeout: 3600
+  account_identifier: myorg-myaccount
+  database: ANALYTICS_DB
+  warehouse: COMPUTE_WH
+  schema: PUBLIC
+  role: ANALYST
+  auth_mode: pat
+```
+
+## Authentication
+
+Set credentials securely:
+
+```bash
+strata datasource auth snowflake_dw
+```
+
+## Best Practices
+
+1. **Use PAT for simplicity** - Easiest authentication method
+2. **Use KP for production** - More secure for production
+3. **Set appropriate warehouse** - Match query workload
+4. **Use roles** - Follow principle of least privilege
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

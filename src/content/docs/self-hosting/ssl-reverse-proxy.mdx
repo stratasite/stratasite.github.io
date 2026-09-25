@@ -1,0 +1,112 @@
+---
+title: "SSL & Reverse Proxy"
+description: "Most production deployments run Strata behind a reverse proxy (Nginx, Caddy, Apache, AWS ALB, Traefik, etc.) that terminates SSL. Strata itself listens on plain HTTP inside its container (default: por"
+---
+Most production deployments run Strata behind a reverse proxy (Nginx, Caddy, Apache, AWS ALB, Traefik, etc.) that terminates SSL. Strata itself listens on plain HTTP inside its container (default: port 80; configurable with `STRATA_CONTAINER_PORT`) — the proxy handles HTTPS on port 443 and forwards requests to Strata over HTTP.
+
+
+**SSL certificates are your responsibility.** Strata does not ship with or manage certificates. You obtain a certificate (e.g. from [Let's Encrypt](https://letsencrypt.org/), your organization's internal CA, or a commercial provider) and configure it on your proxy.
+
+---
+
+## How Strata Handles SSL
+
+Strata uses two environment variables to control SSL behavior:
+
+| Variable | Default | What it does |
+|----------|---------|-------------|
+| `ASSUME_SSL` | `false` | Trusts the `X-Forwarded-Proto` header from your proxy. When a proxy sends `X-Forwarded-Proto: https`, Strata treats the request as HTTPS even though it arrived over HTTP. |
+| `FORCE_SSL` | `false` | Redirects any HTTP request to HTTPS and sets `Strict-Transport-Security` (HSTS) headers. |
+
+These settings control how Strata handles proxy-forwarded HTTPS traffic.
+
+### When to use which setting
+
+| Scenario | `ASSUME_SSL` | `FORCE_SSL` |
+|----------|-------------|-------------|
+| Behind an SSL-terminating proxy (most common) | `true` | `true` |
+| No SSL — internal network or evaluation | `false` | `false` |
+| SSL terminated at Strata itself (rare) | `false` | `true` |
+
+:::warning
+If your proxy terminates SSL but you leave `ASSUME_SSL=false`, Strata won't know requests are HTTPS. This causes redirect loops, mixed-content warnings, and broken WebSocket connections.
+:::
+
+---
+
+## Standard Setup: Proxy Terminates SSL
+
+This is the most common approach. Your proxy handles HTTPS and forwards plain HTTP to Strata.
+
+### What your proxy must do
+
+1. **Listen on port 443** with your SSL certificate
+2. **Forward requests** to Strata on its host port (`PORT`, default `3000`)
+3. **Set the `X-Forwarded-Proto` header** so Strata knows the original request was HTTPS
+4. **Set the `X-Forwarded-For` header** so Strata can log the real client IP
+5. **Pass WebSocket upgrades** (for live query results)
+
+### Strata configuration
+
+```bash
+ASSUME_SSL=true
+FORCE_SSL=true
+APP_HOST=strata.yourcompany.com
+APP_PROTOCOL=https
+```
+
+### Proxy and certificate setup (external docs)
+
+We don't maintain step-by-step proxy or certificate instructions. Use official documentation for your stack:
+
+| Stack | What to look up |
+|-------|-----------------|
+| **Nginx** | [Nginx reverse proxy](https://nginx.org/en/docs/http/ngx_http_proxy_module.html) and [SSL](https://nginx.org/en/docs/http/configuring_https_servers.html). For Let's Encrypt: [Certbot](https://certbot.eff.org/instructions). |
+| **Caddy** | [Caddy reverse proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy) and [automatic HTTPS](https://caddyserver.com/docs/automatic-https). |
+| **Apache** | [mod_proxy](https://httpd.apache.org/docs/2.4/mod/mod_proxy.html) and [SSL with mod_ssl](https://httpd.apache.org/docs/2.4/ssl/). Certbot: [certbot.eff.org](https://certbot.eff.org/instructions). |
+| **AWS ALB** | [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) and [HTTPS listeners](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html). ALB sets `X-Forwarded-Proto` and `X-Forwarded-For` by default. |
+| **Traefik** | [Traefik HTTPS](https://doc.traefik.io/traefik/https/overview/) and [routers](https://doc.traefik.io/traefik/routing/routers/). |
+
+When following those guides, ensure your proxy forwards to Strata's host port (`PORT`) and sets the headers listed above.
+
+---
+
+## No SSL (Evaluation or Internal Network)
+
+If you're evaluating Strata or running it on a trusted internal network without SSL:
+
+```bash
+ASSUME_SSL=false
+FORCE_SSL=false
+APP_PROTOCOL=http
+```
+
+The install script defaults to these values for quick evaluation setups.
+
+---
+
+## Troubleshooting
+
+### Redirect loop (ERR_TOO_MANY_REDIRECTS)
+
+Your proxy sends requests over HTTP, but `FORCE_SSL=true` tells Strata to redirect to HTTPS, which hits the proxy again as HTTP.
+
+**Fix:** Set `ASSUME_SSL=true` so Strata trusts the `X-Forwarded-Proto: https` header from your proxy. Make sure your proxy actually sends this header.
+
+### Mixed content warnings
+
+The browser loads the page over HTTPS but some resources (CSS, JS, WebSocket) use HTTP URLs.
+
+**Fix:** Set `APP_PROTOCOL=https` and `ASSUME_SSL=true`. Strata uses these to generate correct HTTPS URLs.
+
+### WebSocket connection fails
+
+Live query results use WebSockets. If your proxy doesn't pass WebSocket upgrades, queries will still work but results won't update in real time.
+
+**Fix:** Ensure your proxy passes `Upgrade` and `Connection` headers. Most modern proxies handle this by default.
+
+### Health check fails behind proxy
+
+The `/up` health check endpoint works over plain HTTP. If your monitoring tool checks health directly (bypassing the proxy), it will get an HTTPS redirect when `FORCE_SSL=true`.
+
+**Fix:** Have your monitoring tool either follow redirects, check via the proxy, or check the container directly on `STRATA_CONTAINER_PORT` (default 80).

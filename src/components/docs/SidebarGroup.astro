@@ -1,0 +1,90 @@
+---
+/**
+ * One level of the docs sidebar tree. Recurses into categories; a category
+ * that contains the current page starts open, as does one marked `open`
+ * (single-page references open their first group). Nesting is shown by a guide line
+ * down the left of each nested list rather than by growing indentation, so
+ * deep pages stay readable in a narrow column. Labels for pages come from
+ * the collection (title or sidebarLabel), passed down as `titles`.
+ *
+ * Items are page ids (strings), plain links (`{ label, href }`), or
+ * categories (`{ label, link?, href?, items }`).
+ */
+import { containsPage, docHref, type SidebarItem } from '../../config/docs';
+
+interface Props {
+  items: SidebarItem[];
+  currentId: string;
+  titles: Record<string, string>;
+  depth?: number;
+}
+const { items, currentId, titles, depth = 0 } = Astro.props;
+
+const row =
+  'flex items-center rounded-md py-[0.3rem] pl-2.5 pr-1.5 text-[0.875rem] leading-snug transition-colors';
+const page = `${row} text-muted-foreground hover:bg-surface hover:text-foreground`;
+const active = 'bg-surface text-primary font-medium';
+const group = `${row} cursor-pointer list-none justify-between font-semibold text-foreground hover:bg-surface`;
+
+const isCategory = (i: SidebarItem): i is Extract<SidebarItem, { items: SidebarItem[] }> =>
+  typeof i !== 'string' && 'items' in i;
+---
+
+<ul class={depth === 0 ? 'space-y-px' : 'ml-3 mt-px space-y-px border-l border-border pl-1.5'}>
+  {items.map((item) =>
+    typeof item === 'string' ? (
+      <li>
+        <a
+          href={docHref(item)}
+          class={`${page} ${item === currentId ? active : ''}`}
+          aria-current={item === currentId ? 'page' : undefined}
+        >
+          {titles[item] ?? item}
+        </a>
+      </li>
+    ) : !isCategory(item) ? (
+      <li>
+        <a href={item.href} class={page}>
+          {item.label}
+        </a>
+      </li>
+    ) : (
+      <li>
+        <details class="group" open={Boolean(item.open) || containsPage(item, currentId)}>
+          <summary class={`${group} ${item.link === currentId ? active : ''} ${depth > 0 ? 'font-medium' : ''}`}>
+            {item.link || item.href ? (
+              <a
+                href={item.link ? docHref(item.link) : item.href}
+                class="min-w-0 flex-1"
+                aria-current={item.link === currentId ? 'page' : undefined}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <span class="min-w-0 flex-1">{item.label}</span>
+            )}
+            <svg
+              class="ml-2 h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M7.21 5.23a.75.75 0 011.06-.02l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08L11.17 10 7.23 6.29a.75.75 0 01-.02-1.06z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </summary>
+          <Astro.self items={item.items} currentId={currentId} titles={titles} depth={depth + 1} />
+        </details>
+      </li>
+    )
+  )}
+</ul>
+
+<style>
+  summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

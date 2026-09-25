@@ -1,0 +1,91 @@
+---
+title: "Projects"
+description: "Create new Strata projects, clone from source, or link to an existing server project."
+---
+Create new Strata projects, clone from source, or link to an existing server project.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Initialize a new Strata project
+- Add datasource adapters during initialization
+- Clone an existing project from a URL
+- Link a local project to an existing project on the Strata server
+- Configure `project.yml`
+
+## Prerequisites
+
+- Strata CLI installed
+- For cloning: repository URL and API key (if required)
+- For linking: project ID from the Strata server
+
+## Step 1: Initialize a New Project
+
+Run the init command with your project name:
+
+```bash
+strata init my-project
+```
+
+**What happens:** The CLI creates a new directory with the following structure:
+
+```
+my-project/
+├── AGENTS.md            # Rules a coding agent follows to build the model
+├── project.yml          # Project configuration
+├── datasources.yml      # Datasource definitions
+├── security.yml         # Security policies
+├── .strata              # Local secrets (gitignored)
+├── models/              # Semantic model files
+├── migrations/          # Migration files
+└── tests/               # Test definitions
+```
+
+The CLI also initializes a git repository and makes an initial commit of these files. `AGENTS.md` is committed with them — it is what lets a coding agent build the semantic model for you. See [Building Your Model](/docs/cli/building-your-model/).
+
+**With datasource adapters:** You can add one or more datasource adapters during initialization:
+
+```bash
+strata init my-project -d postgres -d snowflake
+```
+
+Supported adapters: `postgres`, `snowflake`, `mysql`, `sqlserver`, `athena`, `trino`, `duckdb`, `druid`, `clickhouse`, `databricks`, `sqlite`, `redshift`.
+
+## Step 2: Clone from Source
+
+If the project already exists in a repository, clone it:
+
+```bash
+strata init --source STRATA_PROJECT_URL --api-key YOUR_API_KEY
+```
+
+**What happens:** The CLI clones and sets up the project. The API key is required if the repository requires authentication.
+
+**Note:** `PROJECT_NAME` is not required when using `--source`; the directory name comes from the project in server.
+
+## Project Configuration
+
+After initialization, edit `project.yml`:
+
+```yaml
+name: My Project
+description: Project description
+server: https://strata.example.com
+production_branch: main
+git: https://github.com/example/project.git
+```
+
+The `project_id` is added automatically after your first deployment.
+
+
+## Best Practices
+
+1. **Use descriptive project names** - e.g. `analytics-warehouse`, not `proj1`
+2. **Keep `.strata` out of git** - It contains secrets; ensure it is in `.gitignore`
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - Add and configure datasources
+- [Building Your Model](/docs/cli/building-your-model/) - Author models yourself or with a coding agent
+- [Creating Tables](/docs/cli/tables/) - Create semantic table models
+- [Deployment](/docs/cli/deployment/) - Deploy to the Strata server

@@ -1,0 +1,74 @@
+---
+title: "Redshift Adapter"
+description: "Connect to Amazon Redshift clusters and serverless workgroups."
+---
+Connect to Amazon Redshift clusters and serverless workgroups.
+
+## Configuration
+
+```yaml
+redshift_dw:
+  adapter: redshift
+  name: Redshift Warehouse
+  tier: warm
+  query_timeout: 3600
+
+  # Required
+  host: mycluster.abc123.us-east-1.redshift.amazonaws.com
+  database: dev
+  username: awsuser
+
+  # Optional
+  port: 5439              # Default: 5439
+  schema: public          # Default: public
+  ssl: false              # Default: false
+
+  # Credentials (set via strata datasource auth)
+  # password:
+```
+
+## Required Fields
+
+- **host** - Cluster endpoint or serverless workgroup endpoint
+- **database** - Database name
+- **username** - Database user
+
+## Optional Fields
+
+- **port** - Port number (default: `5439`)
+- **schema** - Schema name (default: `public`)
+- **ssl** - Enable SSL (default: `false`); set `sslmode` and certificate parameters through `extra_connection_params` when the cluster requires them
+- **password** - Set via `strata datasource auth`
+
+## Example
+
+```yaml
+redshift_dw:
+  adapter: redshift
+  name: Redshift Warehouse
+  tier: warm
+  query_timeout: 3600
+  host: default-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
+  database: analytics
+  username: strata_reader
+  schema: analytics
+  ssl: true
+  extra_connection_params:
+    sslmode: require
+```
+
+## Notes
+
+- **PostgreSQL wire protocol** - Redshift speaks the Postgres protocol, so connectivity and SSL options match the [PostgreSQL adapter](/docs/semantic-model/adapters/postgres/). Strata generates Redshift-specific SQL where the dialects differ (for example, date arithmetic without `quarter` intervals).
+- **Serverless and provisioned** - Both endpoints work; use the workgroup endpoint for Redshift Serverless.
+- **Network access** - The Strata server must reach the cluster: a publicly accessible cluster with a security group rule, or a deployment inside the VPC.
+
+## Best Practices
+
+1. **Use a read-only database user** - Grant `SELECT` on the schemas the model reads
+2. **Enable SSL** - `ssl: true` with `sslmode: require` for any cluster outside the VPC
+3. **Pair with a hot tier** - Redshift is a good system of record; route dashboard-hot queries to ClickHouse or DuckDB in front of it. See [Semantic Routing](/docs/advanced/semantic-routing/)
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

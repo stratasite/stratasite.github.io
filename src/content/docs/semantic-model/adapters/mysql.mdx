@@ -1,0 +1,88 @@
+---
+title: "MySQL Adapter"
+description: "Connect to MySQL databases."
+---
+Connect to MySQL databases.
+
+## Configuration
+
+```yaml
+mysql_db:
+  adapter: mysql
+  name: MySQL Database
+  tier: warm
+  query_timeout: 3600
+  
+  # Required
+  host: db.example.com
+  database: analytics
+  username: root
+  
+  # Optional
+  port: 3306              # Default: 3306
+  ssl: false              # Default: false
+  
+  # Credentials (set via strata datasource auth)
+  # password:
+```
+
+## Required Fields
+
+- **host** - MySQL server hostname or IP (use `127.0.0.1` for local Docker)
+- **database** - Database name
+- **username** - Username for connection
+
+## Optional Fields
+
+- **port** - Port number (default: `3306`)
+- **ssl** - Enable SSL (default: `false`)
+- **password** - Set via `strata datasource auth`
+
+## Example
+
+```yaml
+mysql_db:
+  adapter: mysql
+  name: MySQL Database
+  tier: warm
+  query_timeout: 3600
+  host: 127.0.0.1
+  port: 3306
+  database: analytics
+  username: root
+  ssl: false
+```
+
+## Authentication
+
+Set credentials securely:
+
+```bash
+strata datasource auth mysql_db
+```
+
+## SSL Configuration
+
+Enable SSL for secure connections:
+
+```yaml
+ssl: true
+```
+
+For advanced SSL options:
+
+```yaml
+extra_connection_params:
+  ssl_mode: REQUIRED
+  connect_timeout: 10
+```
+
+## Best Practices
+
+1. **Use SSL in production** - Encrypt connections
+2. **Set appropriate tier** - Match performance characteristics
+3. **Use connection pooling** - Handled automatically
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

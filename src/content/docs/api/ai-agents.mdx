@@ -1,0 +1,230 @@
+---
+title: "AI Agents and Strata"
+description: "How to use AI coding assistants to build semantic models with Strata."
+---
+How to use AI coding assistants to build semantic models with Strata.
+
+:::tip[Key Point]
+**Strata does not require custom prompts or fine-tuning.**
+Any modern AI coding agent (Cursor, Claude, GitHub Copilot, ChatGPT) can work with Strata by loading its official documentation.
+:::
+
+:::info[Start here for CLI projects]
+Every project created with `strata init` ships an **`AGENTS.md`** in its root — the rules, schema constraints, and discovery commands an agent needs, already in the repo. Agents pick it up automatically, so the setup below is the fallback for projects that don't have one. See [Building Your Model](/docs/cli/building-your-model/).
+:::
+
+## What AI-First Means
+
+Strata is designed to be AI-first. This means:
+
+- AI agents can **understand** Strata's semantic modeling concepts
+- AI agents can **generate** valid YAML configuration files
+- AI agents can **follow** Strata's modeling rules and constraints
+- No special prompts, private instructions, or fine-tuning required
+
+When you work with an AI assistant on Strata projects, the AI isn't guessing — it's following documented rules and validated schemas.
+
+---
+
+## How AI Agents Understand Strata
+
+Strata provides three machine-readable artifacts that AI agents use:
+
+### 1. Canonical Documentation
+
+Strata maintains a single, authoritative documentation export designed specifically for AI agents.
+
+- Contains all concepts, rules, and constraints
+- Includes canonical YAML examples for every file type
+- Lists common mistakes to avoid
+- Self-contained — AI loads it once and has complete context
+
+### 2. Discovery Index
+
+A machine-readable registry that helps AI agents understand what Strata can do.
+
+- Lists all semantic object types (tables, relations, etc.)
+- Maps each type to its validation schema
+- Documents available CLI commands
+- Summarizes critical constraints
+
+### 3. Validation Schemas
+
+JSON Schema definitions for every Strata YAML file type.
+
+- Enables YAML validation before deployment
+- Powers IDE autocomplete
+- Prevents invalid configurations
+- Defines required vs optional fields
+
+---
+
+## How to Work with AI Agents
+
+When using an AI coding assistant with Strata, we recommend explicitly telling it:
+
+1. That you are using Strata
+2. That Strata has official documentation and rules
+3. What you want to accomplish
+
+Here are copy-paste instructions you can give your AI:
+
+### Generating a New Semantic Model
+
+```
+We are using Strata for semantic modeling.
+Please follow Strata's official semantic modeling rules and YAML format.
+
+Generate a semantic model for the following database tables:
+- orders (order_id, customer_id, order_date, total_amount)
+- customers (customer_id, name, email, created_at)
+- products (product_id, name, category, price)
+```
+
+### Working with Existing Models
+
+```
+We are using Strata.
+Here is an existing semantic model. Please review it and:
+- Verify the relationship cardinalities are correct
+- Optimize the cost configuration
+- Ensure field names are descriptive, and that a shared name is only used for the same concept
+
+[paste your YAML here]
+```
+
+### Learning Strata Concepts
+
+```
+We are using Strata for semantic modeling.
+Please explain how relationships work in Strata, including:
+- The difference between many_to_one and one_to_many
+- How to handle many-to-many relationships
+- When to use allow_measure_expansion
+```
+
+### Schema-First Generation
+
+```
+We are using Strata.
+Please refer to Strata's documentation to understand how tables and relations are defined.
+
+Generate a valid Strata table YAML for the following database schema:
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total_amount DECIMAL(10,2)
+);
+```
+
+---
+
+## Recommended Workflows
+
+### Workflow A: Generate Semantic Models
+
+1. **Describe** your source database tables to the AI
+2. **Ask** the agent to generate Strata YAML following official rules
+3. **Review** the generated YAML for accuracy
+4. **Validate** with `strata audit`
+5. **Commit** and deploy
+
+### Workflow B: Refactor Existing Models
+
+1. **Provide** your existing YAML files to the AI
+2. **Ask** for specific improvements (cost optimization, relationship fixes, naming)
+3. **Review** the suggested changes
+4. **Validate** with `strata audit`
+5. **Test** before deploying to production
+
+### Workflow C: Learn Strata Concepts
+
+1. **Ask** conceptual questions about semantic modeling
+2. **Request** examples for specific patterns
+3. **Iterate** on your understanding
+4. **Apply** what you learn to your models
+
+---
+
+## What NOT to Do
+
+To get the best results from AI assistance, avoid these common mistakes:
+
+### Do NOT invent YAML keys
+Strata has a defined schema. Don't let AI create fields like `custom_aggregation` or `special_join` that don't exist.
+
+### Do NOT assume SQL = semantic model
+A SQL query is not a semantic model. Semantic models define reusable dimensions and measures, not ad-hoc queries.
+
+### Do NOT create many_to_many relationships
+Strata does not support `many_to_many` cardinality. Use junction tables with two separate relationships instead.
+
+### Do NOT skip validation
+Always run `strata audit` before deploying. AI-generated YAML should pass validation.
+
+### Do NOT reuse a name for a different concept
+A name identifies one concept across the whole semantic layer: the same name on two tables is merged, and the planner picks the table by dimensions and cost. If AI gives two different things the same name (a caller's country and a ship-to country, say), ask it to name them distinctly. Reusing a name for the *same* measure on another table is fine and expected.
+
+### Do NOT bypass the rules
+If AI suggests something that conflicts with Strata's rules, the rules win. Ask AI to find a compliant approach.
+
+---
+
+## Strata as an MCP server
+
+Modeling is half of the story. For **answering questions** on a deployed model, a Strata server is itself a [Model Context Protocol](https://modelcontextprotocol.io) server, so Claude, Cursor, and any other MCP client can explore the semantic layer, build and run queries, and (when asked) build reports, without writing SQL.
+
+- **Endpoint:** `POST {server}/api/mcp` (Streamable HTTP, stateless; each request is a self-contained JSON-RPC call).
+- **Auth:** an API key as a Bearer token, or OAuth 2.1. The server publishes `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`, supports dynamic client registration, and reuses the normal browser sign-in, so an MCP client can connect with nothing but the server URL.
+- **Scope:** the tools act as the signed-in user, in the projects they belong to, with their row-level security.
+
+The tools mirror what a person can do in the UI:
+
+| Area | Tools |
+|---|---|
+| Discovery | `list_projects`, `explore_semantics`, `get_skill` |
+| Queries | `build_query`, `get_query`, `query_result` |
+| Analysis-time layers | `add_calculation`, `remove_calculation`, `add_segment`, `remove_segment` |
+| Reports | `create_report`, `add_view`, `update_view`, `remove_view`, `reorder_views`, `copy_report`, `list_reports`, `get_report` |
+| Delivery | `export_report` (Google Sheets), `subscribe_report`, `list_scheduled` |
+
+`build_query` takes the same [query spec](/docs/api/rest/query-spec/) as the REST API, including `calculations` and `segments`, and every query goes through the same validation and refuse-before-execution rules as the UI. The server's built-in instructions tell the agent to answer in business terms, to persist nothing unless the user asks, and never to send natural language or SQL to Strata: the agent composes the spec.
+
+## REST API
+
+For programmatic access from your own code, without an MCP client, see the [REST API v1](/docs/api/rest/) documentation.
+
+Use the API to:
+
+- Search fields and tables on a deployed branch
+- Create and execute queries with semantic field names
+- Poll async results and export CSV
+
+---
+
+## Where AI Documentation Lives
+
+For tool builders and advanced users, here's where the machine-readable artifacts are located:
+
+| Artifact | URL | Purpose |
+|----------|-----|---------|
+| Full Documentation | `https://strata.do/docs/llms.txt` | Complete knowledge for AI agents |
+| Discovery Index | `https://strata.do/docs/api/docs.json` | Schema registry and CLI commands |
+| Validation Schemas | `https://strata.do/docs/api/schema/*.json` | YAML structure validation |
+
+**Note:** This page explains how to use AI with Strata. The artifacts above are what AI agents actually consume.
+
+---
+
+## Summary
+
+Working with AI on Strata projects is straightforward:
+
+1. **Tell** your AI you're using Strata
+2. **Describe** what you want to build
+3. **Review** the generated YAML
+4. **Validate** with `strata audit`
+5. **Deploy** with confidence
+
+Strata's AI-first design means you don't need prompt engineering tricks. Just clear instructions and validation.

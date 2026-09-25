@@ -1,0 +1,215 @@
+---
+title: "Production Deployment"
+description: "This guide is for teams that require direct control over runtime, configuration, and rollout workflows using raw Docker Compose."
+---
+This guide is for teams that require direct control over runtime, configuration, and rollout workflows using raw Docker Compose.
+
+Supported targets:
+
+- Linux VM or instance (AWS EC2, Azure VM, Google Compute Engine, etc.)
+- On-premises Linux server
+- Any Docker-compatible host managed by your operations team
+
+## 1. Prepare PostgreSQL
+
+:::tip
+For production, use a managed PostgreSQL service (RDS, Cloud SQL, Azure Database) rather than a self-hosted instance.
+:::
+
+Strata uses four PostgreSQL databases:
+
+| Database | Purpose |
+|----------|---------|
+| `strata_production` | Main application data |
+| `strata_production_queue` | Internal asynchronous processing metadata |
+| `strata_production_cache` | Internal application cache metadata |
+| `strata_production_cable` | Real-time connection metadata |
+
+### Option A: Automatic Creation
+
+If your PostgreSQL user has the `CREATEDB` privilege, Strata creates all four databases on first start:
+
+```sql
+CREATE USER strata WITH PASSWORD 'your_secure_password';
+ALTER USER strata CREATEDB;
+```
+
+### Option B: Manual Creation
+
+For locked-down environments where the database user cannot create databases:
+
+```sql
+CREATE USER strata WITH PASSWORD 'your_secure_password';
+CREATE DATABASE strata_production OWNER strata;
+CREATE DATABASE strata_production_queue OWNER strata;
+CREATE DATABASE strata_production_cache OWNER strata;
+CREATE DATABASE strata_production_cable OWNER strata;
+```
+
+## 2. Pull the Image
+
+Use an explicit release tag for production:
+
+```bash
+docker pull ghcr.io/stratasite/server:1.0.0
+```
+
+## 3. Create Docker Compose File
+
+Create a directory for Strata (e.g., `/opt/strata`) and add `docker-compose.yml`:
+
+```yaml
+# docker-compose.yml
+services:
+  web:
+    image: ghcr.io/stratasite/server:${STRATA_VERSION:-latest}
+    ports:
+      - "${PORT:-3000}:${STRATA_CONTAINER_PORT:-80}"
+    env_file: .env
+    environment:
+      STRATA_RUN_DB_PREPARE: "true"
+    volumes:
+      - strata_storage:/rails/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:$${STRATA_CONTAINER_PORT:-80}/up || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+
+  job:
+    image: ghcr.io/stratasite/server:${STRATA_VERSION:-latest}
+    env_file: .env
+    environment:
+      STRATA_RUN_DB_PREPARE: "false"
+      JOB_CONCURRENCY: "${JOB_CONCURRENCY:-4}"
+    command: ["./bin/jobs"]
+    volumes:
+      - strata_storage:/rails/storage
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  strata_storage:
+```
+
+## 4. Configure Environment Variables
+
+Create a `.env` file in the same directory. At minimum:
+
+```bash
+# Database (required)
+DB_HOST=your-postgres-host
+DB_PORT=5432
+DB_USERNAME=strata
+DB_PASSWORD=your_secure_password
+
+# Encryption secrets — auto-generated on first boot for single-node deployments.
+# Must be set explicitly for multi-node: all nodes must share the same values.
+STRATA_SECRET_KEY_BASE=   # openssl rand -hex 64
+STRATA_ENCRYPTION_PRIMARY_KEY=   # openssl rand -hex 16
+STRATA_ENCRYPTION_DETERMINISTIC_KEY=   # openssl rand -hex 16
+STRATA_ENCRYPTION_KEY_DERIVATION_SALT=   # openssl rand -hex 16
+
+# Common in production
+APP_HOST=strata.yourcompany.com
+APP_PROTOCOL=https
+STRATA_LOG_LEVEL=info
+WEB_CONCURRENCY=2
+WEB_THREADS=5
+JOB_CONCURRENCY=4
+JOB_THREADS=3
+```
+
+See [Environment Variables](/docs/self-hosting/environment-variables/) for the complete reference.
+
+## 5. Start Strata
+
+```bash
+docker compose up -d
+```
+
+## 6. Verify
+
+Watch the startup logs:
+
+```bash
+docker compose logs -f web job
+```
+
+Expected output on first run:
+
+```
+[Strata] Waiting for PostgreSQL at your-db-host:5432...
+[Strata] PostgreSQL is ready.
+[Strata] Preparing databases...
+[Strata] Databases ready.
+```
+
+Check the health endpoint:
+
+```bash
+curl http://<your-host-or-ip>:<PORT>/up
+# Expect HTTP 200
+```
+
+## 7. Activate Your License and Create Your Admin Account
+
+Open the application URL. You'll be prompted to enter your license key first, then create the first admin account.
+You can get your FREE license key at [license.strata.do](https://license.strata.do)
+
+---
+
+## SSL / Reverse Proxy
+
+By default, Strata listens on container port 80 (override with `STRATA_CONTAINER_PORT` if needed). For production deployments, place it behind a reverse proxy that terminates SSL. Set `ASSUME_SSL=true` and `FORCE_SSL=true` so Strata correctly handles forwarded HTTPS requests.
+
+See [SSL & Reverse Proxy](/docs/self-hosting/ssl-reverse-proxy/) for full setup instructions, including Nginx, Caddy, and AWS ALB examples.
+
+---
+
+## Multi-Instance Deployment
+
+Running multiple web containers (for load balancing or high availability) requires three things to be consistent across every node. Getting any one of them wrong causes data loss or broken sessions.
+
+### 1. Encryption Secrets — must be identical on every node
+
+Strata uses `STRATA_SECRET_KEY_BASE` to sign session cookies and `STRATA_ENCRYPTION_*` keys to encrypt datasource credentials and other sensitive data at rest. If nodes have different values:
+
+- Sessions signed on one node are invalid on another → users get logged out randomly
+- Encrypted data written by one node cannot be decrypted by another → data is unreadable
+
+Generate these once and copy the same values into every node's `.env`:
+
+```bash
+STRATA_SECRET_KEY_BASE=$(openssl rand -hex 64)
+STRATA_ENCRYPTION_PRIMARY_KEY=$(openssl rand -hex 16)
+STRATA_ENCRYPTION_DETERMINISTIC_KEY=$(openssl rand -hex 16)
+STRATA_ENCRYPTION_KEY_DERIVATION_SALT=$(openssl rand -hex 16)
+```
+
+:::caution
+Do not auto-generate secrets on each node separately. The entrypoint generates secrets automatically only when they are missing — in a multi-node setup, always set them explicitly in `.env` so every node shares the same values.
+:::
+
+### 2. Shared File Storage — required when running more than one web container
+
+Each container's `strata_storage` volume is local to that container. If you run two web containers and a user uploads a file, only the container that received the request has the file — the other will return 404.
+
+Switch to a shared backend before scaling out:
+
+- **Cloud storage:** Set `STORAGE_BACKEND=amazon` (or `google`/`microsoft`) and configure the matching credentials. All nodes read and write to the same bucket.
+- **Shared filesystem:** Mount a shared NFS or EFS volume at `strata_storage` on every host.
+
+See [Storage](/docs/self-hosting/environment-variables/#storage) for configuration details.
+
+### 3. Database — all nodes connect to the same PostgreSQL instance
+
+No special database configuration is needed beyond what a single-node deployment uses. Just ensure all nodes have identical `DB_HOST`, `DB_PORT`, `DB_USERNAME`, and `DB_PASSWORD` values. Only one node should run migrations — set `STRATA_RUN_DB_PREPARE=false` on all additional nodes and let the primary web node run them on startup.
+
+### Upgrade Strategy
+
+Upgrade nodes one at a time (rolling update). Bring one node down, pull the new image, start it — migrations run automatically on the first node up, and subsequent nodes skip them (`STRATA_RUN_DB_PREPARE=false`).

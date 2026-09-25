@@ -1,0 +1,197 @@
+---
+title: "Queries"
+description: "Create, execute, list, and delete API queries."
+---
+Create, execute, list, and delete API queries.
+
+API queries are flagged with `api: true` and scoped to the authenticated user. They use semantic field **names** in the request spec; persisted specs store resolved UIDs.
+
+## List queries
+
+```
+GET /api/v1/projects/{project_id}/queries
+```
+
+**Auth:** Project member
+
+Returns only API-flagged queries, newest first.
+
+**Query parameters:**
+
+| Parameter | Default | Max |
+|-----------|---------|-----|
+| `page` | 1 | — |
+| `limit` | 25 | 50 |
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/queries?limit=25&page=1"
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "results": [
+    {
+      "id": 42,
+      "name": "Revenue by State",
+      "project_id": 1,
+      "api": true,
+      "created_by_id": 5,
+      "limit": 5000,
+      "created_at": "2026-06-15T14:30:00Z",
+      "updated_at": "2026-06-15T14:30:00Z",
+      "spec": {
+        "projections": [ ... ],
+        "filters": [ ... ]
+      }
+    }
+  ],
+  "page": 1,
+  "total_pages": 1,
+  "total_count": 3,
+  "limit": 25
+}
+```
+
+## Create or re-run query
+
+```
+POST /api/v1/projects/{project_id}/queries
+```
+
+**Auth:** Project member
+
+Creates a new query and optionally executes it, or re-runs an existing query by ID.
+
+### Create with execution
+
+**Body:**
+
+```json
+{
+  "name": "Revenue by State",
+  "branch": "main",
+  "wait_timeout": 3,
+  "use_cache": true,
+  "limit": 25,
+  "offset": 0,
+  "spec": {
+    "projections": [
+      { "field": "State", "axis": "x" },
+      { "field": "Web Net Paid", "axis": "y" }
+    ],
+    "filters": [
+      { "field": "State", "predicate": "equals", "value": "CA" }
+    ]
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `name` | Query name (default `"Untitled API Query"`) |
+| `branch` | Branch uid (default production) |
+| `wait_timeout` | Seconds to wait for completion before responding. Capped at **3**; omitted, the response returns as soon as the query is queued |
+| `use_cache` | Reuse a cached result for an identical query when `true` (default); `false` forces a fresh run |
+| `limit` / `offset` | Row window for the inline `result` (default 25, max 100 rows). Fetch the rest from the result endpoints |
+| `spec` | Query specification — see [Query spec](/docs/api/rest/query-spec/) |
+
+### Re-run existing query
+
+Pass `id` instead of `spec`:
+
+```json
+{
+  "id": 42,
+  "branch": "main",
+  "wait_timeout": 3,
+  "use_cache": false
+}
+```
+
+### Response outcomes
+
+| HTTP | `status` | Meaning |
+|------|----------|---------|
+| 201 | `created` | Saved but not executed: the spec has no measure or dimension to run yet |
+| 201 | `succeeded` | Executed; inline `result` with rows |
+| 201 | `failed` | `errors` carries `sql_generation_error` (planning failed) or `execution_failed` (the warehouse rejected the SQL; `message` is its error) |
+| 202 | `pending` | Queued or running; poll `poll_url` |
+| 422 | `invalid` | `invalid_query_construction` (unknown or ambiguous field, unknown spec key, unreachable combination) or `invalid_params` |
+
+Every 201/202 body also carries `id`, `name`, `api`, `created_by_id`, and the resolved `spec`. A 422 body includes `id` when the query record was created before the failure.
+
+**Pending response:**
+
+```json
+{
+  "id": 42,
+  "name": "Revenue by State",
+  "status": "pending",
+  "poll_url": "/api/v1/queries/42/result",
+  "errors": [],
+  "result": {
+    "id": 108,
+    "status": "queued",
+    "query_id": 42
+  }
+}
+```
+
+## Show query
+
+```
+GET /api/v1/queries/{id}
+```
+
+**Auth:** Project member (via query's project)
+
+**Query parameters:** `branch` (optional; the SQL is planned against it)
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/queries/42"
+```
+
+`sql` is `null` for a query that isn't runnable yet. If the saved spec can no longer be planned on the branch (a field was removed, say), the response is `422 invalid_query_construction`.
+
+**Response:** `200 OK`
+
+```json
+{
+  "id": 42,
+  "name": "Revenue by State",
+  "spec": { "projections": [ ... ], "filters": [ ... ] },
+  "sql": "SELECT ...",
+  "errors": []
+}
+```
+
+## Delete query
+
+```
+DELETE /api/v1/queries/{id}
+```
+
+**Auth:** Query creator or project admin
+
+**Response:** `204 No Content`
+
+**Errors:**
+
+| HTTP | When |
+|------|------|
+| 403 | Not creator or admin |
+
+## Related
+
+- [Query spec](/docs/api/rest/query-spec/)
+- [Results](/docs/api/rest/results/)
+- [SQL preview](/docs/api/rest/sql/)
+- [Quickstart](/docs/api/rest/quickstart/)

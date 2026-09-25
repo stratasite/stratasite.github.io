@@ -1,0 +1,26 @@
+---
+title: "Semantic Fields"
+description: "Fields are the building blocks of your semantic model: dimensions, measures, data types, and field format."
+---
+Fields are the building blocks of your semantic model: dimensions, measures, data types, and field format.
+
+## Overview
+
+- **[Dimensions](/docs/semantic-model/fields/dimensions/)** — Categorical attributes for grouping and filtering
+- **[Measures](/docs/semantic-model/fields/measures/)** — Aggregatable metrics (sum, count, avg, etc.)
+- **[Data Types](/docs/semantic-model/fields/data-types/)** — `string`, `integer`, `decimal`, `date`, `date_time`, `boolean`, and more
+- **[Field format](/docs/semantic-model/fields/formatters/)** — Currency, percent, dates, and custom value formatting
+
+## Quick Reference
+
+| Field type | Use in GROUP BY | Aggregation | Example |
+|------------|-----------------|-------------|---------|
+| Dimension  | Yes             | No          | Customer Name, Region, Order Date |
+| Measure    | No              | Yes (required) | Total Revenue, Order Count |
+
+## Next Steps
+
+- [Dimensions](/docs/semantic-model/fields/dimensions/)
+- [Measures](/docs/semantic-model/fields/measures/)
+- [Data types](/docs/semantic-model/fields/data-types/)
+- [Expressions](/docs/semantic-model/expressions/sql/) — How fields query the database

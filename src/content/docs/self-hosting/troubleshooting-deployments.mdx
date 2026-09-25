@@ -1,0 +1,100 @@
+---
+title: "Troubleshooting Enterprise Deployments"
+description: "This guide applies to all supported deployment paths (single-host Docker Compose and orchestrated deployments such as AWS ECS)."
+---
+This guide applies to all supported deployment paths (single-host Docker Compose and orchestrated deployments such as AWS ECS).
+
+## Common startup issues
+
+### Container exits on startup
+
+Check runtime logs first.
+
+Docker Compose:
+
+```bash
+docker compose logs --tail 50 web job
+```
+
+AWS ECS:
+
+- Open CloudWatch logs for the Strata service
+- Review recent startup output and error events
+
+Likely causes:
+
+- Missing required secrets
+- Invalid DB credentials
+- Unreachable DB endpoint
+
+### Health check fails
+
+Validate endpoint:
+
+```bash
+curl http://<host-or-alb>/up
+```
+
+If unhealthy:
+
+- Verify service status
+- Verify DB connectivity from runtime environment
+- Verify database setup completed
+
+### Background Processor Not Processing
+
+- Check service logs for queue or DB errors
+- Verify the service is healthy
+- Verify runtime environment variables and secrets are correct
+
+### TLS redirect issues
+
+If behind proxy/load balancer, verify:
+
+- `ASSUME_SSL=true`
+- `FORCE_SSL=true`
+- Proxy forwards `X-Forwarded-Proto`
+
+## AWS ECS
+
+### EFS mount fails or permission errors
+
+- Verify the EFS access point uses the correct POSIX user UID/GID with root directory `/storage`
+- Verify the EFS security group allows inbound **NFS (TCP 2049)** from the ECS task security group
+- Confirm transit encryption is enabled in the task definition volume configuration
+
+### Port binding failure on Fargate
+
+If the container exits immediately with a port binding error, set `STRATA_CONTAINER_PORT=8080`. Non-root containers on Fargate cannot bind to ports below 1024.
+
+### Cannot pull container image
+
+- Verify the registry credentials secret is correctly formatted as JSON: `{"username":"...","password":"..."}`
+- Verify the secret ARN is referenced in the task definition's **Private registry** configuration
+- Verify the task execution role has `secretsmanager:GetSecretValue` permission for the registry secret
+
+### Debugging with ECS Exec
+
+Enable ECS Exec on the service to open a shell session in a running container:
+
+```bash
+aws ecs execute-command \
+  --cluster your-cluster \
+  --task your-task-id \
+  --container your-container-name \
+  --interactive \
+  --command "/bin/sh"
+```
+
+The task role needs `ssmmessages` permissions. See [AWS documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html) for setup details.
+
+## Support bundle checklist
+
+When escalating, provide:
+
+1. Deployment path used
+2. Image tag deployed
+3. Last deployment timestamp
+4. Recent logs from the Strata service
+5. Health endpoint result
+6. Any recent config/secret changes

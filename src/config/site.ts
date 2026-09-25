@@ -26,8 +26,9 @@ export const site = {
   trialUrl: '/try/',
   trialLabel: 'Try it free',
 
-  // Outbound destinations (live on other domains/paths today).
-  docsUrl: 'https://strata.do/developer-docs/',
+  // Documentation lives in this site: src/content/docs/, served at /docs/.
+  docsUrl: '/docs/',
+  // Outbound destinations (live on other domains today).
   blogUrl: 'https://blog.strata.do',
 } as const;
 
@@ -70,7 +71,7 @@ export const nav = {
   links: [
     { label: 'Features', href: '/#features' },
     { label: 'Pricing', href: '/pricing/' },
-    { label: 'Docs', href: site.docsUrl, external: true },
+    { label: 'Docs', href: site.docsUrl },
     { label: 'Blog', href: site.blogUrl, external: true },
   ],
 } as const;

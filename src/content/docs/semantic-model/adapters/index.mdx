@@ -1,0 +1,56 @@
+---
+title: "Adapters"
+description: "Strata supports 12 database adapters for connecting to your data warehouses."
+---
+Strata supports 12 database adapters for connecting to your data warehouses.
+
+## Supported Adapters
+
+1. **[PostgreSQL](/docs/semantic-model/adapters/postgres/)** - Full PostgreSQL support
+2. **[Snowflake](/docs/semantic-model/adapters/snowflake/)** - Snowflake data warehouse
+3. **[MySQL](/docs/semantic-model/adapters/mysql/)** - MySQL database
+4. **[SQL Server](/docs/semantic-model/adapters/sqlserver/)** - Microsoft SQL Server (including Azure)
+5. **[Athena](/docs/semantic-model/adapters/athena/)** - AWS Athena
+6. **[Trino](/docs/semantic-model/adapters/trino/)** - Trino/Presto
+7. **[DuckDB](/docs/semantic-model/adapters/duckdb/)** - Embedded analytics database
+8. **[Druid](/docs/semantic-model/adapters/druid/)** - Apache Druid
+9. **[ClickHouse](/docs/semantic-model/adapters/clickhouse/)** - ClickHouse, over the HTTP interface
+10. **[Databricks](/docs/semantic-model/adapters/databricks/)** - Databricks SQL warehouses
+11. **[SQLite](/docs/semantic-model/adapters/sqlite/)** - SQLite database files
+12. **[Redshift](/docs/semantic-model/adapters/redshift/)** - Amazon Redshift, provisioned or serverless
+
+## Common Configuration
+
+All adapters support:
+
+- **adapter** - Adapter name (required)
+- **name** - Display name (required)
+- **description** - Optional description
+- **tier** - Performance tier: `hot`, `warm`, `cold` (default: `warm`)
+- **query_timeout** - Query timeout in seconds (default: `3600`)
+- **client_name** - Client name sent to database (default: `Strata`)
+
+## Adding Adapters
+
+Use the CLI to add adapters:
+
+```bash
+strata datasource add postgres
+strata datasource add snowflake
+```
+
+Or edit `datasources.yml` directly.
+
+## Authentication
+
+Credentials are stored securely in `.strata` (not committed to git):
+
+```bash
+strata datasource auth datasource_key
+```
+
+## Next Steps
+
+- Read adapter-specific documentation above
+- [Datasources](/docs/semantic-model/datasources/) - Tiers and full configuration
+- [Managing Datasources](/docs/cli/datasources/) - Test connections

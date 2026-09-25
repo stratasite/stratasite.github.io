@@ -1,0 +1,100 @@
+---
+title: "SAML 2.0"
+description: "Strata can delegate sign-in to any SAML 2.0 identity provider (Okta, Microsoft Entra ID, Ping, Keycloak, and others). This page covers the values Strata needs and what to register back at your IdP."
+---
+Strata can delegate sign-in to any SAML 2.0 identity provider (Okta, Microsoft Entra ID, Ping, Keycloak, and others). This page covers the values Strata needs and what to register back at your IdP.
+
+For shared behavior — how users are auto-created, license seats, and the break-glass password fallback — see [Authentication & SSO](/docs/self-hosting/authentication/).
+
+## How it works
+
+1. A user clicks **Sign in with SSO** on the Strata login page.
+2. Strata sends an **unsigned** SAML AuthnRequest to your IdP.
+3. The user authenticates at the IdP.
+4. The IdP POSTs a **signed** SAML assertion back to Strata's Assertion Consumer Service (ACS) URL.
+5. Strata verifies the assertion's signature against the IdP certificate you configured, then signs the user in (creating the account on first login).
+
+Strata verifies the IdP's response signature — that is what secures the flow. Strata does **not** sign its own request, so your IdP must not require a signed request from the service provider (see Troubleshooting).
+
+## What to register at your IdP
+
+Create a SAML application (service provider) at your IdP with:
+
+- **Entity ID / Audience** that matches Strata's **SP entity ID** (default `strata`).
+- **ACS / Reply URL**:
+
+  ```text
+  https://YOUR_STRATA_HOST/auth/saml/callback
+  ```
+
+- **Sign assertions**: enabled (Strata verifies the signature).
+- **Require signed requests / client signature**: disabled.
+- **Encrypt assertions**: disabled (Strata expects signed, not encrypted, assertions).
+
+## Attribute mapping
+
+The assertion must release the user's **email**. Strata reads the standard `info` attributes and recognizes these attribute names:
+
+| Identity field | Accepted SAML attribute names |
+|---|---|
+| Email (required) | `email`, `mail` |
+| First name | `first_name`, `firstname`, `firstName` |
+| Last name | `last_name`, `lastname`, `lastName` |
+
+If first/last name are missing, Strata derives the name from the email local part. If email is missing, the login fails — make sure your IdP releases an email attribute.
+
+## Fields in Strata
+
+In **System Settings → SSO**, choose method **SAML 2.0** and fill in:
+
+| Field | Required | What it is / where to get it |
+|---|---|---|
+| **IdP SSO service URL** | Yes | Your IdP's SAML 2.0 single sign-on endpoint (sometimes called "SSO URL" or "SAML 2.0 endpoint"). Found in your IdP's SAML app settings or IdP metadata. |
+| **IdP certificate (PEM)** | Yes | Your IdP's **signing** certificate, PEM-wrapped (see below). |
+| **SP entity ID** | No (default `strata`) | Must equal the Entity ID / Audience you set on the IdP application. Leave blank to use `strata`. |
+| **Assertion consumer service URL** | No | Defaults to `https://YOUR_STRATA_HOST/auth/saml/callback`. Set only to override. |
+
+The **IdP certificate** must include the PEM header and footer:
+
+```text
+-----BEGIN CERTIFICATE-----
+MIIC...your IdP signing certificate...
+-----END CERTIFICATE-----
+```
+
+Most IdPs let you download or copy this certificate from the SAML app's settings or from the IdP's SAML metadata document. Use the **signing** certificate, not an encryption certificate.
+
+Click **Save SSO settings**, then restart all Strata application servers.
+
+## Troubleshooting
+
+### The IdP shows "invalid signature" or "SigAlg was null"
+
+Your IdP is configured to **require a signed request** from the service provider. Strata sends unsigned AuthnRequests (standard for this integration — the signed *assertion* is what secures the flow). Disable "require signed requests" / "client signature required" on the IdP application.
+
+### The IdP shows "invalid requester" or an entity-ID error
+
+Strata's **SP entity ID** (default `strata`) must exactly match the Entity ID / Audience configured on the IdP application. Make them identical.
+
+### The IdP shows "invalid redirect / ACS URL"
+
+Register the exact ACS URL on the IdP application:
+
+```text
+https://YOUR_STRATA_HOST/auth/saml/callback
+```
+
+Confirm `APP_HOST` and `APP_PROTOCOL` match the public URL users browse to.
+
+### The user reaches Strata but login fails on a blank email
+
+The assertion isn't releasing an email attribute. Add an attribute mapper at the IdP that emits the user's email (attribute name `email` or `mail`), and confirm the IdP user actually has an email set.
+
+### Login fails after an encryption change
+
+Strata expects **signed** assertions, not **encrypted** ones. Disable assertion encryption on the IdP application and keep assertion signing enabled.
+
+## References
+
+- [OASIS SAML 2.0 specifications](https://www.oasis-open.org/standard/saml/)
+- [omniauth-saml](https://github.com/omniauth/omniauth-saml) — the library Strata uses

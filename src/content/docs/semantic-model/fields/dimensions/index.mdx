@@ -1,0 +1,266 @@
+---
+title: "Dimensions"
+description: "Dimension fields represent categorical attributes used for grouping and filtering."
+---
+Dimension fields represent categorical attributes used for grouping and filtering.
+
+## Overview
+
+Dimensions are the categorical fields in your semantic model. They represent attributes of your data that can be used for grouping, filtering, and analysis.
+
+## Characteristics
+
+- **Used in GROUP BY** - Dimensions group query results
+- **Can be filtered** - Users can filter by dimension values
+- **Lower cardinality** - Typically fewer unique values than measures
+- **Examples**: Customer Name, Product Category, Order Date, Region
+
+## Basic Definition
+
+```yaml
+- type: dimension
+  name: Customer Name
+  description: Name of the customer
+  data_type: string
+  expression:
+    sql: customer_name
+```
+
+## Dimension Properties
+
+### name
+
+Display name shown to users.
+
+```yaml
+name: Customer Name
+```
+
+### description
+
+Optional description explaining what the dimension represents.
+
+```yaml
+description: Full name of the customer
+```
+
+### data_type
+
+The data type of the dimension. See [data types](/docs/semantic-model/fields/data-types/).
+
+```yaml
+data_type: string
+```
+
+For **date and date_time** dimensions, including grains and filtering patterns, see [Date and DateTime dimensions](/docs/semantic-model/fields/dimensions/date-time/).
+
+### expression
+
+How to query this dimension from the database.
+
+```yaml
+expression:
+  sql: customer_name
+```
+
+[Learn about expressions →](/docs/semantic-model/expressions/sql/)
+
+## Optional Properties
+
+### hidden
+
+Hide dimension from UI while keeping it available for calculations.
+
+```yaml
+hidden: true
+```
+
+### display_type
+
+Control how the dimension is rendered.
+
+```yaml
+display_type: url  # default, html, url, email, phone_number, image
+```
+
+### format
+
+Apply formatting (shortcut string or hash).
+
+```yaml
+format: currency:2  # or hash: { type: currency, precision: 2 }
+```
+
+[Learn about field format →](/docs/semantic-model/fields/formatters/)
+
+### disable_value_listing
+
+Disable listing values in filters (useful for high-cardinality dimensions).
+
+```yaml
+disable_value_listing: true
+```
+
+**Use cases:**
+- Customer IDs
+- Order IDs
+- Timestamps
+- High-cardinality codes
+
+### value_list_size
+
+Limit the number of values shown in filters (default: 1000).
+
+```yaml
+value_list_size: 500
+```
+
+### synonyms
+
+Alternative names for this dimension. Helps AI-powered search and natural language queries match fields when users use different terminology.
+
+```yaml
+synonyms:
+  - client name
+  - buyer name
+  - account name
+```
+
+### extended_blend_group
+
+For dimensions that should blend across tables in queries, set the same `extended_blend_group` on each. See [Extended blending groups](/docs/semantic-model/extended-blending-groups/).
+
+When you use table or entity generation templates (for example, from the CLI or a UI), ensure the template exposes a way to **assign a dimension to one or more extended blend groups** so that blend groups can be configured without editing raw YAML by hand.
+
+## Primary Keys
+
+Mark dimensions as primary keys for query optimization:
+
+```yaml
+- type: dimension
+  name: Order ID
+  data_type: integer
+  expression:
+    primary_key: true
+    sql: order_id
+```
+
+**Benefits:**
+- Helps planner optimize joins
+- Ensures uniqueness
+- Improves query performance
+
+## Complex Dimensions
+
+Complex dimensions are dimensions whose expressions are defined in terms of **other dimensions** instead of directly referencing a physical column.
+
+Rules:
+
+- Complex dimensions may reference **only dimensions**, not measures.
+- All referenced dimensions must be reachable in the same **universe** as the complex dimension (so they can be grouped together).
+- Evaluation happens at query time, similar to [compound measures](/docs/semantic-model/fields/measures/compound/).
+
+### Example: Derived status label
+
+```yaml
+- type: dimension
+  name: Customer Status Code
+  data_type: string
+  expression:
+    sql: status_code
+
+- type: dimension
+  name: Customer Status
+  data_type: string
+  expression:
+    sql: |
+      CASE
+        WHEN [Customer Status Code] = 'A' THEN 'Active'
+        WHEN [Customer Status Code] = 'I' THEN 'Inactive'
+        ELSE 'Unknown'
+      END
+```
+
+### Example: Custom date bucket
+
+```yaml
+- type: dimension
+  name: Order Date
+  data_type: date
+  expression:
+    sql: order_date
+
+- type: dimension
+  name: Order Month Label
+  data_type: string
+  expression:
+    sql: to_char([Order Date], 'YYYY-MM')
+```
+
+Use complex dimensions when you want to:
+
+- Reuse existing dimensions in multiple derived attributes,
+- Keep business-friendly labels and buckets out of raw SQL in every query, and
+- Ensure that all logic for a concept (like “status” or “month”) lives in one place in the semantic model.
+
+## Common Patterns
+
+### Simple Dimension
+
+```yaml
+- type: dimension
+  name: Product Category
+  data_type: string
+  expression:
+    sql: category_name
+```
+
+### High-Cardinality Dimension
+
+```yaml
+- type: dimension
+  name: Customer ID
+  data_type: integer
+  disable_value_listing: true
+  expression:
+    sql: customer_id
+```
+
+### Formatted Dimension
+
+```yaml
+- type: dimension
+  name: Product Image
+  data_type: string
+  display_type: image
+  expression:
+    sql: image_url
+```
+
+### Primary Key Dimension
+
+```yaml
+- type: dimension
+  name: Order ID
+  data_type: integer
+  expression:
+    primary_key: true
+    sql: order_id
+```
+
+## Best Practices
+
+1. **Use descriptive names** - Business-friendly dimension names
+2. **Add descriptions** - Help users understand dimensions
+3. **Disable value listing** for high-cardinality dimensions (IDs, timestamps)
+4. **Set grains for date/datetime** - See [Date and DateTime dimensions](/docs/semantic-model/fields/dimensions/date-time/)
+5. **Mark primary keys** - Improve query optimization
+6. **Use appropriate data types** - Match database column types
+
+## Next Steps
+
+- [Date and DateTime dimensions](/docs/semantic-model/fields/dimensions/date-time/) - Grains, formatting, and date-specific patterns
+- [Measures](/docs/semantic-model/fields/measures/)
+- [Data types](/docs/semantic-model/fields/data-types/)
+- [Field format](/docs/semantic-model/fields/formatters/)
+- [Expressions](/docs/semantic-model/expressions/sql/)

@@ -1,0 +1,43 @@
+---
+title: "Server Installation"
+description: "Strata Server is the self-hosted web application for semantic analytics and BI workflows. It is distributed as a private container image and supports multiple deployment approaches."
+---
+Strata Server is the self-hosted web application for semantic analytics and BI workflows. It is distributed as a private container image and supports multiple deployment approaches.
+
+## Deployment Flow
+
+1. Start with [Choose Your Deployment Path](/docs/self-hosting/deployment-paths/)
+2. Follow the selected deployment guide
+3. Validate runtime health and background processing
+
+## Deployment Options
+
+- [Quick Install](/docs/self-hosting/quick-install/)
+- [Production Deployment](/docs/self-hosting/production-deployment/)
+- [AWS ECS Manual Deployment](/docs/self-hosting/aws-ecs-manual/)
+
+## Runtime Architecture
+
+Strata Server runs as a single runtime process:
+
+- A single Strata application service handles user traffic.
+- The same service handles asynchronous platform processing.
+
+Scale by running more identical web service instances/tasks behind your load balancer.
+
+## Core Prerequisites
+
+| Requirement | Version / Notes |
+|---|---|
+| Docker Engine | 24+ |
+| Docker Compose | v2.20+ |
+| PostgreSQL | 18 (managed or self-hosted) |
+| Network | Access to DB, registry, and storage endpoints |
+
+## Next References
+
+- [Environment Variables](/docs/self-hosting/environment-variables/)
+- [Performance and scaling](/docs/self-hosting/performance-scaling/)
+- [Google OAuth for Sheets Exports](/docs/self-hosting/google-oauth/)
+- [SSL & Reverse Proxy](/docs/self-hosting/ssl-reverse-proxy/)
+- [Upgrading](/docs/self-hosting/upgrading/)

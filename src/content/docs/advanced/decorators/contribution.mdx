@@ -1,0 +1,61 @@
+---
+title: "Contribution Decorators"
+description: "Percentage of total calculations."
+---
+Percentage of total calculations.
+
+## Overview
+
+Contribution decorators calculate what percentage each value represents of the total.
+
+## Available Decorators
+
+### Percentage of Total
+
+Calculate percentage each value represents of total.
+
+```yaml
+# Applied in query, not in model definition
+# User selects "Percentage of Total" decorator
+```
+
+## How It Works
+
+Contribution decorators are applied at query time:
+1. User selects measure and contribution decorator
+2. Planner generates SQL with percentage calculation
+3. Returns percentage values (0-100%)
+
+## Use Cases
+
+### Revenue Contribution
+
+```yaml
+- type: measure
+  name: Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+
+# User applies "Percentage of Total" decorator
+# Returns: Each product's revenue as % of total revenue
+```
+
+### Market Share
+
+```yaml
+# User applies contribution decorator
+# Returns: Each region's sales as % of total sales
+```
+
+## Best Practices
+
+1. **Use with dimensions** - Contribution requires grouping by dimension
+2. **Format as percentage** - Use `format: percent:2` for measures
+3. **Document measures** - Help users understand contribution options
+
+## Next Steps
+
+- Learn about [temporal decorators](/docs/advanced/decorators/temporal/)
+- Explore [window decorators](/docs/advanced/decorators/window/)
+- Read about [snapshot measures](/docs/semantic-model/fields/measures/snapshot/)

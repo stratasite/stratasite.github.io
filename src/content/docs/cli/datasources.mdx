@@ -1,0 +1,192 @@
+---
+title: "Datasources"
+description: "Add, test, and manage database connections with the Strata CLI."
+---
+Add, test, and manage database connections with the Strata CLI.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Add datasources interactively with the CLI
+- Set and manage credentials securely
+- Test datasource connections
+- List and explore tables in a datasource
+- Understand configuration files and tiers
+
+## Prerequisites
+
+- Strata CLI installed
+- A Strata project initialized (see [Projects](/docs/cli/projects/))
+- Database connection details (host, port, credentials, etc.)
+
+## Step 1: Add a Datasource
+
+Run the add command with your adapter name:
+
+```bash
+strata datasource add postgres
+strata datasource add snowflake
+```
+
+Alias: `ds` (e.g. `strata ds add postgres`)
+
+**What happens:**
+1. The CLI prompts for a datasource key (unique identifier, e.g. `warehouse`)
+2. Prompts for display name
+3. Collects adapter-specific configuration (host, port, database, schema, etc.)
+4. Optionally collects credentials (username, password, API keys)
+5. Writes the definition to `datasources.yml`
+
+**Supported adapters:** `postgres`, `snowflake`, `mysql`, `sqlserver`, `athena`, `trino`, `duckdb`, `druid`, `clickhouse`, `databricks`, `sqlite`, `redshift`
+
+If you omit the adapter, the CLI prompts you to choose one:
+
+```bash
+strata datasource add
+```
+
+**AI features:** After adding a datasource, the CLI may prompt to enable AI-powered features for table generation (provider and API key). If enabled, credentials are stored in `.strata` and are not committed to git. You can configure AI later with `strata datasource auth` or by editing `.strata`. See [Creating Tables](/docs/cli/tables/) for using AI when creating table models.
+
+## Step 2: Set Credentials
+
+Store credentials for a datasource (never committed to git):
+
+```bash
+strata datasource auth warehouse
+```
+
+**What happens:**
+1. The CLI prompts for credentials (username, password, API keys, etc.)
+2. Stores them in `.strata` (local, gitignored)
+
+Credentials are always kept out of version control.
+
+When you run `strata deploy`, the CLI overlays datasource credential keys from `.strata` into `datasources.yml` in-memory before uploading. The `.strata` file itself is not uploaded.
+
+With `strata deploy -e <env>`, environment-specific datasource credentials in `.strata.<env>.<datasource_key>` override root `.strata.<datasource_key>` values.
+
+## Step 3: Test the Connection
+
+Verify that the datasource is reachable:
+
+```bash
+strata datasource test warehouse
+```
+
+**What happens:** The CLI validates connection parameters, authentication, and database accessibility, and reports success or failure.
+
+## Step 4: Explore Tables
+
+List tables in a datasource:
+
+```bash
+strata datasource tables warehouse
+```
+
+If you omit the datasource key, the CLI prompts you to choose one. You can search and filter tables, then select one (e.g. to copy the name for use with [Creating Tables](/docs/cli/tables/)).
+
+**Options:**
+- `-p, --pattern PATTERN` - Filter by regex pattern
+- `-c, --catalog CATALOG` - Override catalog
+- `-s, --schema SCHEMA` - Override schema
+
+Show the schema of a specific table:
+
+```bash
+strata datasource meta warehouse orders
+```
+
+Run SQL on a datasource (provide either `-q` or `-f`):
+
+```bash
+strata datasource exec warehouse -q "SELECT * FROM orders LIMIT 10"
+strata datasource exec warehouse -f queries/check.sql
+```
+
+## Other Commands
+
+**List configured datasources:**
+```bash
+strata datasource list
+```
+
+**List supported adapters:**
+```bash
+strata datasource adapters
+```
+
+**Check which adapter gems are installed:**
+```bash
+strata datasource check
+```
+
+Install missing gems with `gem install <gem_name>` if needed.
+
+## Tier Configuration
+
+When adding or editing a datasource, you can set a **tier** (`hot`, `warm`, or `cold`). Tiers influence query routing and performance. For a full explanation, see [Datasources](/docs/semantic-model/datasources/#tier-configuration).
+
+## Configuration Files
+
+### datasources.yml
+
+Datasource definitions (committed to git):
+
+```yaml
+warehouse:
+  adapter: postgres
+  name: Production Warehouse
+  tier: hot
+  host: db.example.com
+  port: 5432
+  database: analytics
+  schema: public
+```
+
+### .strata
+
+Credentials and API key (gitignored):
+
+```yaml
+api_key: your_api_key
+
+warehouse:
+  username: user
+  password: secret
+
+staging:
+  warehouse:
+    password: staging-secret
+```
+
+## Best Practices
+
+1. **Use descriptive datasource keys** - e.g. `warehouse`, `analytics`, not `ds1`
+2. **Test after adding** - Run `strata datasource test <key>` before creating tables
+3. **Set appropriate tiers** - Match performance characteristics (see [Datasources](/docs/semantic-model/datasources/#tier-configuration))
+4. **Never commit credentials** - Keep `.strata` out of git
+
+## Troubleshooting
+
+### Connection Fails
+
+**Check:** Host, port, database name, schema, and credentials in `datasources.yml` and `.strata`.
+
+**Solution:** Run `strata datasource test <key>` and fix any reported errors. Verify the database is reachable from your network.
+
+### Adapter Gem Missing
+
+**Check:** Run `strata datasource check` to see which adapter gems are installed.
+
+**Solution:** Install the required gem, e.g. `gem install pg` for PostgreSQL.
+
+### Tables Not Listed
+
+**Check:** Catalog and schema. Some adapters require explicit catalog/schema. Use `-c` and `-s` to override.
+
+## Next Steps
+
+- [Building Your Model](/docs/cli/building-your-model/) - Turn these tables into a semantic model, yourself or with a coding agent
+- [Creating Tables](/docs/cli/tables/) - Create semantic table models from datasource tables
+- [Datasources (tiers, full config)](/docs/semantic-model/datasources/)
+- [Adapters](/docs/semantic-model/adapters/) - Adapter-specific configuration

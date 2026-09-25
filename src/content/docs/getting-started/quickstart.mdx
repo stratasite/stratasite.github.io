@@ -1,0 +1,166 @@
+---
+title: "Quick Start"
+description: "From nothing to a deployed semantic model in about 15 minutes: run the server, install the CLI, create a project."
+---
+From nothing to a deployed semantic model in about 15 minutes: run the server, install the CLI, create a project.
+
+## 1. Run Strata Server
+
+The server hosts the web UI and is where the CLI deploys your model, so it comes first.
+
+<Tabs>
+  <TabItem value="docker" label="Docker" default>
+
+One command. No configuration needed.
+
+```bash
+docker run -d -p 8080:80 -v strata_data:/data --name strata ghcr.io/stratasite/server:latest
+```
+
+Strata starts a bundled PostgreSQL instance and generates encryption secrets on first boot. Both are persisted to the `strata_data` volume.
+
+Open [http://localhost:8080](http://localhost:8080), enter your license key, then create your admin account. Get a free license key at [license.strata.do](https://license.strata.do).
+
+The image ships with the TPC-DS retail sample project already deployed, so there is a model, reports, and an AI agent to explore as soon as you sign in.
+
+:::caution[Bundled database]
+The bundled Postgres is for local evaluation. For production, use a dedicated PostgreSQL instance — see [Production Deployment](/docs/self-hosting/production-deployment/).
+:::
+
+  </TabItem>
+  <TabItem value="installer" label="Installer Script">
+
+The installer checks prerequisites, prompts for a database and port, and starts Strata as Docker Compose services.
+
+```bash
+curl -fsSL https://strata.do/server/install.sh | bash
+```
+
+Leave the database prompts empty to use the bundled Postgres. After setup, open `http://<your-host>:<PORT>`, enter your license key, then create your admin account. Get a free license key at [license.strata.do](https://license.strata.do).
+
+The image ships with the TPC-DS retail sample project already deployed, so there is a model, reports, and an AI agent to explore as soon as you sign in.
+
+Full prompt reference and management commands: [Quick Install](/docs/self-hosting/quick-install/).
+
+  </TabItem>
+</Tabs>
+
+Already have a server running? Skip to the next step.
+
+## 2. Install the CLI
+
+The CLI needs Ruby 3.4.4+ and Git. If you don't have them, see [CLI Installation](/docs/getting-started/installation/) for per-platform setup.
+
+<Tabs>
+  <TabItem value="script" label="Shell Script" default>
+
+```bash
+curl -fsSL https://strata.do/cli/install.sh | bash
+```
+
+  </TabItem>
+  <TabItem value="gem" label="Gem">
+
+```bash
+gem install strata-cli
+```
+
+  </TabItem>
+</Tabs>
+
+Verify:
+
+```bash
+strata --version
+```
+
+## 3. Create a Project
+
+Your server already has the sample model on it. Pick a path: clone the sample to see how a model is built and extend it, or start a project against your own warehouse.
+
+<Tabs>
+  <TabItem value="sample" label="Sample Project" default>
+
+The sample is a complete TPC-DS retail model backed by DuckDB, so it needs no warehouse. It is already deployed on every Docker install; this clones its source so you can work on it with the CLI.
+
+```bash
+strata project sample
+```
+
+The command signs you in to your server via browser, clones the project into `tpc-ds-retail-sample/`, and wires it to your server. Make a change and deploy it:
+
+```bash
+cd tpc-ds-retail-sample
+strata deploy
+```
+
+Refresh your server UI to see the change. The [Tutorial](/docs/getting-started/tutorial/) walks through extending the model.
+
+  </TabItem>
+  <TabItem value="scratch" label="From Scratch">
+
+**Initialize** a project directory:
+
+```bash
+strata init sales-analytics
+cd sales-analytics
+```
+
+**Add a datasource** and test it. Adapters: `postgres`, `snowflake`, `mysql`, `sqlserver`, `athena`, `trino`, `duckdb`, `druid`, `clickhouse`, `databricks`, `sqlite`, `redshift`.
+
+```bash
+strata datasource add postgres
+# Prompts for connection details
+strata datasource test warehouse
+```
+
+**Model a table** from a physical table, then a relationship:
+
+```bash
+strata create table common/customers
+# Creates models/common/tbl.customers.yml
+strata create relation store/sales
+# Creates models/store/rel.sales.yml
+```
+
+:::tip[Let an agent build the model]
+`strata init` also writes an `AGENTS.md`. Open the project in a coding agent and it can author the whole model. See [Building Your Model](/docs/cli/building-your-model/).
+:::
+
+**Audit and deploy:**
+
+```bash
+strata audit
+strata deploy
+```
+
+The first deploy prompts for your server URL and offers **Sign in via browser**. The CLI fetches and saves an API key, so there's no manual key setup.
+
+  </TabItem>
+</Tabs>
+
+You now have a semantic model running on your own Strata server.
+
+## Command Reference
+
+| Command | Syntax | Description |
+|---------|--------|-------------|
+| project sample | `strata project sample` | Clone the TPC-DS sample project locally |
+| init | `strata init PROJECT_NAME` | Initialize a new project |
+| datasource add | `strata datasource add ADAPTER` | Add a datasource connection |
+| datasource test | `strata datasource test DATASOURCE_KEY` | Test datasource connectivity |
+| datasource tables | `strata datasource tables DATASOURCE_KEY` | List tables in datasource |
+| datasource meta | `strata datasource meta DATASOURCE_KEY TABLE` | Show table schema |
+| create table | `strata create table PATH/TABLE_NAME` | Create a semantic table model |
+| create relation | `strata create relation PATH/RELATION_NAME` | Create a relationship file |
+| table list | `strata table list` | List defined table models |
+| audit | `strata audit` | Validate semantic model |
+| deploy | `strata deploy` | Deploy to Strata server |
+
+## Next Steps
+
+- [Core Concepts](/docs/getting-started/concepts/) — What a datasource, table, and relationship are in Strata
+- [Tutorial](/docs/getting-started/tutorial/) — Hands-on walkthrough extending the TPC-DS model
+- [Building Your Model](/docs/cli/building-your-model/) — Build the model yourself or with a coding agent
+- [CLI Reference](/docs/cli/) — Detailed command documentation
+- [Self-Hosting Guide](/docs/self-hosting/) — Production deployment, SSO, and operations

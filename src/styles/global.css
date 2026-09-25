@@ -27,6 +27,24 @@
   .tnum {
     font-feature-settings: 'tnum' 1;
   }
+
+  /* Syntax highlighting. Shiki runs with its `css-variables` theme, so every
+     token color is one of these, and every one of these is a brand token:
+     cream text, peach keys/keywords, orange literals, quiet comments. Nothing
+     is baked into the HTML. */
+  :root {
+    --astro-code-background: var(--code-surface);
+    --astro-code-foreground: var(--strata-cream);
+    --astro-code-token-keyword: var(--strata-peach);
+    --astro-code-token-function: var(--strata-peach);
+    --astro-code-token-string: var(--strata-cream);
+    --astro-code-token-string-expression: var(--strata-cream);
+    --astro-code-token-constant: var(--strata-orange);
+    --astro-code-token-parameter: var(--strata-cream);
+    --astro-code-token-punctuation: var(--muted-foreground);
+    --astro-code-token-link: var(--strata-peach);
+    --astro-code-token-comment: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
+  }
 }
 
 @layer components {
@@ -67,17 +85,121 @@
   /* Fenced code blocks: a clean terminal — ink surface, peach (primary) default
      text, a subtle hairline. No inner box, no per-token recoloring. */
   .prose-strata pre {
-    @apply mt-6 overflow-x-auto rounded-xl p-5 font-mono text-[0.9em] leading-relaxed;
+    @apply mt-6 rounded-xl p-5 font-mono text-[0.9em] leading-relaxed;
     background-color: var(--code-surface);
     color: var(--strata-peach);
     border: 1px solid color-mix(in srgb, var(--strata-cream) 12%, transparent);
+    /* Long commands wrap rather than scroll sideways: a hidden tail of a
+       `docker run` line is worse than a wrapped one. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
   .prose-strata pre code {
     @apply bg-transparent p-0 text-[1em] font-normal;
     color: inherit;
+    white-space: inherit;
   }
   .prose-strata .not-prose {
     @apply text-foreground;
+  }
+  .prose-strata h4 {
+    @apply mt-6 scroll-mt-24 text-base font-semibold tracking-tight;
+  }
+  .prose-strata hr {
+    @apply my-10 border-border;
+  }
+  /* Reference tables: tabular figures, a recessed header row, hairline rows.
+     rehype-table-wrap puts each one in .table-wrap so wide ones scroll. */
+  .prose-strata .table-wrap {
+    @apply mt-6 overflow-x-auto rounded-lg border border-border;
+  }
+  .prose-strata table {
+    @apply tnum w-full border-collapse text-[0.9375rem] leading-snug;
+  }
+  .prose-strata thead th {
+    @apply bg-surface-2 px-3.5 py-2.5 text-left font-semibold text-foreground;
+  }
+  .prose-strata tbody td {
+    @apply border-t border-border px-3.5 py-2.5 align-top text-muted-foreground;
+  }
+  .prose-strata td > code,
+  .prose-strata th > code {
+    @apply whitespace-nowrap;
+  }
+  /* Collapsed reference blocks (<details>) in long tutorials. */
+  .prose-strata details {
+    @apply mt-6 rounded-lg border border-border bg-surface px-5 py-3;
+  }
+  .prose-strata details > summary {
+    @apply cursor-pointer font-display font-semibold text-foreground;
+  }
+  .prose-strata details[open] > summary {
+    @apply mb-2 border-b border-border pb-3;
+  }
+  /* Rendered Mermaid diagrams (see the script in layouts/Docs.astro). */
+  .prose-strata .mermaid-diagram {
+    @apply mt-6 overflow-x-auto rounded-lg border border-border bg-surface p-4;
+  }
+  .prose-strata .mermaid-diagram svg {
+    @apply mx-auto h-auto max-w-full;
+  }
+
+  /* ---- Callouts -----------------------------------------------------------
+     One rule set for both the Callout component and the `:::tip` admonition
+     syntax in docs MDX (src/plugins/remark-admonitions.mjs). The left rule
+     carries the kind: quiet ink for notes, peach for tips and info, orange for
+     warnings and cautions, rust for danger. */
+  .callout {
+    @apply my-6 rounded-lg border-l-4 border-border bg-surface-2 p-5 text-[0.95rem] leading-relaxed text-foreground;
+  }
+  .callout > .callout-title {
+    @apply mt-0 font-display text-base font-bold tracking-tight text-foreground;
+  }
+  .callout > :not(.callout-title) {
+    @apply mt-2.5;
+  }
+  .callout > .callout-title + * {
+    @apply mt-2;
+  }
+  /* ---- Documentation -------------------------------------------------------
+     Layered on .prose-strata for /docs/. Reference material is read in short
+     bursts, so slightly smaller type than an article, and a running lead
+     paragraph that reads as the page summary. */
+  .prose-docs {
+    @apply text-[1rem];
+  }
+  .prose-docs > p:first-child {
+    @apply mt-0 text-lg text-muted-foreground;
+  }
+  .prose-docs h2 {
+    @apply mt-12 border-t border-border pt-8 text-2xl;
+  }
+  .prose-docs > h2:first-child {
+    @apply mt-0 border-t-0 pt-0;
+  }
+  .prose-docs h3 {
+    @apply mt-8 text-lg;
+  }
+  .prose-docs p,
+  .prose-docs ul,
+  .prose-docs ol {
+    @apply text-muted-foreground;
+  }
+  .prose-docs strong {
+    @apply text-foreground;
+  }
+  .prose-docs li > p {
+    @apply mt-2;
+  }
+  .prose-docs pre {
+    @apply text-[0.875rem];
+  }
+  /* Headings are jump targets from the right-hand nav and search; keep them
+     below the two sticky bars. */
+  .prose-docs h2,
+  .prose-docs h3,
+  .prose-docs h4 {
+    @apply scroll-mt-40;
   }
 
   /* ---- Legal documents -------------------------------------------------
@@ -115,4 +237,193 @@
   .prose-legal ol {
     @apply space-y-1.5;
   }
+}
+
+/* Callout kinds. Outside @layer on purpose: these class names are produced by
+   src/plugins/remark-admonitions.mjs at build time, so Tailwind never sees them
+   in a source file and would tree-shake them out of a layer. */
+.callout-tip,
+.callout-info {
+  border-color: color-mix(in srgb, var(--strata-peach) 60%, transparent);
+  background-color: color-mix(in srgb, var(--strata-peach) 10%, var(--surface-2));
+}
+.callout-warning,
+.callout-caution {
+  border-color: color-mix(in srgb, var(--strata-orange) 70%, transparent);
+  background-color: color-mix(in srgb, var(--strata-orange) 10%, var(--surface-2));
+}
+.callout-danger {
+  border-color: var(--strata-rust);
+  background-color: color-mix(in srgb, var(--strata-rust) 18%, var(--surface-2));
+}
+
+/* Docs pages: the sub-nav sits directly under the site header with no
+   hairline between them, so the header's bottom border is dropped there. */
+.docs-page > header.sticky {
+  border-bottom-color: transparent;
+}
+
+/* ---- API reference ---------------------------------------------------------
+   Generated from the OpenAPI spec (src/data/openapi.ts). Method and status
+   badges are the only colour: rust, orange and teal are fills, never text. */
+.api-endpoint {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.api-endpoint code,
+.api-index code {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--foreground);
+}
+.api-path-param {
+  color: var(--primary);
+}
+.api-method {
+  display: inline-block;
+  min-width: 3.6rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--strata-cream);
+  background: var(--strata-ink-soft);
+}
+.api-method-get    { background: var(--chart-5); }
+.api-method-post   { background: var(--strata-orange); }
+.api-method-put,
+.api-method-patch  { background: var(--chart-6); color: var(--strata-ink-deep); }
+.api-method-delete { background: var(--strata-rust); }
+
+.prose-strata .api-index {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 0;
+  list-style: none;
+}
+.prose-strata .api-index a:not(.cta) {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-weight: 400;
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+.prose-strata .api-index a:not(.cta):hover {
+  background: var(--surface);
+  color: var(--foreground);
+}
+.api-index-summary {
+  margin-left: auto;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.api-op {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.prose-docs .api-op > h2 {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+  font-size: 1.375rem;
+}
+.prose-docs .api-tag > h2 {
+  margin-top: 4.5rem;
+}
+.prose-docs .api-op h3 {
+  margin-top: 2rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.api-response {
+  margin-top: 1.25rem;
+}
+.api-response-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+.api-status {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-feature-settings: 'tnum' 1;
+  color: var(--strata-ink-deep);
+  background: var(--strata-peach);
+}
+.api-status-client { background: var(--strata-orange); color: var(--strata-cream); }
+.api-status-other  { background: var(--strata-ink-soft); color: var(--strata-cream); }
+
+.prose-strata .api-props table {
+  font-size: 0.875rem;
+}
+.prose-strata .api-props td p {
+  margin-top: 0;
+}
+.prose-strata .api-props td p + p {
+  margin-top: 0.25rem;
+}
+.api-enum {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.api-enum code {
+  font-size: 0.85em;
+}
+.prose-strata .api-example {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--strata-cream);
+}
+.api-schema {
+  margin-top: 2.5rem;
+}
+.prose-docs .api-schema h3 {
+  margin-top: 0;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+}
+
+/* Scrollable docs columns (sidebar, on-page nav, search results): a thin,
+   ink-toned scrollbar that only shows its thumb while the column is hovered,
+   instead of the browser's default grey bar. */
+.docs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.docs-scroll:hover {
+  scrollbar-color: var(--strata-ink-line) transparent;
+}
+.docs-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.docs-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.docs-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.docs-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--strata-ink-line);
 }

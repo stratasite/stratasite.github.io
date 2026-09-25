@@ -1,0 +1,88 @@
+---
+title: "REST API"
+description: "Programmatic access to Strata semantic metadata and query execution."
+---
+Programmatic access to Strata semantic metadata and query execution.
+
+## Overview
+
+The Strata REST API v1 exposes the semantic layer for external applications, automation, and integrations. Use it to:
+
+- Discover fields and tables on a deployed branch
+- Preview and run queries against the semantic layer
+
+:::tip[API Reference]
+For the full endpoint schema and payload reference, open the interactive OpenAPI docs in a new tab: [API Reference](/docs/api-reference/).
+:::
+
+All endpoints return JSON unless noted otherwise. Base path:
+
+```
+{server}/api/v1
+```
+
+## Prerequisites
+
+- A running Strata server with at least one deployed project
+- An API key from your user profile in the Strata web app
+- Membership in the project
+
+See [Authentication](/docs/api/rest/authentication/) and the [Quickstart](/docs/api/rest/quickstart/) to make your first request.
+
+## Endpoints
+
+### Semantic metadata
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/projects/{project_id}/fields` | [List/search fields](/docs/api/rest/fields/#list-fields) |
+| `GET` | `/projects/{project_id}/fields/{id}` | [Show field](/docs/api/rest/fields/#show-field) |
+| `GET` | `/projects/{project_id}/tables` | [List/search tables](/docs/api/rest/tables/#list-tables) |
+| `GET` | `/projects/{project_id}/tables/{id}` | [Show table](/docs/api/rest/tables/#show-table) |
+
+### Queries and results
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/projects/{project_id}/queries` | [List API queries](/docs/api/rest/queries/#list-queries) |
+| `POST` | `/projects/{project_id}/queries` | [Create or re-run query](/docs/api/rest/queries/#create-or-re-run-query) |
+| `GET` | `/queries/{id}` | [Show query](/docs/api/rest/queries/#show-query) |
+| `DELETE` | `/queries/{id}` | [Delete query](/docs/api/rest/queries/#delete-query) |
+| `POST` | `/projects/{project_id}/sql` | [Preview SQL](/docs/api/rest/sql/#preview-sql) |
+| `GET` | `/queries/{query_id}/sql` | [SQL for saved query](/docs/api/rest/sql/#sql-for-saved-query) |
+| `GET` | `/queries/{query_id}/result` | [Poll result](/docs/api/rest/results/#poll-result-via-query) |
+| `GET` | `/projects/{project_id}/results/{id}` | [Show result](/docs/api/rest/results/#show-result) |
+| `DELETE` | `/projects/{project_id}/results/{id}` | [Cancel result](/docs/api/rest/results/#cancel-result) |
+
+### Projects, branches, deployments, cache
+
+These are the endpoints the `strata` CLI drives. They are stable to call directly but return the older `{ "errors": ["…"] }` error shape rather than the structured one.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/projects` | Projects the caller can access |
+| `GET` | `/projects/{project_id}` | Show a project |
+| `POST` | `/projects` | Create a project (`project[name]`, `project[uid]`, …); needs develop rights |
+| `DELETE` | `/projects/{project_id}` | Delete a project; body `delete_confirmation` must equal its name; admin only |
+| `GET` | `/projects/{project_id}/branches` | Branches with `uid`, `production`, `last_deployed_at` |
+| `DELETE` | `/projects/{project_id}/b/{branch_uid}` | Delete a non-production branch; admin only |
+| `GET` | `/projects/{project_id}/b/{branch_uid}/deploys` | Deployments on a branch, newest first |
+| `GET` | `/projects/{project_id}/b/{branch_uid}/deploys/{id}` | One deployment; add `?log=1` for per-entity versions |
+| `POST` | `/projects/{project_id}/b/{branch_uid}/deploys` | Upload an archive and start a deployment (what `strata deploy` does); developer or admin |
+| `DELETE` | `/projects/{project_id}/cache` | Purge every cached result in the project; developer or admin |
+
+## Guides
+
+| Topic | Description |
+|-------|-------------|
+| [Authentication](/docs/api/rest/authentication/) | API keys and Bearer token auth |
+| [Quickstart](/docs/api/rest/quickstart/) | End-to-end: discover fields → run query → fetch results |
+| [Conventions](/docs/api/rest/conventions/) | Branch scoping, pagination, versioning |
+| [Query spec](/docs/api/rest/query-spec/) | Projections, filters, field name resolution |
+| [Errors](/docs/api/rest/errors/) | Error formats and status codes |
+| [API Reference](/docs/api-reference/) | Interactive OpenAPI interface (new tab recommended) |
+
+## Related
+
+- [AI Agents and Strata](/docs/api/ai-agents/) — use AI assistants to build semantic models
+- [Core concepts](/docs/getting-started/concepts/) — semantic layer fundamentals

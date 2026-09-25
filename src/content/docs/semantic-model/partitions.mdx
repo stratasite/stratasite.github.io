@@ -1,0 +1,137 @@
+---
+title: "Partitions"
+description: "Define data availability constraints for query routing."
+---
+Define data availability constraints for query routing.
+
+## Overview
+
+Partitions tell the planner about data availability constraints. This helps route queries to the correct tables when multiple tables can answer the same question.
+
+## Supported Predicates
+
+Only `between` and `in_list` predicates are supported.
+
+### between
+
+Date range partition.
+
+```yaml
+partitions:
+  - dimension: Order Date
+    predicate: between
+    filter_value: 24m  # 24 months ago
+    filter_value_end: 1d  # yesterday
+    description: "Rolling 2 year window"
+```
+
+### in_list
+
+List of values partition.
+
+```yaml
+partitions:
+  - dimension: Region
+    predicate: in_list
+    filter_value: us-east, us-west, europe
+    description: "Table only has 3 regions of 5"
+```
+
+## Date Range Partitions
+
+Most common use case: rolling window tables.
+
+```yaml
+name: Recent Sales
+physical_name: recent_sales
+datasource: warehouse
+cost: 10
+
+partitions:
+  - dimension: Order Date
+    predicate: between
+    filter_value: 24m  # 24 months ago
+    filter_value_end: 1d  # yesterday
+    description: "Table only contains last 24 months"
+```
+
+**Time formats:**
+- `24m` - 24 months
+- `1y` - 1 year
+- `30d` - 30 days
+- `1d` - 1 day
+
+## List Partitions
+
+Partition by specific values.
+
+```yaml
+partitions:
+  - dimension: Region
+    predicate: in_list
+    filter_value: us-east, us-west, europe
+    description: "Table only has 3 regions"
+```
+
+## Multiple Partitions
+
+Define multiple partition constraints:
+
+```yaml
+partitions:
+  - dimension: Order Date
+    predicate: between
+    filter_value: 12m
+    filter_value_end: 1d
+    description: "Last 12 months"
+
+  - dimension: Region
+    predicate: in_list
+    filter_value: us-east, us-west
+    description: "US regions only"
+```
+
+## How It Works
+
+When a user creates a query:
+1. Planner checks partition constraints
+2. If query matches partition, uses this table
+3. If query doesn't match, uses alternative table (if available)
+4. Routes query to appropriate table based on constraints
+
+## Use Cases
+
+### Rolling Window Table
+
+```yaml
+name: Recent Orders
+partitions:
+  - dimension: Order Date
+    predicate: between
+    filter_value: 12m
+    filter_value_end: 1d
+    description: "Last 12 months of data"
+```
+
+### Regional Partition
+
+```yaml
+name: US Sales
+partitions:
+  - dimension: Region
+    predicate: in_list
+    filter_value: us-east, us-west, us-central
+    description: "US regions only"
+```
+
+## Best Practices
+
+1. **Document partitions** - Add descriptions explaining constraints
+2. **Use appropriate dimensions** - Must reference dimension in same table
+3. **Set appropriate costs** - Partitioned tables often have lower cost
+4. **Test query routing** - Verify planner routes queries correctly
+
+## Next Steps
+
+- Learn about [cost optimization](/docs/advanced/cost-optimization/)
+- Read how [semantic routing](/docs/advanced/semantic-routing/) uses partitions

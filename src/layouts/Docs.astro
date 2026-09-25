@@ -1,0 +1,145 @@
+---
+/**
+ * Shell for every documentation page: a guide switcher and search across the
+ * top, the guide's page tree on the left, the article in the middle, and an
+ * "on this page" nav on the right. Pages are MDX in src/content/docs/; the
+ * tree is src/config/docs.ts. Built on Base, so it carries the site nav and
+ * footer, and deliberately no demo CTA: someone reading docs is already in.
+ */
+import Base from './Base.astro';
+import DocsBar from '../components/docs/DocsBar.astro';
+import SidebarGroup from '../components/docs/SidebarGroup.astro';
+import Toc from '../components/docs/Toc.astro';
+import Pager from '../components/docs/Pager.astro';
+import type { Guide, SidebarItem } from '../config/docs';
+
+interface Props {
+  title: string;
+  description?: string;
+  guide: Guide;
+  /** Page id, e.g. `cli/tables`. */
+  id: string;
+  titles: Record<string, string>;
+  headings: { depth: number; slug: string; text: string }[];
+  trail: { label: string; href?: string }[];
+  prev?: { href: string; label: string };
+  next?: { href: string; label: string };
+  editUrl?: string;
+  /** Page-specific tree in place of the guide's (the generated API reference). */
+  sidebar?: SidebarItem[];
+}
+
+const { title, description, guide, id, titles, headings, trail, prev, next, editUrl, sidebar } = Astro.props;
+const tree = sidebar ?? guide.sidebar;
+---
+
+<Base title={`${title} — Strata Docs`} description={description} bodyClass="docs-page">
+  <div class="docs">
+    <DocsBar active={guide.id} />
+
+    <div class="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[16rem_minmax(0,1fr)_14rem]">
+      <!-- Page tree: a sticky column on desktop, a disclosure on mobile. -->
+      <aside data-pagefind-ignore>
+        <details class="mb-8 rounded-lg border border-border bg-surface p-3 lg:hidden">
+          <summary class="cursor-pointer font-display text-sm font-semibold text-foreground">
+            {guide.label} contents
+          </summary>
+          <div class="mt-3">
+            <SidebarGroup items={tree} currentId={id} titles={titles} />
+          </div>
+        </details>
+        <nav
+          class="docs-sidebar docs-scroll sticky top-[9rem] hidden max-h-[calc(100vh-10rem)] overflow-y-auto border-r border-border pb-6 pr-4 lg:block"
+          aria-label={`${guide.label} pages`}
+        >
+          <SidebarGroup items={tree} currentId={id} titles={titles} />
+        </nav>
+      </aside>
+
+      <article class="min-w-0" data-pagefind-body>
+        {trail.length > 0 && (
+          <nav class="mb-4 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb" data-pagefind-ignore>
+            {trail.map((t) => (
+              <>
+                {t.href ? <a class="hover:text-foreground" href={t.href}>{t.label}</a> : <span>{t.label}</span>}
+                <span aria-hidden="true" class="opacity-60">/</span>
+              </>
+            ))}
+            <span class="text-foreground">{title}</span>
+          </nav>
+        )}
+
+        <header class="border-b border-border pb-6">
+          <h1 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
+        </header>
+
+        <div class="prose-strata prose-docs mt-8 max-w-3xl">
+          <slot />
+        </div>
+
+        <div class="max-w-3xl" data-pagefind-ignore>
+          <Pager prev={prev} next={next} />
+          {editUrl && (
+            <p class="mt-8 text-sm text-muted-foreground">
+              Spotted a mistake?
+              <a class="text-primary hover:underline" href={editUrl} target="_blank" rel="noopener">Edit this page on GitHub</a>.
+            </p>
+          )}
+        </div>
+      </article>
+
+      <aside class="hidden xl:block" data-pagefind-ignore>
+        <Toc headings={headings} />
+      </aside>
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Mermaid diagrams are authored as ```mermaid fences and render as plain
+  // code until this runs: it pulls Mermaid in only on pages that have one, and
+  // themes it from the brand tokens so diagrams sit on ink like everything else.
+  const blocks = Array.from(document.querySelectorAll<HTMLPreElement>('pre[data-language="mermaid"]'));
+  if (blocks.length) {
+    const css = getComputedStyle(document.documentElement);
+    const v = (name: string) => css.getPropertyValue(name).trim();
+    const cdn = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import(/* @vite-ignore */ cdn)
+      .then(async ({ default: mermaid }) => {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'base',
+          fontFamily: v('--font-sans'),
+          themeVariables: {
+            background: v('--surface'),
+            primaryColor: v('--surface-2'),
+            primaryTextColor: v('--foreground'),
+            primaryBorderColor: v('--primary'),
+            secondaryColor: v('--surface'),
+            tertiaryColor: v('--surface'),
+            lineColor: v('--muted-foreground'),
+            textColor: v('--foreground'),
+            clusterBkg: v('--surface'),
+            clusterBorder: v('--border'),
+            edgeLabelBackground: v('--surface'),
+            fontSize: '14px',
+          },
+        });
+        for (const [i, pre] of blocks.entries()) {
+          const source = pre.textContent ?? '';
+          try {
+            const { svg } = await mermaid.render(`mermaid-${i}`, source);
+            const figure = document.createElement('figure');
+            figure.className = 'mermaid-diagram';
+            figure.innerHTML = svg;
+            pre.replaceWith(figure);
+          } catch {
+            /* leave the source visible */
+          }
+        }
+      })
+      .catch(() => {
+        /* offline or blocked: the source stays readable */
+      });
+  }
+</script>

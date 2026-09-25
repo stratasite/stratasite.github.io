@@ -1,0 +1,202 @@
+---
+title: "SQL Expressions"
+description: "Define field expressions using SQL."
+---
+Define field expressions using SQL.
+
+## Overview
+
+SQL expressions are the most common way to define how fields query the database. They allow you to write SQL directly or reference database columns.
+
+## Basic Syntax
+
+```yaml
+expression:
+  sql: column_name
+```
+
+**Shorthand:** `expression: column_name` is equivalent to `expression: { sql: column_name }`. Use the mapping form when you need `lookup`, `primary_key`, or `array`.
+
+## Simple Column Reference
+
+Reference a database column directly:
+
+```yaml
+- type: dimension
+  name: Customer Name
+  data_type: string
+  expression:
+    sql: customer_name
+```
+
+## SQL Functions
+
+Use SQL functions for transformations:
+
+```yaml
+- type: dimension
+  name: Full Name
+  data_type: string
+  expression:
+    sql: CONCAT(first_name, ' ', last_name)
+```
+
+## CASE Statements
+
+Use CASE for conditional logic:
+
+```yaml
+- type: dimension
+  name: Order Status
+  data_type: string
+  expression:
+    sql: |
+      CASE
+        WHEN status = 'P' THEN 'Pending'
+        WHEN status = 'C' THEN 'Completed'
+        WHEN status = 'X' THEN 'Cancelled'
+        ELSE 'Unknown'
+      END
+```
+
+## Aggregation (Measures Only)
+
+Measures must include aggregation functions:
+
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+**Common aggregations:**
+- `sum()` - Sum of values
+- `avg()` - Average of values
+- `count()` - Count of rows
+- `count(distinct column)` - Count of distinct values
+- `min()` - Minimum value
+- `max()` - Maximum value
+
+## Multi-line SQL
+
+Use YAML literal block for multi-line SQL:
+
+```yaml
+- type: dimension
+  name: Complex Calculation
+  data_type: decimal
+  expression:
+    sql: |
+      CASE
+        WHEN amount > 1000 THEN 'High Value'
+        WHEN amount > 500 THEN 'Medium Value'
+        ELSE 'Low Value'
+      END
+```
+
+## Database-Specific Functions
+
+Use adapter-specific SQL functions:
+
+```yaml
+# PostgreSQL
+- type: dimension
+  name: Order Month
+  data_type: string
+  expression:
+    sql: TO_CHAR(order_date, 'YYYY-MM')
+
+# Snowflake
+- type: dimension
+  name: Order Month
+  data_type: string
+  expression:
+    sql: TO_VARCHAR(order_date, 'YYYY-MM')
+```
+
+## Null Handling
+
+Handle NULL values:
+
+```yaml
+- type: dimension
+  name: Customer Name
+  data_type: string
+  expression:
+    sql: COALESCE(customer_name, 'Unknown')
+```
+
+## Date Functions
+
+Transform dates:
+
+```yaml
+- type: dimension
+  name: Order Year
+  data_type: integer
+  expression:
+    sql: EXTRACT(YEAR FROM order_date)
+```
+
+## Best Practices
+
+1. **Keep it simple** - Prefer simple column references
+2. **Use database functions** - Leverage SQL capabilities
+3. **Handle NULLs** - Use COALESCE or CASE for NULL handling
+4. **Test expressions** - Verify SQL works in your database
+5. **Document complex logic** - Add descriptions for complex expressions
+
+## Common Patterns
+
+### Concatenation
+
+```yaml
+- type: dimension
+  name: Full Address
+  data_type: string
+  expression:
+    sql: CONCAT(street, ', ', city, ', ', state, ' ', zip)
+```
+
+### Date Formatting
+
+```yaml
+- type: dimension
+  name: Order Month
+  data_type: string
+  expression:
+    sql: TO_CHAR(order_date, 'YYYY-MM')
+```
+
+### Conditional Logic
+
+```yaml
+- type: dimension
+  name: Customer Segment
+  data_type: string
+  expression:
+    sql: |
+      CASE
+        WHEN total_orders > 100 THEN 'VIP'
+        WHEN total_orders > 50 THEN 'Regular'
+        ELSE 'New'
+      END
+```
+
+### Aggregation with Filter
+
+```yaml
+- type: measure
+  name: Completed Orders
+  data_type: integer
+  expression:
+    sql: count(CASE WHEN status = 'completed' THEN 1 END)
+```
+
+## Next Steps
+
+- Learn about [lookup expressions](/docs/semantic-model/expressions/lookups/)
+- Explore [array expressions](/docs/semantic-model/expressions/arrays/)
+- Understand [primary keys](/docs/semantic-model/fields/dimensions/#primary-keys)

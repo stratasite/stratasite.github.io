@@ -1,0 +1,96 @@
+---
+title: "SQL Server Adapter"
+description: "Connect to Microsoft SQL Server (including Azure SQL)."
+---
+Connect to Microsoft SQL Server (including Azure SQL).
+
+## Configuration
+
+```yaml
+sqlserver_db:
+  adapter: sqlserver
+  name: SQL Server Database
+  tier: warm
+  query_timeout: 3600
+  
+  # Required
+  host: db.example.com
+  database: analytics
+  username: sa
+  
+  # Optional
+  port: 1433              # Default: 1433
+  azure: false            # Default: false (set true for Azure SQL)
+  
+  # Credentials (set via strata datasource auth)
+  # password:
+```
+
+## Required Fields
+
+- **host** - SQL Server hostname or IP
+- **database** - Database name
+- **username** - Username for connection
+
+## Optional Fields
+
+- **port** - Port number (default: `1433`)
+- **azure** - Set `true` for Azure SQL Database (default: `false`)
+- **password** - Set via `strata datasource auth`
+
+## Example
+
+### Standard SQL Server
+
+```yaml
+sqlserver_db:
+  adapter: sqlserver
+  name: SQL Server Database
+  tier: warm
+  query_timeout: 3600
+  host: db.example.com
+  port: 1433
+  database: analytics
+  username: sa
+  azure: false
+```
+
+### Azure SQL Database
+
+```yaml
+azure_sql:
+  adapter: sqlserver
+  name: Azure SQL Database
+  tier: hot
+  query_timeout: 3600
+  host: server.database.windows.net
+  port: 1433
+  database: analytics
+  username: admin@server
+  azure: true
+```
+
+## Authentication
+
+Set credentials securely:
+
+```bash
+strata datasource auth sqlserver_db
+```
+
+## Azure SQL
+
+For Azure SQL Database:
+- Set `azure: true`
+- Use full server name: `server.database.windows.net`
+- Username format: `admin@server`
+
+## Best Practices
+
+1. **Use Azure flag** - Set `azure: true` for Azure SQL
+2. **Set appropriate tier** - Match performance characteristics
+3. **Use connection pooling** - Handled automatically
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

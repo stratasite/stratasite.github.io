@@ -1,0 +1,89 @@
+---
+title: "Semantic Routing"
+description: "What you configure so the query planner picks the right table and datasource."
+---
+What you configure so the query planner picks the right table and datasource.
+
+## Overview
+
+When a query requests measures and dimensions, the planner chooses which **table** (and thus **datasource**) to use. You don't hard-code table names—you set **tier**, **cost**, and **partitions** in YAML, and the planner uses those to route queries. This page is about what each setting means and where to set it.
+
+**Rule you must respect:** a query is executed by exactly one datasource. Strata never blends results across datasources, so everything a query asks for must be servable from a single one. When the same measures and dimensions are defined in more than one datasource, routing decides which one runs the query.
+
+## What You Configure
+
+### Datasource Tier
+
+**Where:** In your datasource config (e.g. `datasources.yml`).  
+**What it means:** When more than one datasource can answer the query, the planner prefers the one with the **lower tier number**—hot over warm over cold.
+
+| Tier | Typical use |
+|------|-------------|
+| `hot` | Primary warehouse, fast queries |
+| `warm` | Read replicas, moderate speed |
+| `cold` | Archives, data lakes, slow |
+
+```yaml
+# datasources.yml
+primary:
+  adapter: snowflake
+  tier: hot
+
+replica:
+  adapter: postgres
+  tier: warm
+
+archive:
+  adapter: athena
+  tier: cold
+```
+
+**Example:** If the same data exists in hot (last 3 months) and cold (full history), a query for "last 30 days" will use the hot datasource; a query for "year 2020" will use cold.
+
+### Table Cost
+
+**Where:** In each table's YAML (`cost` on the table).  
+**What it means:** When several tables can answer the same query, the planner prefers **lower cost**. Use cost to prefer pre-aggregated or summary tables over detail tables.
+
+```yaml
+# Fact / detail table — higher cost
+name: Store Sales
+cost: 100
+
+# Pre-aggregated table — lower cost, preferred when it can answer the query
+name: Store Sales Daily
+cost: 20
+```
+
+When two tables define the same measure (e.g. "Store Sales Price"), the [one-name-one-concept rule](/docs/getting-started/concepts/#core-design-principles) makes them one measure with two sources. The planner first keeps the tables whose dimensions cover the query, then prefers the lower-cost one, so `cost` is how you break ties.
+
+### Partition Constraints
+
+**Where:** In the table's YAML under `partition`.  
+**What it means:** This table holds data for a specific range (e.g. "Sale Date ≥ 2024-01-01"). The planner prefers tables whose partition matches the query filters so it can prune data. See [Partitions](/docs/semantic-model/partitions/) for full syntax.
+
+```yaml
+name: Recent Sales
+partition:
+  dimension: Sale Date
+  predicate: greater_than_or_equal_to
+  filter_value: 2024-01-01
+```
+
+## Dimension and Measure Coverage
+
+The chosen table's **universe** must contain paths to **all** requested dimensions and the requested measures. You don't configure this per-query—you design your semantic model (joins, cardinality) so that the right universe exists. If you see errors like "dimension not in universe," fix joins or cardinality so that one universe can reach all requested fields. See [Universe Formation](/docs/advanced/universe-formation/).
+
+## Best Practices
+
+1. **Use meaningful costs** — Pre-aggregated tables should have lower costs
+2. **Configure tiers correctly** — Hot for fast, cold for archives
+3. **Add partitions** — Help planner route time-filtered queries
+4. **Test routing** — Use `strata audit` and query logs to verify
+5. **Document tier boundaries** — Know what data each tier contains
+
+## Next Steps
+
+- [Universe Formation](/docs/advanced/universe-formation/) — How paths are generated
+- [Cost Optimization](/docs/advanced/cost-optimization/) — Fine-tuning costs
+- [Partitions](/docs/semantic-model/partitions/) — Time-based constraints

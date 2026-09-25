@@ -1,0 +1,297 @@
+---
+title: "Core Concepts"
+description: "Understanding the fundamental concepts of Strata's semantic layer."
+---
+Understanding the fundamental concepts of Strata's semantic layer.
+
+## What is a Semantic Layer?
+
+A semantic layer is an abstraction that sits between your raw database tables and business users. It translates business-friendly field names (like "Total Revenue") into optimized SQL queries against your physical database.
+
+**Benefits:**
+- **Self-service analytics**: Business users can explore data without writing SQL
+- **Consistency**: Single source of truth for metrics and definitions
+- **Performance**: Optimized query generation with cost-based routing
+- **Security**: Centralized access control and data governance
+
+:::info[Git-Based Workflow]
+**All semantic models are version-controlled YAML files.** Unlike UI-based BI tools where changes are made through point-and-click interfaces:
+- **Version control**: Full Git history for all changes
+- **Code review**: PR-based workflows for model changes
+- **Branching**: Test changes in branches before deploying to production
+- **CI/CD**: Automated testing and deployment pipelines
+:::
+
+## Key Components
+
+### Tables
+
+Tables (`tbl.*.yml`) represent physical database tables with semantic metadata. They define:
+- **Dimensions**: Fields to group data or generally provides descriptive information (e.g., Customer Name, Product Category)
+- **Measures**: Aggregatable metrics, typically numeric (e.g., Total Sales, Average Order Value)
+- **Cost**: Query optimization hint
+- **Partitions**: Data availability constraints
+
+**Example:**
+```yaml
+name: Store Sales
+physical_name: store_sales
+datasource: tpcds
+cost: 100
+
+# Partition logic helps the engine choose alternative tables when this one
+# can't satisfy the query. Date range is the only partition type supported.
+partitions:
+  - dimension: Date
+    predicate: between
+    filter_value: 24m   # 24 months ago
+    filter_value_end: 1d # yesterday
+
+fields:
+  - type: dimension
+    name: Store Name
+    data_type: string
+    expression:
+      sql: s_store_name
+
+  - type: measure
+    name: Total Revenue
+    data_type: decimal
+    expression:
+      sql: sum(ss_sales_price)
+```
+
+### Relationships
+
+Relations (`rel.*.yml`) define how tables join together. They specify:
+- **Left and right tables**: Which tables to join
+- **Join condition**: SQL expression for the join
+- **Cardinality**: Relationship type (one-to-one, one-to-many, many-to-one)
+
+**Example:**
+```yaml
+datasource: tpcds
+
+store_sales_store:
+  left: Store Sales
+  right: Store
+  sql: left.ss_store_sk = right.s_store_sk
+  cardinality: many_to_one
+```
+
+### Datasources
+
+Datasources connect Strata to your databases. They support:
+- **Multiple adapters**: PostgreSQL, Snowflake, MySQL, SQL Server, Athena, Trino, DuckDB, Druid, ClickHouse, Databricks, SQLite, Redshift
+- **Tier configuration**: Hot (fast), Warm (moderate), Cold (archival)
+- **Connection pooling**: Efficient query execution
+
+### Segments
+
+A **segment** is a named, reusable population: a set of members, and the criteria that decide who is in it. "Customers who spent over 10,000 last year", "stores opened after 2020", "sessions that reached checkout". Segments are the one thing on this page that is **not** modeled in YAML. They are created in a report or query at analysis time, by a person in the UI, by an agent through the API, or through the MCP tools, so nobody has to change the model to ask a cohort question.
+
+A segment is made of two things:
+
+- **Keys**: the dimensions that identify a member (for instance `Customer`). They set the grain of the population and are what the engine joins on.
+- **Criteria**: anything the engine can plan. Filters on dimensions, conditions on measures (`[Total Revenue] > 10000`), a top-n ranking, a row limit.
+
+Once defined, a segment is **applied** at one of two levels:
+
+- **Whole view or query.** Every measure on it answers for that population only.
+- **A single measure.** Only that measure is restricted, and the measures beside it keep answering for everyone. This is how you put a cohort next to its baseline in one view: new-customer revenue beside total revenue, or one cohort beside another, without a correlated subquery and without stitching two queries together by hand.
+
+Either level can **include** the population (keep members) or **exclude** it (drop members, an anti-join). A segment applies to a target in exactly one mode.
+
+**How the engine runs it.** Each segment is planned once, as its own query that resolves to a set of keys, and emitted as a single CTE no matter how many measures use it. Every consuming node joins to that CTE on the keys. Because it goes through the same planner as everything else, a segmented measure gets the same grain safety and row-level security as an unsegmented one: row policies apply inside the segment's CTE too, so a user can never reach members they aren't allowed to see. Populations compose by intersection, never by nesting: "top 5 products" plus a segment means the global top 5 intersected with the segment.
+
+**Expanding segments.** A variant for "same X" questions such as *what else is bought in the same basket as sub-commodity A?* Besides its keys, an expanding segment carries one or more companion dimensions into the query, so each row multiplies into one row per companion value that shares the key. They always apply to the whole query, and because the fan-out is deliberate, measures on them should be distinct counts of the key rather than sums.
+
+Through the REST API a segment is an entry in a query spec's `segments` array, the same shape the UI and the MCP `add_segment` tool use:
+
+```json
+{
+  "name": "High spenders",
+  "keys": ["Customer"],
+  "filters": [{ "field": "Total Revenue", "predicate": "greater_than", "value": "10000" }],
+  "mode": "include",
+  "apply_to": ["Total Revenue"]
+}
+```
+
+Omit `apply_to` to constrain the whole query. See the [query spec](/docs/api/rest/query-spec/) for the full reference.
+
+### Calculations
+
+A **calculation** is a derived column a business user adds to a view or query at analysis time: a rate, a ratio, a share, a margin, a difference, a bucket. It is a SQL expression written over the governed fields of the semantic layer, not over warehouse columns, so it inherits every definition, join, and security rule the model already enforces. Like segments, calculations are **not** modeled in YAML. The model stays the data team's; the last-mile math belongs to the person asking the question.
+
+Calculations reference fields by name:
+
+- `[Total Revenue]@m` — a measure
+- `[Item Category]@d` — a dimension
+- `[Margin]` — another column of the same query, including other calculations
+
+The formula decides what kind of column it is. With an aggregate function it is a **measure calculation**, and every measure it reads must sit inside an aggregate:
+
+```sql
+sum([Store Quantity]@m) / nullif(sum([Store Quantity]@m) + sum([Inventory Quantity On Hand]@m), 0)
+```
+
+Without one it is a **dimension calculation**, evaluated per row before grouping:
+
+```sql
+case when [Order Total]@d >= 500 then 'Large' when [Order Total]@d >= 100 then 'Medium' else 'Small' end
+```
+
+What keeps this safe on a governed layer:
+
+- **Only semantic references.** Raw column and table names are rejected, and a formula is an expression, never a `SELECT` or subquery. Cross-row math uses window functions over the query's own columns.
+- **Validated on save.** Every reference must resolve to a field of the stated type, the measures must live in one datasource, and an aggregate formula must not read a measure outside an aggregate. The editor checks this as you type, and the API returns a structured error rather than running a wrong query.
+- **Planned like everything else.** A dimension calculation is pushed down into the query that groups by it. A measure calculation is computed over the aggregated results, so a segment applied to it cascades to the measures it reads.
+
+Every calculation carries its own display format (`percent` for a fraction, `currency` with a unit, `number` with abbreviation), so a 0.123 rate shows as 12.3%.
+
+**Calculations and compound measures.** They look alike but sit at different layers. A [compound measure](/docs/semantic-model/fields/measures/compound/) is modeled in YAML, deployed with the project, and available to every report. A calculation lives on one view or query, needs no deployment, and is the right place for a metric that one report or one question needs. A calculation that everyone keeps rebuilding is a signal to promote it into the model.
+
+**With an agent.** Calculations are the tool the AI assistant reaches for when a question needs a metric the model doesn't have: it builds the query that carries the inputs, adds the calculation by name and formula, sets the format, and runs it. The same operation is exposed to external agents as the MCP `add_calculation` tool and in a REST query spec under the `calculations` key:
+
+```json
+{
+  "alias": "Sell Through Rate",
+  "sql": "sum([Store Quantity]@m) / nullif(sum([Store Quantity]@m) + sum([Inventory Quantity On Hand]@m), 0)",
+  "data_type": "decimal",
+  "axis": "y"
+}
+```
+
+For the common transforms you don't need a formula at all: year-over-year and period comparisons, moving averages, and percent-to-total are one-click [decorators](/docs/advanced/decorators/temporal/) on any measure.
+
+### Decorated Runtime Measures
+
+A **decorator** is a one-click transform applied to a measure in a view or query, at analysis time, with no formula and no model change. Pick a measure, pick a transform, and Strata adds a new column computed from it: last year's value, its share of the total, its 7-period moving average. The decorated measure keeps the governance of the measure underneath. The definition, the joins, the grain rules, and the row-level security all come from the model; the decorator only changes how the aggregated result is transformed.
+
+Three families cover the common analytics moves:
+
+- **Time transforms.** Compare a measure to the same period before: year-over-year, quarter-over-quarter, month-over-month, week-over-week, day-over-day, as the prior value (`LY(Revenue)`) or as percent change (`%LY(Revenue)`). Strata reads the query's date dimension and its grain to work out the comparison period, so a month-grain chart with a year-over-year transform compares each month to the same month last year.
+- **Percent of total.** A measure divided by its total: `Revenue` beside `% of Total Revenue`. Strata chooses the denominator from the dimensions on the query (by default, the total is taken within each date), and you can set the partitioning dimensions yourself for share-within-region, share-within-category, and the like. You also choose whether the total respects the query's filters (share of the filtered set) or ignores them (share of everything).
+- **Windowed calculations.** Moving and running windows over the ordered results: moving average, running total, min, max, and count, plus ranking (`rank`, `dense_rank`, `percent_rank`, `ntile`) and offsets (`lag`, `lead`, `first_value`, `last_value`). Windows order by the query's date dimension automatically, and partition by whichever dimensions you pick.
+
+Dimensions have their own quick transforms in the same spirit: truncate a date to week, month, quarter, or year, or extract a part of it (day of week, month name, year-month) for seasonality views.
+
+**How they run.** A decorator is stored on the measure's projection, not in the model, and is applied by the planner as a final pass over the aggregated results in a fixed order (percent of total before time and window transforms, so the two compose predictably). It goes through the same validation as everything else: a time transform on a query with no date dimension, or a window on a dimension, is refused before execution.
+
+**Where they sit next to calculations.** A decorator is the fast path for a transform that has a name; a [calculation](#calculations) is the general path for a formula that doesn't. Both live on the view, need no deployment, and are available to the AI assistant and to agents: in a REST query spec a decorator is a `decorators` entry on the projection (`temporalize`, `contribute`, `window`, `truncate`, `extract`). Details and examples: [Temporal](/docs/advanced/decorators/temporal/), [Window](/docs/advanced/decorators/window/), and [Contribution](/docs/advanced/decorators/contribution/) decorators.
+
+## Core Design Principles
+
+:::tip[One Name, One Concept — Design Philosophy]
+**A field name identifies exactly one concept of its type across your entire semantic layer.** There are no table prefixes. Names are scoped per type, so "Days To Recontact" can exist as both a dimension and a measure.
+
+Defining the same name on several tables is allowed and is how conformed fields work: every definition of "Total Revenue" is treated as the same measure, and any table that carries it can answer a query for it. The planner chooses the table by the dimensions the query requests, then by the table's `cost`, which you can tune to influence tie breaks.
+
+Because a shared name means "the same thing", concepts that differ must be named differently. "Caller Country" and "Ship Country" stay separate; a single "Country" on both tables would be merged.
+
+**Benefits:**
+- **Unambiguous references**: When a query asks for "Total Revenue", there's exactly one meaning, whichever table serves it
+- **Simpler compound measures**: Reference fields by name without table prefixes: `[Total Revenue] - [Total Cost]`
+- **Blending by naming**: A shared "Date" or "Customer" across fact tables is what makes cross-fact queries possible
+- **AI-friendly**: LLMs can understand your model without disambiguation
+:::
+
+:::danger[No Many-to-Many Relationships]
+**Strata does not support many-to-many (`many_to_many`) relationships.** This is an intentional design constraint to ensure predictable query behavior.
+
+**Why this limitation exists:**
+- Prevents double-counting in aggregations (a common source of bugs)
+- Forces explicit modeling that makes data relationships clearer
+- Ensures consistent query results
+
+**Workaround:**
+If you need many-to-many relationships (e.g., Users ↔ Roles), create a **junction/bridge table** with two separate relationships:
+- `Users → UserRoles` (one_to_many)
+- `UserRoles → Roles` (many_to_one)
+
+**Trade-off:** This requires additional YAML files and explicit modeling, but results in more maintainable and predictable semantic models.
+:::
+
+### Fact table grain and join safety
+
+Every fact table in your model has a **grain** — the level of detail at which each row is stored.
+
+Strata’s universe formation and routing logic assume that:
+
+- Joins between tables respect their true cardinality (see [Cardinality](/docs/semantic-model/relationships/cardinality/)).
+- Many-to-many joins are modeled explicitly via bridge tables rather than hidden in a single relationship.
+
+If two facts live at incompatible grains (for example, one is “daily inventory” and the other is “per‑transaction sales”), Strata will:
+
+- **Restrict measures to safe join paths** when building universes: measures are only exposed on paths where every join is one-to-one (or explicitly allows measure expansion). On many-to-one or one-to-many paths, only dimensions are exposed, so measures are not double-counted.
+- Use **automatic data blending** across universes when no single path can safely serve all measures—each fact is queried in its own universe and results are merged on common dimensions.
+
+## How It Works
+
+### 1. Model Definition
+
+Data engineers define semantic models using YAML files:
+- Table models describe fields and metadata
+- Relationship models define joins
+- Migrations track changes over time. We'll discuss about migration in coming sections.
+
+### 2. Deployment
+
+Models are deployed to a Strata server:
+- YAML files are validated
+- Semantic model is built
+- Universe paths are generated (all possible query paths)
+
+### 3. Query Planning
+
+When a user creates a query:
+- **Universe Resolution**: Strata's planners finds optimal data paths
+- **Build**: Builds query execution plan
+- **Converts** semantic query to optimized SQL
+- **Execution**: Runs query against datasource
+
+### 4. Result Delivery
+
+Query results are:
+- Cached for performance
+- Formatted according to field definitions
+- Returned to the user interface
+
+## Project Structure
+
+A typical Strata project:
+
+```
+my-project/
+├── project.yml              # Project metadata
+├── datasources.yml          # Datasource configurations
+├── .strata                  # Local secrets (gitignored)
+├── models/                  # Semantic model files
+│   ├── sales/
+│   │   ├── tbl.orders.yml
+│   │   ├── tbl.customers.yml
+│   │   └── rel.sales.yml
+│   └── inventory/
+│       └── tbl.products.yml
+├── migrations/              # Schema migrations
+│   └── 20260101_rename_field.yml
+└── tests/                   # Query validation tests
+    └── revenue_positive.yml
+```
+
+## Workflow
+
+1. **Initialize**: Create project with `strata init`
+2. **Configure**: Add datasources with `strata datasource add`
+3. **Model**: Create tables and relationships
+4. **Validate**: Validate with `strata audit` and test files
+5. **Deploy**: Upload to server with `strata deploy`
+
+## Next Steps
+
+- [Key terms and when to use what](/docs/getting-started/glossary/) — Glossary and decision guide
+- Learn how to [create tables](/docs/cli/tables/)
+- Understand [field types and expressions](/docs/semantic-model/fields-and-types/)
+- Explore [relationships](/docs/cli/relationships/)
+- Read about [universe formation](/docs/advanced/universe-formation/) and [advanced features](/docs/advanced/)

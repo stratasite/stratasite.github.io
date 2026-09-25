@@ -1,0 +1,239 @@
+---
+title: "Inclusions"
+description: "Force multi-level calculations with dimension inclusions."
+---
+Force multi-level calculations with dimension inclusions.
+
+## Overview
+
+Inclusions solve a critical problem: **computing correct averages and medians when counts per group are uneven**. They force calculations at a finer grain (by including extra dimensions) before rolling up to the final result. This is the opposite direction to [exclusions](/docs/advanced/exclusions/), which remove dimensions from calculations.
+
+Inclusion measures enable multi-level aggregations like medians, percentiles, and other complex calculations that require intermediate grouping.
+
+## What Problem Does This Solve?
+
+### Example: Daily Median Account View Hours
+
+Imagine you have a table tracking video viewing activity at the grain of `(day, account, title)`. Each row represents how many hours a specific account watched a specific title on a specific day. You want to compute:
+
+**Metric**: Daily median account view hours
+
+**Wrong approach:**
+
+```yaml
+- type: measure
+  name: Median View Hours (Wrong)
+  data_type: decimal
+  expression:
+    sql: median(hours)  # Computed at (day, account, title) grain
+```
+
+This produces a meaningless "account-title median" because you're taking the median across **every row** (every title view), not across **accounts**.
+
+**What you actually want:**
+1. First, **sum** hours per account per day (collapse the title dimension)
+2. Then, compute the **median** of those account totals for each day
+
+**Correct approach with inclusion:**
+
+```yaml
+- type: measure
+  name: Daily Median Account View Hours
+  data_type: decimal
+  inclusions:
+    filter: apply
+    aggregation: percentile_cont(0.5) WITHIN GROUP (ORDER BY @exp)
+    dimensions:
+      - Account ID
+  expression:
+    sql: sum(hours)
+```
+
+**How this works:**
+- **Inner aggregation**: `SUM(hours)` per `(day, account)` → total hours each account watched each day
+- **Outer aggregation**: `MEDIAN(...)` per `day` → median across all accounts for that day
+
+This ensures you're computing the median of **account totals**, not individual title-view rows.
+
+### When You Need Inclusions
+
+Use inclusion measures when:
+- Computing **averages** or **medians** where the underlying data has uneven counts per group
+- You need to aggregate at an **intermediate grain** (e.g., per account) before computing a final statistic (e.g., median across accounts)
+- Standard aggregation would produce incorrect results due to grain mismatch
+
+## How It Works
+
+Inclusion measures use a **two-step execution model**:
+
+### Step 1: Inner Aggregation (with included dimensions)
+
+The engine first computes the base expression (`sql: ...`) grouped by:
+- **Target dimensions** (the dimensions in the user's query, e.g., `Date`)
+- **Plus included dimensions** (the dimensions listed in `inclusions.dimensions`, e.g., `Account ID`)
+
+```sql
+-- Inner query
+SELECT 
+  day,
+  account_id,
+  sum(hours) AS account_hours  -- base expression
+FROM viewing_activity
+GROUP BY day, account_id
+```
+
+### Step 2: Outer Aggregation (without included dimensions)
+
+The engine then applies the `aggregation` function to the results of step 1, grouped by:
+- **Target dimensions only** (included dimensions are dropped)
+
+```sql
+-- Outer query
+SELECT 
+  day,
+  percentile_cont(0.5) WITHIN GROUP (ORDER BY account_hours) AS median_hours
+FROM (
+  -- Inner query (from step 1)
+  SELECT day, account_id, sum(hours) AS account_hours
+  FROM viewing_activity
+  GROUP BY day, account_id
+) subq
+GROUP BY day
+```
+
+The `@exp` placeholder in the `aggregation` field is replaced with the result of the inner aggregation (e.g., `account_hours` in the example above).
+
+### Execution Summary
+
+| Step | GROUP BY | Aggregation |
+|------|----------|-------------|
+| Inner | Target dims + Included dims | Base expression (`sql`) |
+| Outer | Target dims only | Outer aggregation (`aggregation`) |
+
+## Industry Context
+
+If you're familiar with other BI or semantic layer tools, Strata's inclusion measures are similar to:
+
+- **Tableau**: INCLUDE [Level of Detail (LOD) calculations](https://help.tableau.com/current/pro/desktop/en-us/calculations_calculatedfields_lod.htm). The INCLUDE keyword adds dimensions to the calculation grain.
+- **MicroStrategy**: Has an equivalent feature for level-based metrics (specific feature name varies by version).
+- **Looker**: Does **not** support this pattern natively. You would need to pre-build derived tables with the intermediate aggregation.
+
+The key insight across all these tools: when your raw data is at a fine grain (e.g., per title view) but you need to aggregate at an intermediate grain (e.g., per account) before computing a final statistic, you need a way to specify that intermediate grouping explicitly.
+
+## Configuration
+
+```yaml
+inclusions:
+  filter: apply                                              # ignore, only, apply
+  aggregation: percentile_cont(0.5) WITHIN GROUP (ORDER BY @exp)  # Outer aggregation
+  dimensions:
+    - Account ID                                             # Dimensions to include in inner aggregation
+```
+
+### Configuration Fields
+
+**`dimensions`**: List of dimension names to temporarily include in the **inner aggregation** (step 1). These dimensions are added to the GROUP BY in the inner query, then dropped in the outer query.
+
+**`aggregation`**: SQL expression for the **outer aggregation** (step 2). Use `@exp` as a placeholder for the result of the inner aggregation. Common patterns:
+- `percentile_cont(0.5) WITHIN GROUP (ORDER BY @exp)` — median
+- `percentile_cont(0.9) WITHIN GROUP (ORDER BY @exp)` — 90th percentile
+- `avg(@exp)` — average of the inner results
+- `stddev(@exp)` — standard deviation
+- `max(@exp)`, `min(@exp)` — max or min of the inner results
+
+**`filter`**: Controls how filters on the **inclusion dimensions** are treated in the inner aggregation:
+- `apply` (default) — filters on inclusion dimensions are applied in the inner query
+- `ignore` — filters on inclusion dimensions are ignored in the inner query
+- `only` — only filters on inclusion dimensions are applied; other filters are ignored
+
+## Use Cases
+
+### Median Calculation
+
+```yaml
+- type: measure
+  name: Median Order Value
+  data_type: decimal
+  inclusions:
+    filter: apply
+    aggregation: percentile_cont(0.5) WITHIN GROUP (ORDER BY @exp)
+    dimensions:
+      - Product Category
+  expression:
+    sql: sum(amount)
+```
+
+**Execution:**
+1. **Inner**: `sum(amount)` grouped by (query dims + Product Category)
+2. **Outer**: `percentile_cont(0.5)` grouped by query dims only → median across Product Category values
+
+### Percentile Calculation
+
+```yaml
+- type: measure
+  name: 90th Percentile Order Value
+  data_type: decimal
+  inclusions:
+    filter: apply
+    aggregation: percentile_cont(0.9) WITHIN GROUP (ORDER BY @exp)
+    dimensions:
+      - Customer Segment
+  expression:
+    sql: sum(amount)
+```
+
+### Custom Aggregation
+
+```yaml
+- type: measure
+  name: Custom Metric
+  data_type: decimal
+  inclusions:
+    filter: apply
+    aggregation: stddev(@exp)  # Standard deviation
+    dimensions:
+      - Region
+  expression:
+    sql: sum(amount)
+```
+
+## Complete Example
+
+```yaml
+- type: measure
+  name: Median Revenue by Product
+  description: Median revenue calculated at product level
+  data_type: decimal
+  format: currency:2
+  inclusions:
+    filter: apply
+    aggregation: percentile_cont(0.5) WITHIN GROUP (ORDER BY @exp)
+    dimensions:
+      - Product Category
+  expression:
+    sql: sum(amount)
+```
+
+## Limitations
+
+**Multiple inclusion rules**: The Strata UI may allow you to define multiple `inclusions` entries on a single measure. However, the engine currently **effectively handles one inclusion rule per measure**. 
+
+If you need multiple intermediate groupings, consider:
+- Defining separate measures for each grouping level, or
+- Using a single inclusion with the most critical intermediate dimension
+
+Multi-inclusion support is experimental; verify behavior in your environment or use a single inclusion rule for predictable results.
+
+## Best Practices
+
+1. **Use for complex calculations** - Medians, percentiles, standard deviation, averages with uneven counts
+2. **Document aggregation** - Explain what the inclusion does and which dimension(s) provide the intermediate grain
+3. **Test carefully** - Verify multi-level calculations work correctly; compare against hand-written SQL
+4. **Use descriptive names** - "Daily Median Account View Hours" not "Median Hours"
+5. **One inclusion per measure** - Stick to a single inclusion rule for predictable behavior
+
+## Next Steps
+
+- Learn about [exclusions](/docs/advanced/exclusions/)
+- Explore [snapshot measures](/docs/semantic-model/fields/measures/snapshot/)
+- Read about [window decorators](/docs/advanced/decorators/window/)

@@ -1,0 +1,318 @@
+---
+title: "Troubleshooting"
+description: "What the common errors mean and how to fix them, from installing the CLI to a query the planner refuses."
+---
+What the common errors mean and how to fix them, from installing the CLI to a query the planner refuses.
+
+## Quick Reference
+
+| Symptom | Likely cause | Start here |
+|---|---|---|
+| `strata: command not found` | Gem bin directory not on `PATH` | [Install](#cli-installation) |
+| `Cannot reach server at …` | Server not running, or wrong URL in `project.yml` | [Server](#server-and-sign-in) |
+| `You have uncommitted changes` | Deploy requires a clean git tree | [Deployment](#deployment) |
+| `No files changed since last deployment` | Nothing to deploy; use `--force` to redeploy anyway | [Deployment](#deployment) |
+| `Audit checks failed` | Model errors caught before upload | [Model validation](#model-validation) |
+| Connection refused / authentication failed | Host, port, credentials, SSL, or network | [Datasources](#datasource-connections) |
+| Works locally, fails on the server | The server runs the queries, not your laptop | [Datasources](#datasource-connections) |
+| `X could not be found in a universe with this measure` | The dimension isn't reachable from the measure's fact | [Queries](#queries-and-results) |
+| `All measures must be in the same datasource` | The query needs two datasources | [Queries](#queries-and-results) |
+| Numbers too high | Wrong cardinality or unsafe measure expansion | [Queries](#queries-and-results) |
+| Reports broke after a rename | Rename without a migration | [Queries](#queries-and-results) |
+| Slow queries | Routing to the wrong table or tier | [Performance](#performance) |
+
+Strata **refuses** a query it cannot answer correctly instead of returning a wrong number. When you see a refusal, the message names the field or combination that could not be resolved; that is the thing to fix in the model, not something to work around in the query.
+
+---
+
+## CLI Installation
+
+### `strata: command not found`
+
+The gem installed but its executable directory is not on your `PATH`.
+
+```bash
+gem environment | grep -A1 "EXECUTABLE DIRECTORY"
+# Add that directory to PATH in your shell profile, then open a new terminal
+```
+
+With a version manager (rbenv, asdf), run `rbenv rehash` or `asdf reshim ruby` after installing.
+
+### Ruby version too old
+
+```
+strata-cli requires Ruby version >= 3.4.4
+```
+
+Install a current Ruby per [CLI Installation](/docs/getting-started/installation/) and confirm with `ruby --version`. If you have several Rubies, make sure `gem install strata-cli` and `strata` run under the same one.
+
+### A datasource command fails with a missing gem
+
+Database drivers are installed on demand, not bundled. Each adapter needs its client gem, and some need a native library first:
+
+| Adapter | Gem | Native dependency |
+|---|---|---|
+| postgres, redshift | `pg` | libpq (`brew install libpq`, `apt install libpq-dev`) |
+| mysql | `mysql2` | MySQL client libraries |
+| sqlserver | `tiny_tds` | FreeTDS |
+| athena | `aws-sdk-athena`, `aws-sdk-s3` | none |
+| trino | `trino-client` | none |
+| duckdb | `duckdb` | none (prebuilt) |
+| sqlite | `sqlite3` | none (prebuilt) |
+
+```bash
+strata datasource check      # shows which driver gems are installed
+gem install pg               # then install the one you need
+```
+
+A build error during `gem install` almost always means the native library is missing; install it and retry.
+
+---
+
+## Server and Sign-in
+
+### `Cannot reach server at http://…. Is it running?`
+
+The CLI could not open a connection to the URL in `project.yml`.
+
+1. Confirm the server is up: open the URL in a browser, or `docker ps` on the host.
+2. Check `server:` in `project.yml` for the right scheme, host, and port (the Docker quick install listens on `8080`).
+3. If deploying with `-e`, check the `server:` under that environment's key in `.strata` instead.
+
+### `Authentication timed out. Please try again.`
+
+The first deploy offers **Sign in via browser** and waits for you to approve it. If the browser window never opened, copy the URL the CLI printed into a browser on the same machine. Re-run the command to get a new link.
+
+### `Missing required configuration: api_key`
+
+Run `strata deploy` and choose browser sign-in; the CLI saves the key to `.strata`. A placeholder `YOUR_STRATA_API_KEY` counts as no key. To re-authenticate later, delete the `api_key` line from `.strata` and deploy again.
+
+### Server asks for a license key
+
+A fresh server needs a license before the first admin account is created. Get a free key at [license.strata.do](https://license.strata.do). Server-side startup problems (container exits, health check never passes, database errors) are covered in [Troubleshooting Deployments](/docs/self-hosting/troubleshooting-deployments/) in the Self-Hosting Guide.
+
+---
+
+## Deployment
+
+### `You have uncommitted changes. Please commit or stash them before deploying.`
+
+Deployments are tied to commits so the server can record exactly what was deployed. Commit or stash, then deploy:
+
+```bash
+git add . && git commit -m "Update semantic model"
+strata deploy
+```
+
+`--force` does not bypass this check; see the next item for what it does.
+
+### `No files changed since last deployment.`
+
+The CLI uploads only files changed since the last deployed commit, and there were none. To redeploy everything anyway (after changing something outside the tracked files, or to recover from a bad state), use:
+
+```bash
+strata deploy --force
+```
+
+### `Audit checks failed. Fix errors before deploying.`
+
+`strata deploy` runs the full audit first. Fix what it reports (see [Model validation](#model-validation) below), or deploy without the audit when you know the server-side checks will catch anything real:
+
+```bash
+strata audit               # see the failures
+strata deploy --skip-audit
+```
+
+### Deployment stages and where they stall
+
+```bash
+strata deploy status
+```
+
+| Stage | What is happening |
+|---|---|
+| `preparing`, `pre_migrations` | Unpacking the archive, applying rename/swap migrations |
+| `project_configuration`, `processing_datasources` | Project settings, datasource records and connection checks |
+| `processing_models`, `removing_deleted_models` | Tables and fields created or updated; deleted files removed |
+| `processing_relationships` | Relationships validated and stored |
+| `forming_universes`, `creating_blend_paths` | Join trees enumerated from every fact; blend paths between facts computed |
+| `validating_references` | Compound measures, exclusions, inclusions, and snapshots resolved against the universes |
+| `post_migrations`, `cleaning_up`, `finished` | Cleanup |
+| `running_tests` | Test files executed, if any |
+
+`forming_universes` and `creating_blend_paths` grow with the number of tables and relationships. Several minutes is normal for models with 100+ tables. If it never finishes, look for a near-circular join pattern and break it.
+
+### Deployment failed part-way
+
+The server marks the deployment `failed` and stores the error; nothing is left half-applied. Read the error with `strata deploy status`, fix it, and run `strata deploy` again. A retry is a fresh deployment and needs no cleanup.
+
+### Deployed to the wrong environment or branch
+
+Each git branch deploys to its own branch on the server, and `-e <name>` picks the `server` and `api_key` under that environment's key in `.strata`. Check both:
+
+```bash
+git branch --show-current
+strata deploy -e staging
+```
+
+Set `production_branch` in `project.yml` so the production branch is unambiguous. See [Deployment](/docs/cli/deployment/).
+
+### Tests fail during deployment
+
+Test files under `tests/` run after the model is built. A failing `assert_sql` usually means the model changed and the expected SQL is stale. Compare the generated SQL in the failure output with the assertion, update it, and redeploy. See [Tests](/docs/cli/tests/).
+
+---
+
+## Datasource Connections
+
+### Connection refused or authentication failed
+
+```bash
+strata datasource test warehouse     # isolate the datasource
+strata datasource list               # keys and names
+```
+
+1. **Host and port**: check `datasources.yml`. Each adapter page lists the default port and any non-obvious one (ClickHouse uses the HTTP port 8123, not 9000).
+2. **Credentials**: `strata datasource auth warehouse` writes them to `.strata`, which is never committed. Key names in `.strata` must match the datasource keys in `datasources.yml` exactly.
+3. **SSL**: set `ssl: true` where the server requires it.
+4. **Network**: firewall, VPN, security group. Test with the database's own client (`psql`, `snowsql`) from the same machine.
+
+### Works locally, fails on the server
+
+`strata datasource test` runs from your machine. Queries and deployment-time checks run from the **Strata server**. Two things differ:
+
+- **Credentials travel with the deploy.** The CLI merges each datasource's `.strata` entry into the uploaded `datasources.yml`. If you never ran `strata datasource auth` for a datasource, the server has no credentials for it. On a self-hosted server you can also set credentials on the datasource record in the app instead of shipping them from the CLI.
+- **The server needs network access to the database.** A warehouse reachable from your laptop over VPN may not be reachable from the container or ECS task. Check security groups, allow-lists, and DNS from the server's network.
+
+### Cloud permission errors
+
+```
+Datasource error: You are not authorized to perform: athena:StartQueryExecution
+Datasource error: Access denied when writing output to url: s3://…
+```
+
+The credentials can connect but lack permissions on the service or a dependent resource (Athena's S3 results bucket, a Databricks SQL warehouse, a Unity Catalog schema). See the adapter page for the grants each one needs, for example [Athena](/docs/semantic-model/adapters/athena/#authentication) and [Databricks](/docs/semantic-model/adapters/databricks/#authentication).
+
+---
+
+## Model Validation
+
+`strata audit` runs three checks, and `strata deploy` runs all of them first:
+
+```bash
+strata audit syntax        # YAML parses
+strata audit models        # structure, types, references, relationships
+strata audit connections   # every datasource connects
+```
+
+Messages are of the form `Field 'X': …` or `Relationship 'k': …` with the file name. The ones people hit most:
+
+| Message | Fix |
+|---|---|
+| `Invalid YAML in …` | Indentation (spaces, not tabs), a missing colon, or an unquoted value. A `sql:` value that starts with `[` must be quoted, or YAML reads it as a list. |
+| `Field 'X' already exists` | The same name is used twice **in one table** for the same type. The same name on another table is not an error: it merges into one concept. Rename only if they mean different things. |
+| `Field 'X': measure should have an aggregation function` | A measure's `sql` must aggregate: `sum(amount)`, not `amount`. Any aggregate the datasource supports is fine. |
+| `Field 'X': dimensions cannot reference measures` | A dimension's expression may reference other dimensions, never measures. |
+| `Field 'X': [Y]@m measure was not found in the project` | The referenced name doesn't exist, or has a typo. Names are case-sensitive. |
+| `Field 'X': [Y] matched multiple fields. Use @m or @d` | A dimension and a measure share the name; say which one you mean. |
+| `Field 'X' has invalid data_type / grains / exclusion_type …` | The message lists the accepted values. See [Data Types](/docs/semantic-model/fields/data-types/) and [Exclusions](/docs/advanced/exclusions/). |
+| `Snapshot dimension 'D' …` / `Field 'X' has invalid snapshot` | The table's `snapshot:` must name a date dimension on the table or in its universe; the measure's `snapshot:` must be `beginning` or `ending`. See [Snapshot Measures](/docs/semantic-model/fields/measures/snapshot/). |
+| `Partition on 'D' …` | A partition needs `dimension`, `predicate`, and a `filter_value` that is a date or a dynamic date like `28d`. See [Partitions](/docs/semantic-model/partitions/). |
+| `Relationship 'k' join sql should be of the format left.column = right.column` | Only equi-joins between the two tables, written with the `left.` and `right.` prefixes. |
+| `Relationship 'k': … is not in datasource '…'` | Relationships never cross datasources. Both tables must belong to the same one. |
+| `Invalid cardinality 'many_to_many'` | Not supported. Model a junction table with two relationships. See [Cardinality](/docs/semantic-model/relationships/cardinality/). |
+| `'xyz' was not found in the datasource` | `physical_name` doesn't exist as written. Check spelling and the datasource's `schema`/`catalog`; list what the server sees with `strata datasource tables warehouse`. |
+
+Server-side checks in `validating_references` can still fail after a clean audit, because they need the universes. The two common ones:
+
+- **A compound measure references a dimension not every component can reach.** `[Store Revenue]` and `[Web Revenue]` may only reference `[Customer Tier]` if both facts reach Customer. Move the conditional part into a standard measure on the fact that has the dimension. See [Compound Measures](/docs/semantic-model/fields/measures/compound/).
+- **A snapshot measure on a table without `snapshot:`.** `X is a snapshot measure and can only be mapped to snapshot tables.`
+
+---
+
+## Queries and Results
+
+### `X could not be found in a universe with this measure`
+
+The query asked for a measure grouped or filtered by a dimension its fact cannot reach. Strata refuses rather than guess a join. Check, in order:
+
+1. **Is there a relationship?** The dimension's table must be reachable from the measure's fact table through `many_to_one` (or `one_to_one`) joins. Add the missing `rel.*.yml`.
+2. **Is the change deployed?** `strata deploy`, then `strata table list`.
+3. **Is it the wrong concept?** If the dimension exists under a different name on the fact's side ("Ship Country" vs "Country"), it isn't the same field. Either the names should be unified because they are one concept, or the query needs the right one.
+4. **Should the measure ignore it?** If the measure is meant to be grouped only by some dimensions, model that with an [exclusion](/docs/advanced/exclusions/) so the query is valid at the coarser grain.
+
+### `All measures must be in the same datasource`
+
+Every query runs in exactly one datasource; results are never merged across them. Make the whole query answerable from one: define the missing measure on a table in the other datasource under the same name, and routing picks whichever datasource can serve everything. See [Semantic Routing](/docs/advanced/semantic-routing/).
+
+### `No universe can resolve the query within datasource …`
+
+No single fact table's join tree contains every requested field, and the facts involved don't share the requested dimensions for blending. Usually one dimension is the culprit; remove fields one at a time to find it, then add the relationship or conformed name that connects it.
+
+### Numbers are too high (double counting)
+
+- **Cardinality is wrong.** A relationship declared `many_to_one` that is really one-to-many multiplies the measure. Verify against the data and fix the `cardinality`. See [Cardinality](/docs/semantic-model/relationships/cardinality/).
+- **`allow_measure_expansion: true` on a join that isn't safe.** Expansion lets a measure be grouped by dimensions on the "many" side. Remove it unless the join is truly safe.
+- **The right fix for many-to-many** is a junction table with two relationships, never a direct join.
+
+### The same measure gives different numbers in two reports
+
+When a measure is defined on more than one table, routing chooses per query by requested dimensions, then by `cost`. If two definitions of "Total Revenue" disagree, they are not the same concept, or one has a bug. Compare the two expressions; use the query's plan in the UI to see which table served it; give a distinct name to anything that means something different.
+
+### A balance or inventory total is wrong across months
+
+Summing a daily balance over a month is meaningless. Model it as a [snapshot measure](/docs/semantic-model/fields/measures/snapshot/) with `snapshot: ending` (or `beginning`) on a table that declares its `snapshot:` date dimension.
+
+### A cross-domain compound measure repeats a value across rows
+
+Expected. When a query groups by a dimension only some components of a compound measure can reach, the others are auto-leveled: aggregated without that dimension and repeated across it. For a rate this is the fixed denominator you want. See [Auto-leveled compound measures](/docs/semantic-model/fields/measures/compound/#auto-leveled-compound-measures).
+
+### Reports broke after renaming a field or table
+
+Saved reports and dashboards reference fields by name. A rename without a migration leaves them pointing at a name that no longer exists. Rename through a migration so references are updated on deploy:
+
+```bash
+strata create migration rename --entity dimension --from "Store Name" --to "Store Location"
+```
+
+See [Migrations](/docs/cli/migrations/), including [its troubleshooting section](/docs/cli/migrations/#troubleshooting).
+
+### A segment or calculation is refused
+
+- `Segment S cannot be applied to …`: the segment's key dimensions aren't reachable from the measure's fact. The segment's keys must be dimensions the constrained measures can reach.
+- `aggregating calculations can only use the dimension [D]@d inside an aggregate function unless the query also projects it`: a measure calculation reads a dimension outside its aggregate. Project the dimension, or move the reference inside the aggregate.
+- `the referenced dimensions cannot be resolved together with the other fields used in this query`: the calculation references a field the query's universe cannot reach.
+
+REST API errors (`422 invalid_query_construction`, ambiguous names, status codes) are documented in [API Errors](/docs/api/rest/errors/).
+
+---
+
+## Performance
+
+### Slow queries
+
+1. **Routing chose the warehouse instead of the hot tier.** The hot-tier table must be able to serve the whole query: same measure names, the requested dimensions reachable, and a [partition](/docs/semantic-model/partitions/) that covers the query's date filter. A query with no date filter, or one outside the partition, falls back to the warehouse by design.
+2. **Routing chose the detail table over an aggregate table.** Give the aggregate table a lower `cost` than the detail table. See [Cost Optimization](/docs/advanced/cost-optimization/).
+3. **Long join paths.** Every extra hop is another join in the generated SQL. Denormalize hot dimensions onto the fact, or add a rolled-up table.
+4. **Warehouse-side limits.** `query_timeout` on the datasource caps how long Strata waits. Raising it hides the problem; fix the routing first.
+
+Use the plan view in the UI to see which table and datasource served a query before changing anything.
+
+### Slow deployment
+
+See [Deployment stages](#deployment-stages-and-where-they-stall). Universe formation is the long stage on large models.
+
+---
+
+## Getting Help
+
+1. **Capture the audit output**: `strata audit 2>&1 | tee audit.log`
+2. **Capture the deployment error**: `strata deploy status`
+3. **Narrow it down**: `git diff HEAD~5 -- models/` shows what changed; if a query is refused, drop fields until it passes.
+4. **Contact support** with the audit log, the deployment status output, the relevant YAML, and what you expected to see.
+
+## Next Steps
+
+- [Deployment](/docs/cli/deployment/) and [Audit](/docs/cli/audit/)
+- [Troubleshooting Deployments](/docs/self-hosting/troubleshooting-deployments/) for server-side problems
+- [API Errors](/docs/api/rest/errors/)

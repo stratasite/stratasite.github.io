@@ -1,0 +1,169 @@
+---
+title: "Extended Blending Groups"
+description: "Use extended blending groups to treat the same logical dimension across multiple tables as one for querying."
+---
+Use extended blending groups to treat the same logical dimension across multiple tables as one for querying.
+
+## Overview
+
+When the same business dimension (e.g. Order Date, Ship Date, Activity Date) exists in several tables with different column names or grains, you can assign a shared **`extended_blend_group`** on each. The planner can then blend these dimensions so that a single query can group or filter by that concept across tables.
+
+
+## When to Use Extended Blending
+
+- **Cross-table date alignment** — e.g. “Order Date” in `orders` and “Order Date” in `shipments` or `returns` so users can filter by one order-date concept.
+- **Shared attributes in a star or snowflake** — The same dimension name and meaning in multiple fact tables; you want one blended dimension instead of one per table.
+- **Multi-fact reporting** — Dashboards or queries that slice by a common dimension (date, customer, product) across several fact tables.
+
+## Setting Up `extended_blend_group`
+
+Use the same `extended_blend_group` value on each dimension that should blend:
+
+```yaml
+# tbl.orders.yml
+fields:
+  - type: dimension
+    name: Order Date
+    data_type: date
+    extended_blend_group: order_date_blend
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: order_date
+```
+
+```yaml
+# tbl.shipments.yml
+fields:
+  - type: dimension
+    name: Order Date
+    data_type: date
+    extended_blend_group: order_date_blend
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: ship_date
+```
+
+The string is case-insensitive. Only dimensions in the same group blend together.
+
+## Example: Multiple Fact Tables
+
+Sales, returns, and inventory snapshots each have a date. Define one blend group for “activity date”:
+
+```yaml
+# tbl.sales.yml
+fields:
+  - type: dimension
+    name: Activity Date
+    data_type: date
+    extended_blend_group: activity_date
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: sale_date
+
+# tbl.returns.yml
+fields:
+  - type: dimension
+    name: Activity Date
+    data_type: date
+    extended_blend_group: activity_date
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: return_date
+
+# tbl.inventory.yml
+fields:
+  - type: dimension
+    name: Activity Date
+    data_type: date
+    extended_blend_group: activity_date
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: snapshot_date
+```
+
+Queries that use “Activity Date” can then apply it across sales, returns, and inventory according to the relationships and paths in the model.
+
+## Requirements and Best Practices
+
+1. **Same `data_type`** — All dimensions in a group should have the same type (e.g. all `date` or all `date_time`).
+2. **Compatible grains** — For `date`/`date_time`, use grains that make sense for all members (e.g. day, week, month, quarter, year).
+3. **Same universe/branch** — Blending applies within a branch; dimensions in different branches do not blend.
+4. **Meaningful group names** — Use a group name that reflects the business concept (e.g. `order_date_blend`, `activity_date`).
+5. **Avoid over-blending** — Only put dimensions in a group when they truly represent the same concept; mixing different semantics can produce confusing results.
+
+## How automatic data blending works (developer view)
+
+Extended blend groups are one part of Strata’s **automatic data blending** system. In industry terms, this is sometimes called **data blending** or **multipass SQL**; Strata uses the terms *automatic data blending* and *extended blend groups*. At a high level:
+
+- There is a single **logical key** for a concept like “activity date” in the semantic layer.
+- Each fact table exposes one or more physical columns that implement that key, and you tie those columns together using a shared `extended_blend_group`.
+- At query time, the planner knows which physical column to use for each fact, and can safely aggregate and **merge** results on the logical key.
+
+When a query asks for measures from multiple facts that share a blend group:
+
+1. **Universe selection** picks the relevant universes/facts.
+2. For each fact/universe, the planner builds a node in a query graph that aggregates that fact **to the lowest common dimensionality** (for example, by the blended date and any other shared dimensions).
+3. The planner then adds a final **merge node** that joins these aggregate nodes on the blended dimensions.
+
+The generated SQL typically uses Common Table Expressions (CTEs) to represent this graph:
+
+```sql
+WITH
+  store_sales_agg AS (
+    SELECT activity_date, SUM(store_amount) AS store_revenue
+    FROM store_sales
+    GROUP BY activity_date
+  ),
+  web_sales_agg AS (
+    SELECT activity_date, SUM(web_amount) AS web_revenue
+    FROM web_sales
+    GROUP BY activity_date
+  ),
+  final AS (
+    SELECT
+      COALESCE(s.activity_date, w.activity_date) AS activity_date,
+      store_revenue,
+      web_revenue
+    FROM store_sales_agg s
+    FULL OUTER JOIN web_sales_agg w
+      ON s.activity_date = w.activity_date
+  )
+SELECT *
+FROM final;
+```
+
+You do not need to write this SQL yourself—the semantic model (relationships, grains, and `extended_blend_group` values) gives the planner enough information to construct it automatically.
+
+## Relation to Relationships and Paths
+
+Blending does not replace [relationships](/docs/semantic-model/relationships/cardinality/). Tables still need proper `one_to_many`, `many_to_one`, or `one_to_one` relationships. Extended blend groups tell the planner how to treat dimensions that live in different tables as one for grouping and filtering when paths exist.
+
+## Next Steps
+
+- [Dimensions](/docs/semantic-model/fields/dimensions/)
+- [Relationships](/docs/semantic-model/relationships/cardinality/)

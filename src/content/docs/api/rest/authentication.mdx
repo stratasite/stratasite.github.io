@@ -1,0 +1,71 @@
+---
+title: "Authentication"
+description: "Every Strata API v1 request requires a valid API key."
+---
+Every Strata API v1 request requires a valid API key.
+
+## API keys
+
+API keys belong to a **user**, not a project, and each user has at most one. Create yours in the Strata web app:
+
+1. Open your user profile (your avatar, then your name).
+2. In the **API Key** section, choose **Create API Key** and copy it; it is shown only once.
+3. **Revoke API Key** on the same page invalidates it. Creating a new one replaces the old one.
+
+A request made with your key can do exactly what you can do in the app: the projects you are a member of, with your role in each. Store the key securely. Do not commit it to git or expose it in client-side code.
+
+:::tip[CLI users]
+The Strata CLI can obtain a key for you automatically — the first `strata deploy` offers a browser sign-in and saves the key to `.strata` (gitignored). See [Deployment](/docs/cli/deployment/) for setup.
+:::
+
+## Bearer token
+
+Send the API key on every request using HTTP Bearer authentication:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Accept: application/json" \
+     https://your-server.example.com/api/v1/projects/tpcds/fields
+```
+
+Replace `YOUR_API_KEY` with your key and `your-server.example.com` with your Strata server URL.
+
+The same header also accepts a Strata-issued **OAuth 2.1 access token**. That flow exists for MCP clients (see [AI Agents](/docs/api/ai-agents/#strata-as-an-mcp-server)); scripts and integrations should use an API key.
+
+## Unauthorized requests
+
+Missing or invalid keys return **401 Unauthorized** with a `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource"` header (for OAuth-capable clients) and this body:
+
+```json
+{
+  "status": "unauthorized",
+  "errors": [
+    {
+      "code": "unauthorized",
+      "message": "Invalid or missing API key"
+    }
+  ]
+}
+```
+
+## Authorization
+
+Authentication identifies **who** you are. Authorization controls **what** you can do:
+
+| Action | Requirement |
+|--------|-------------|
+| Read project metadata (fields, tables, queries, results) | Project member |
+| Create/run API queries, preview SQL, cancel a result | Project member |
+| Delete API queries | Query creator or project admin |
+| Purge the result cache, create deployments | Project developer or admin |
+| List or delete branches | Member to list; admin to delete |
+
+System administrators are members of every project.
+
+Forbidden requests return **403** with a structured error (newer endpoints) or `{ "errors": ["..."] }` (legacy endpoints). See [Errors](/docs/api/rest/errors/).
+
+## Next steps
+
+- [Quickstart](/docs/api/rest/quickstart/) — make your first authenticated request
+- [Conventions](/docs/api/rest/conventions/) — base URL and branch scoping
+- [API Reference](/docs/api-reference/) — interactive OpenAPI interface
