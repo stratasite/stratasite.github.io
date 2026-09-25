@@ -1,0 +1,170 @@
+---
+title: "Query spec"
+description: "The query spec defines what to select, how to group, and what to filter — using semantic field names."
+---
+The query `spec` defines what to select, how to group, and what to filter — using semantic field names.
+
+## Overview
+
+Pass `spec` in the body of:
+
+- `POST /api/v1/projects/{project_id}/queries` — create and execute
+- `POST /api/v1/projects/{project_id}/sql` — preview SQL without saving
+
+```json
+{
+  "spec": {
+    "projections": [
+      { "field": "State", "axis": "x" },
+      { "field": "Web Net Paid", "axis": "y" }
+    ],
+    "filters": [
+      { "field": "State", "predicate": "equals", "value": "CA" }
+    ]
+  }
+}
+```
+
+## Projections
+
+Each projection selects one field and assigns it to a query axis:
+
+```json
+{ "field": "Web Net Paid", "axis": "y" }
+```
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `field` | Yes | Semantic field **name** (e.g. `"State"`) or UID |
+| `axis` | Yes | Placement: `x`, `y`, `series`, `row`, `tip` |
+| `field_type` | No | Disambiguate name collisions: `"Semantic::Dimension"` or `"Semantic::Measure"` |
+| `decorators` | No | Array of decorator specs (truncate, extract, window, etc.) |
+| `order_by` | No | Sort direction for this projection |
+| `alias` | No | Display alias |
+
+### Axis values
+
+| Axis | Typical use |
+|------|-------------|
+| `x` | Row dimension (categories, dates) |
+| `y` | Primary measure or dimension |
+| `series` | Split series (e.g. multiple lines) |
+| `row` | Row grouping |
+| `tip` | Tooltip/detail field |
+
+## Filters
+
+### Flat AND (array)
+
+A simple array of filters is combined with AND:
+
+```json
+"filters": [
+  { "field": "State", "predicate": "equals", "value": "CA" },
+  { "field": "Date", "predicate": "between", "value": "2024-01-01", "value_end": "2024-12-31" }
+]
+```
+
+### Logic tree (object)
+
+Use `and` / `or` keys for nested logic:
+
+```json
+"filters": {
+  "and": [
+    { "field": "Date", "predicate": "between", "value": "2024-01-01", "value_end": "2024-12-31" },
+    { "or": [
+      { "field": "State", "predicate": "equals", "value": "CA" },
+      { "field": "State", "predicate": "equals", "value": "NY" }
+    ]}
+  ]
+}
+```
+
+### Filter leaf keys
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `field` | Yes | Semantic field name or UID |
+| `predicate` | Yes | Filter operator (e.g. `equals`, `between`, `contains`) |
+| `value` | Usually | Primary filter value |
+| `value_end` | For `between` | End of range |
+| `field_type` | No | Disambiguation (same as projections) |
+| `top_n_measure` | No | For top-N filters |
+
+## Field name resolution
+
+The API resolves field **names** within the project and branch scope at request time.
+
+:::tip[Use names, not warehouse columns]
+Reference `"Web Net Paid"`, not `ws_net_paid`. The semantic layer maps names to warehouse SQL.
+:::
+
+### Ambiguous names
+
+When the same name exists on both a dimension and a measure, the API returns **422** with `invalid_query_construction`.
+
+Disambiguate with either approach:
+
+**Suffix:**
+
+```json
+{ "field": "Ambiguous Thing@m", "axis": "y" }
+```
+
+- `@d` — dimension
+- `@m` — measure
+
+**Explicit type:**
+
+```json
+{ "field": "Ambiguous Thing", "field_type": "Semantic::Measure", "axis": "y" }
+```
+
+### Unknown fields
+
+Referencing a field that does not exist on the branch returns **422**:
+
+```json
+{
+  "status": "invalid",
+  "errors": [
+    { "code": "invalid_query_construction", "message": "No field named 'Not A Real Field'" }
+  ]
+}
+```
+
+## Response spec shape
+
+When you fetch a saved query (`GET /api/v1/queries/{id}`), the returned `spec` uses resolved field **UIDs** instead of names. Use names when creating; expect UIDs when reading back persisted queries.
+
+## Optional spec keys
+
+| Key | Description |
+|-----|-------------|
+| `name` | Display name (also accepted at top level of create request) |
+| `description` | Optional description |
+| `limit` | Row limit for the queryable (default 5000) |
+| `view` | Visualization config (mode, legend, axis settings) |
+
+## Decorators
+
+Advanced projections can include decorators:
+
+```json
+{
+  "field": "Date",
+  "axis": "x",
+  "decorators": [
+    { "type": "truncate", "grain": "month" }
+  ]
+}
+```
+
+Supported types: `truncate`, `extract`, `window`, `contribute`, `temporalize`. See the semantic model docs for decorator details.
+
+## Next steps
+
+- [SQL preview](/docs/api/rest/sql/) — validate a spec before saving
+- [Queries](/docs/api/rest/queries/) — create and execute
+- [Quickstart](/docs/api/rest/quickstart/) — full worked example

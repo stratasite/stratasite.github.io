@@ -1,0 +1,46 @@
+---
+title: "Choose Your Deployment Path"
+description: "Strata Server supports multiple deployment models so your team can choose the approach that best matches your operations, governance, and delivery speed requirements."
+---
+Strata Server supports multiple deployment models so your team can choose the approach that best matches your operations, governance, and delivery speed requirements.
+
+### Docker (Zero Config)
+
+Run Strata with a single `docker run` command. Bundled PostgreSQL starts automatically and encryption secrets are generated on first boot. Best for local evaluation and demos.
+
+See [Quick Install → Docker](/docs/self-hosting/quick-install/).
+
+### Installer Script (Single Host)
+
+Use the installer when you want a guided setup on a single server against an external PostgreSQL instance — handles environment configuration and starts Strata as Docker Compose services.
+
+See [Quick Install → Installer Script](/docs/self-hosting/quick-install/).
+
+### Production Deployment (VM / On-Prem)
+
+Use manual Docker Compose setup on a raw Linux host when your team requires explicit control over host configuration, environment variables, secrets handling, and rollout workflows.
+
+See [Production Deployment](/docs/self-hosting/production-deployment/).
+
+### AWS ECS (Express Mode)
+
+Use AWS ECS with Express Mode for a production deployment with auto-provisioned load balancing, SSL, networking, and auto-scaling. The Strata container is self-initializing — it creates databases and runs all setup on first start.
+
+See [Deploy Strata on AWS ECS](/docs/self-hosting/aws-ecs-manual/).
+
+## Decision Matrix
+
+| Requirement | Recommended Path |
+|---|---|
+| Local evaluation or demo | Docker |
+| Fastest single-host go-live | Installer Script |
+| Explicit control on a raw VM/server | Production Deployment |
+| AWS-managed with auto-provisioned infrastructure | AWS ECS (Express Mode) |
+
+## Common Requirements Across All Paths
+
+All paths share the same runtime contract:
+
+- PostgreSQL connectivity (bundled or external)
+- Health validation using `/up`
+- License key entered via the web UI on first login

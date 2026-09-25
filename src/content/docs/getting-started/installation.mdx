@@ -1,0 +1,99 @@
+---
+title: "CLI Installation"
+description: "Before you can start using Strata CLI, you need to install it on your system. This guide covers Ruby and Git prerequisites, platform-specific setup, and CLI installation."
+---
+Before you can start using Strata CLI, you need to install it on your system. This guide covers Ruby and Git prerequisites, platform-specific setup, and CLI installation.
+
+## Requirements
+
+- **Ruby**: 3.4.4 or higher (required for Strata CLI)
+- **Git**: Required for deployment, migrations, and version-controlled projects (install from [git-scm.com](https://git-scm.com/downloads))
+
+### Checking Ruby and Git
+
+Verify versions before installing:
+
+```bash
+ruby --version   # Should be 3.4.4 or higher
+git --version   # Any recent version is fine
+```
+
+If Ruby is missing or too old, install or upgrade using the instructions below for your platform.
+
+## Platform-Specific Setup
+
+<Tabs>
+  <TabItem value="mac" label="macOS" default>
+    **Homebrew (recommended):**
+    ```bash
+    brew install ruby
+    ```
+    Or use the system Ruby if it meets 3.4.4+ (check with `ruby --version`). For the latest Ruby, consider [rbenv](https://github.com/rbenv/rbenv) or [asdf](https://asdf-vm.com/).
+  </TabItem>
+  <TabItem value="linux" label="Linux">
+    Use your package manager:
+    ```bash
+    # Debian/Ubuntu
+    sudo apt update && sudo apt install ruby-full
+
+    # Fedora/RHEL
+    sudo dnf install ruby
+    ```
+    Ensure the version is 3.4.4 or higher. If not, use [rbenv](https://github.com/rbenv/rbenv) or [asdf](https://asdf-vm.com/).
+  </TabItem>
+  <TabItem value="windows" label="Windows">
+    Use the [RubyInstaller](https://rubyinstaller.org/) for Windows. Choose the version 3.4.x or higher and run the installer. Optionally add the "MSYS2 development toolchain" when prompted for native extensions. After installation, open a new terminal and verify with `ruby --version`.
+  </TabItem>
+</Tabs>
+
+## Install Strata CLI
+
+This installs Strata CLI globally so you can run `strata` from any directory.
+
+<Tabs>
+  <TabItem value="script" label="Shell Script (Recommended)" default>
+    ```bash
+    curl -fsSL https://strata.do/cli/install.sh | bash
+    ```
+    This script checks for Ruby and Git prerequisites, installs the CLI gem, and verifies the installation.
+  </TabItem>
+  <TabItem value="gem" label="Gem">
+    ```bash
+    gem install strata-cli
+    ```
+  </TabItem>
+</Tabs>
+
+## Verify Installation
+
+After installation, verify that Strata CLI is installed correctly:
+
+```bash
+strata version
+```
+
+This command displays the installed version of Strata CLI.
+
+## Getting Help
+
+To see all available commands, run:
+
+```bash
+strata
+```
+
+For detailed help on any command, use:
+
+```bash
+strata COMMAND --help
+```
+
+The CLI help system provides comprehensive documentation for each command, including options, examples, and usage patterns.
+
+## Next Steps
+
+Now that you have Strata CLI installed, you're ready to start creating your first Strata project!
+
+- [Quickstart](/docs/getting-started/quickstart/) - Create your first project
+- [Core Concepts](/docs/getting-started/concepts/) - Understand the semantic layer
+- [CLI](/docs/cli/) - Full command reference

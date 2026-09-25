@@ -1,0 +1,178 @@
+---
+title: "Quick Start"
+description: "Get up and running with Strata CLI in minutes."
+---
+Get up and running with Strata CLI in minutes.
+
+## Prerequisites
+
+- Ruby 3.4.4+ installed
+- Git installed
+
+## Install
+
+```bash
+gem install strata-cli
+```
+
+## Workflow
+
+### 1. Initialize a Project
+
+Create a new Strata project directory with configuration files.
+
+```bash
+strata init PROJECT_NAME
+```
+
+- `PROJECT_NAME` — Name of your project (creates a directory with this name)
+
+**Example:**
+
+```bash
+strata init sales-analytics
+# Creates a new project directory called "sales-analytics"
+cd sales-analytics
+```
+
+---
+
+### 2. Add a Datasource
+
+Connect your project to a database.
+
+```bash
+strata datasource add ADAPTER
+```
+
+- `ADAPTER` — Database type: `postgres`, `snowflake`, `mysql`, `duckdb`, `athena`, `trino`, `sqlserver`, `druid`
+
+**Example:**
+
+```bash
+strata datasource add postgres
+# Prompts for connection details and adds a PostgreSQL datasource
+```
+
+---
+
+### 3. Test Datasource Connection
+
+Verify the datasource connects successfully.
+
+```bash
+strata datasource test DATASOURCE_KEY
+```
+
+- `DATASOURCE_KEY` — The key you assigned when adding the datasource
+
+**Example:**
+
+```bash
+strata datasource test warehouse
+# Tests connection to the datasource named "warehouse"
+```
+
+---
+
+:::tip[Two ways to build the model]
+Steps 4 and 5 below build tables one at a time. You can also open the project in a coding agent and have it author the whole model from the `AGENTS.md` that `strata init` created. See [Building Your Model](/docs/cli/building-your-model/).
+:::
+
+### 4. Create a Table Model
+
+Generate a semantic table model from a physical database table.
+
+```bash
+strata create table PATH/TABLE_NAME
+```
+
+- `PATH` — Folder path within models/ (e.g., `common`, `store`, `catalog`)
+- `TABLE_NAME` — Name for the semantic table model
+
+**Example:**
+
+```bash
+strata create table common/customers
+# Creates models/common/tbl.customers.yml
+```
+
+---
+
+### 5. Create a Relationship
+
+Define how tables join together.
+
+```bash
+strata create relation PATH/RELATION_NAME
+```
+
+- `PATH` — Folder path within models/
+- `RELATION_NAME` — Name for the relationship file
+
+**Example:**
+
+```bash
+strata create relation store/sales
+# Creates models/store/rel.sales.yml
+```
+
+---
+
+### 6. Audit the Model
+
+Validate your semantic model before deployment.
+
+```bash
+strata audit
+```
+
+**Example:**
+
+```bash
+strata audit
+# Checks YAML syntax, table definitions, relationships, and datasource connectivity
+```
+
+---
+
+### 7. Deploy
+
+Push your semantic model to the Strata server.
+
+```bash
+strata deploy
+```
+
+The first deploy prompts for your server URL and offers **Sign in via browser** — the CLI fetches and saves an API key automatically, so there's no manual key setup.
+
+**Example:**
+
+```bash
+strata deploy
+# Uploads validated model to your Strata server instance
+```
+
+---
+
+## Command Reference
+
+| Command | Syntax | Description |
+|---------|--------|-------------|
+| init | `strata init PROJECT_NAME` | Initialize a new project |
+| datasource add | `strata datasource add ADAPTER` | Add a datasource connection |
+| datasource test | `strata datasource test DATASOURCE_KEY` | Test datasource connectivity |
+| datasource tables | `strata datasource tables DATASOURCE_KEY` | List tables in datasource |
+| datasource meta | `strata datasource meta DATASOURCE_KEY TABLE` | Show table schema |
+| create table | `strata create table PATH/TABLE_NAME` | Create a semantic table model |
+| create relation | `strata create relation PATH/RELATION_NAME` | Create a relationship file |
+| table list | `strata table list` | List defined table models |
+| audit | `strata audit` | Validate semantic model |
+| deploy | `strata deploy` | Deploy to Strata server |
+
+## Next Steps
+
+- [Tutorial](/docs/getting-started/tutorial/) — Hands-on walkthrough with TPC-DS
+- [Building Your Model](/docs/cli/building-your-model/) — Build the model yourself or with a coding agent
+- [CLI Reference](/docs/cli/) — Detailed command documentation
+- [Concepts](/docs/getting-started/concepts/) — Understand the semantic layer

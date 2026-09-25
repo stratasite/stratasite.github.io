@@ -27,6 +27,24 @@
   .tnum {
     font-feature-settings: 'tnum' 1;
   }
+
+  /* Syntax highlighting. Shiki runs with its `css-variables` theme, so every
+     token color is one of these, and every one of these is a brand token:
+     cream text, peach keys/keywords, orange literals, quiet comments. Nothing
+     is baked into the HTML. */
+  :root {
+    --astro-code-background: var(--code-surface);
+    --astro-code-foreground: var(--strata-cream);
+    --astro-code-token-keyword: var(--strata-peach);
+    --astro-code-token-function: var(--strata-peach);
+    --astro-code-token-string: var(--strata-cream);
+    --astro-code-token-string-expression: var(--strata-cream);
+    --astro-code-token-constant: var(--strata-orange);
+    --astro-code-token-parameter: var(--strata-cream);
+    --astro-code-token-punctuation: var(--muted-foreground);
+    --astro-code-token-link: var(--strata-peach);
+    --astro-code-token-comment: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
+  }
 }
 
 @layer components {
@@ -79,6 +97,105 @@
   .prose-strata .not-prose {
     @apply text-foreground;
   }
+  .prose-strata h4 {
+    @apply mt-6 scroll-mt-24 text-base font-semibold tracking-tight;
+  }
+  .prose-strata hr {
+    @apply my-10 border-border;
+  }
+  /* Reference tables: tabular figures, a recessed header row, hairline rows.
+     rehype-table-wrap puts each one in .table-wrap so wide ones scroll. */
+  .prose-strata .table-wrap {
+    @apply mt-6 overflow-x-auto rounded-lg border border-border;
+  }
+  .prose-strata table {
+    @apply tnum w-full border-collapse text-[0.9375rem] leading-snug;
+  }
+  .prose-strata thead th {
+    @apply bg-surface-2 px-3.5 py-2.5 text-left font-semibold text-foreground;
+  }
+  .prose-strata tbody td {
+    @apply border-t border-border px-3.5 py-2.5 align-top text-muted-foreground;
+  }
+  .prose-strata td > code,
+  .prose-strata th > code {
+    @apply whitespace-nowrap;
+  }
+  /* Collapsed reference blocks (<details>) in long tutorials. */
+  .prose-strata details {
+    @apply mt-6 rounded-lg border border-border bg-surface px-5 py-3;
+  }
+  .prose-strata details > summary {
+    @apply cursor-pointer font-display font-semibold text-foreground;
+  }
+  .prose-strata details[open] > summary {
+    @apply mb-2 border-b border-border pb-3;
+  }
+  /* Rendered Mermaid diagrams (see the script in layouts/Docs.astro). */
+  .prose-strata .mermaid-diagram {
+    @apply mt-6 overflow-x-auto rounded-lg border border-border bg-surface p-4;
+  }
+  .prose-strata .mermaid-diagram svg {
+    @apply mx-auto h-auto max-w-full;
+  }
+
+  /* ---- Callouts -----------------------------------------------------------
+     One rule set for both the Callout component and the `:::tip` admonition
+     syntax in docs MDX (src/plugins/remark-admonitions.mjs). The left rule
+     carries the kind: quiet ink for notes, peach for tips and info, orange for
+     warnings and cautions, rust for danger. */
+  .callout {
+    @apply my-6 rounded-lg border-l-4 border-border bg-surface-2 p-5 text-[0.95rem] leading-relaxed text-foreground;
+  }
+  .callout > .callout-title {
+    @apply mt-0 font-display text-base font-bold tracking-tight text-foreground;
+  }
+  .callout > :not(.callout-title) {
+    @apply mt-2.5;
+  }
+  .callout > .callout-title + * {
+    @apply mt-2;
+  }
+  /* ---- Documentation -------------------------------------------------------
+     Layered on .prose-strata for /docs/. Reference material is read in short
+     bursts, so slightly smaller type than an article, and a running lead
+     paragraph that reads as the page summary. */
+  .prose-docs {
+    @apply text-[1rem];
+  }
+  .prose-docs > p:first-child {
+    @apply mt-0 text-lg text-muted-foreground;
+  }
+  .prose-docs h2 {
+    @apply mt-12 border-t border-border pt-8 text-2xl;
+  }
+  .prose-docs h2:first-child {
+    @apply mt-0 border-t-0 pt-0;
+  }
+  .prose-docs h3 {
+    @apply mt-8 text-lg;
+  }
+  .prose-docs p,
+  .prose-docs ul,
+  .prose-docs ol {
+    @apply text-muted-foreground;
+  }
+  .prose-docs strong {
+    @apply text-foreground;
+  }
+  .prose-docs li > p {
+    @apply mt-2;
+  }
+  .prose-docs pre {
+    @apply text-[0.875rem];
+  }
+  /* Headings are jump targets from the right-hand nav and search; keep them
+     below the two sticky bars. */
+  .prose-docs h2,
+  .prose-docs h3,
+  .prose-docs h4 {
+    @apply scroll-mt-36;
+  }
 
   /* ---- Legal documents -------------------------------------------------
      Layered on top of .prose-strata for terms, privacy, and licenses. Set in
@@ -115,4 +232,22 @@
   .prose-legal ol {
     @apply space-y-1.5;
   }
+}
+
+/* Callout kinds. Outside @layer on purpose: these class names are produced by
+   src/plugins/remark-admonitions.mjs at build time, so Tailwind never sees them
+   in a source file and would tree-shake them out of a layer. */
+.callout-tip,
+.callout-info {
+  border-color: color-mix(in srgb, var(--strata-peach) 60%, transparent);
+  background-color: color-mix(in srgb, var(--strata-peach) 10%, var(--surface-2));
+}
+.callout-warning,
+.callout-caution {
+  border-color: color-mix(in srgb, var(--strata-orange) 70%, transparent);
+  background-color: color-mix(in srgb, var(--strata-orange) 10%, var(--surface-2));
+}
+.callout-danger {
+  border-color: var(--strata-rust);
+  background-color: color-mix(in srgb, var(--strata-rust) 18%, var(--surface-2));
 }

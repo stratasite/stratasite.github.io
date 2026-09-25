@@ -1,0 +1,113 @@
+---
+title: "Compound Measures"
+description: "Measures whose expressions reference other measures by name."
+---
+Measures whose expressions reference other measures by name.
+
+## Overview
+
+Compound measures define metrics using other measures (and optionally dimensions) in their expression. The expression is evaluated at **query time**, with each referenced measure or dimension replaced by its resolved SQL.
+
+All referenced fields must:
+
+- Live in the **same semantic model (project)** — bracket references like `[Total Revenue]` are resolved by name within the deployed model; the engine validates references at build or deploy time.
+- Belong to the **same datasource** as the compound measure (you cannot mix Snowflake and Postgres in a single measure), and
+- Be reachable in at least one **universe** together so the planner can construct a valid query.
+
+## Definition
+
+Use square brackets to reference other fields by name in the expression:
+
+```yaml
+- type: measure
+  name: Profit Margin
+  data_type: decimal
+  expression:
+    sql: ([Total Revenue] - [Total Cost]) / [Total Revenue]
+```
+
+Here `Total Revenue` and `Total Cost` must be measures (or dimensions) defined in the same table or reachable via the model, and they must all be in the **same datasource**.
+
+## When to Use
+
+- Ratios of measures: margin, conversion, per-unit metrics
+- Differences or sums of measures: profit, variance
+- Any metric that is a formula over other measures
+
+## Runtime Resolution
+
+:::info[Compound measures and expressions]
+Compound measures that use expressions are **resolved at query time**. The expression SQL is evaluated when the query runs: each referenced measure or dimension is replaced by its resolved SQL from the underlying tables or from other compound measures.
+
+This allows flexible, formula-like measures. Ensure that every referenced field exists and is reachable in the context of the query; otherwise resolution can fail at query time.
+:::
+
+### Universes and dimensionality
+
+The **universe** that contains a compound measure effectively defines:
+
+- Which dimensions can group that measure, and
+- How automatic data blending is applied when referenced measures live on different tables within the same datasource.
+
+In practice:
+
+- It is safe (and common) to build compound measures from measures that live on **different tables** as long as they are in the same datasource and universe.
+- If there is no single universe that can see all referenced fields together, the measure will be invalid and will fail validation or query planning.
+
+## Example
+
+```yaml
+fields:
+  - type: measure
+    name: Total Revenue
+    data_type: decimal
+    expression:
+      sql: sum(amount)
+
+  - type: measure
+    name: Total Cost
+    data_type: decimal
+    expression:
+      sql: sum(cost)
+
+  - type: measure
+    name: Profit
+    data_type: decimal
+    expression:
+      sql: [Total Revenue] - [Total Cost]
+
+  - type: measure
+    name: Profit Margin
+    data_type: decimal
+    format: percent:2
+    expression:
+      sql: [Profit] / [Total Revenue]
+```
+
+You can also mix bracketed references with raw SQL functions and constants:
+
+```yaml
+- type: measure
+  name: Adjusted Profit Margin
+  data_type: decimal
+  format: percent:2
+  expression:
+    sql: ([Profit] - COALESCE([Refunds], 0)) / NULLIF([Total Revenue], 0)
+```
+
+## Compound Measures in Expressions
+
+When a compound measure is used inside another expression (e.g. in a [temporal decorator](/docs/advanced/decorators/temporal/) or another compound measure), it is also resolved at query time. The dependency chain is evaluated when the query is built, so the order of definition in YAML does not need to follow the dependency order.
+
+## Best Practices
+
+1. **Use clear, unique names** — Referenced measures must be found by name.
+2. **Avoid circular references** — A → B → A is invalid.
+3. **Check reachability and datasource** — All referenced fields must be joinable in at least one universe and live in the same datasource.
+4. **Prefer simpler expressions** — Complex nests can make debugging harder.
+
+## Next Steps
+
+- [Measures](/docs/semantic-model/fields/measures/)
+- [Expressions](/docs/semantic-model/expressions/sql/)
+- [Temporal decorators](/docs/advanced/decorators/temporal/) — Compound measures in time-based calculations

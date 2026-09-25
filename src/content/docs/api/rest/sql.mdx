@@ -1,0 +1,98 @@
+---
+title: "SQL preview"
+description: "Generate SQL from a query spec without persisting a query."
+---
+Generate SQL from a query spec without persisting a query.
+
+## Preview SQL
+
+```
+POST /api/v1/projects/{project_id}/sql
+```
+
+**Auth:** Project member
+
+Resolves field names, builds the query plan, and returns SQL. The query record is rolled back — nothing is saved.
+
+**Body:**
+
+```json
+{
+  "branch": "main",
+  "spec": {
+    "projections": [
+      { "field": "State", "axis": "x" },
+      { "field": "Web Net Paid", "axis": "y" }
+    ],
+    "filters": [
+      { "field": "State", "predicate": "equals", "value": "CA" }
+    ]
+  }
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST \
+     -H "Authorization: Bearer $API_KEY" \
+     -H "Content-Type: application/json" \
+     "$BASE_URL/api/v1/projects/tpcds/sql" \
+     -d '{
+       "spec": {
+         "projections": [
+           { "field": "State", "axis": "x" },
+           { "field": "Web Net Paid", "axis": "y" }
+         ]
+       }
+     }'
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "sql": "SELECT ...",
+  "errors": []
+}
+```
+
+**Errors:**
+
+| HTTP | Code | When |
+|------|------|------|
+| 422 | `invalid_query_construction` | Unknown or ambiguous field |
+| 422 | `sql_generation_error` | Planner failure |
+
+## SQL for saved query
+
+```
+GET /api/v1/queries/{query_id}/sql
+```
+
+**Auth:** Project member
+
+Returns SQL for an existing API query. Shallow route — no `project_id` in path.
+
+**Query parameters:** `branch` (optional)
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/queries/42/sql"
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "sql": "SELECT ...",
+  "errors": []
+}
+```
+
+## Related
+
+- [Query spec](/docs/api/rest/query-spec/)
+- [Queries](/docs/api/rest/queries/)

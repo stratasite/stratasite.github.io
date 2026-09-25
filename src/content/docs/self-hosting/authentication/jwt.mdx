@@ -1,0 +1,83 @@
+---
+title: "JWT"
+description: "JWT SSO is a lightweight, Metabase-style option for when you already run an application that can authenticate your users and sign a token. Your app signs a short-lived JSON Web Token describing the us"
+---
+JWT SSO is a lightweight, Metabase-style option for when you already run an application that can authenticate your users and sign a token. Your app signs a short-lived JSON Web Token describing the user, and Strata trusts it because it's signed with a secret only the two systems share.
+
+For shared behavior — how users are auto-created, license seats, and the break-glass password fallback — see [Authentication & SSO](/docs/self-hosting/authentication/).
+
+## How it works
+
+1. A user clicks **Sign in with SSO** on the Strata login page.
+2. Strata redirects to your **Login URL** with a `return_to` query parameter pointing back at Strata (`https://YOUR_STRATA_HOST/auth/jwt`).
+3. Your app authenticates the user, signs a JWT with the shared secret, and redirects the browser to `return_to` with the token attached: `https://YOUR_STRATA_HOST/auth/jwt?jwt=<token>`.
+4. Strata verifies the token's signature and expiry, then signs the user in (creating the account on first login).
+
+## The shared secret is symmetric
+
+JWT SSO uses **HS256 (HMAC-SHA256)**. There is a single **shared secret**, and the *same* secret both signs and verifies the token. You set the identical secret in your application and in Strata.
+
+There is no public/private key pair here. If you want asymmetric signing (your IdP holds a private key, Strata holds only a public key), use [OpenID Connect](/docs/self-hosting/authentication/oidc/) instead.
+
+## Token contract
+
+Your app must sign a token with these claims:
+
+```json
+{
+  "email": "user@example.com",
+  "first_name": "Ada",
+  "last_name": "Lovelace",
+  "exp": 1735689600
+}
+```
+
+- **Algorithm**: `HS256`, signed with the shared secret.
+- **`email`** is required. `first_name` / `last_name` are optional (Strata falls back to the email local part).
+- **`exp`** is the standard expiry (a Unix timestamp) and is enforced. Sign **short-lived** tokens — a few minutes — so a token leaked from a URL or log can't be replayed.
+
+Example (Ruby, using the `jwt` gem):
+
+```ruby
+require "jwt"
+
+payload = {
+  email: "user@example.com",
+  first_name: "Ada",
+  last_name: "Lovelace",
+  exp: Time.now.to_i + 300   # expires in 5 minutes
+}
+
+token = JWT.encode(payload, SHARED_SECRET, "HS256")
+redirect_to "#{params[:return_to]}?jwt=#{token}"
+```
+
+Any language works — sign an HS256 JWT with the same secret and redirect to the `return_to` URL with `?jwt=<token>`.
+
+## Fields in Strata
+
+In **System Settings → SSO**, choose method **JWT** and fill in:
+
+| Field | Required | What it is |
+|---|---|---|
+| **Login URL** | Yes | Your application's page that authenticates the user and signs the token. Strata redirects here (with `return_to`) when a user starts SSO. |
+| **Shared secret** | Yes | The HS256 secret. Set the **identical** value in your application. Stored encrypted at rest. |
+
+Generate a strong random secret, for example with `openssl rand -hex 32`, and configure the same value in both systems. Click **Save SSO settings**, then restart all Strata application servers.
+
+## Troubleshooting
+
+### "Invalid or expired SSO token"
+
+- The shared secret in Strata doesn't match the one your app signed with. Set them identical.
+- The token's `exp` is in the past (or missing). Sign a fresh, short-lived token per login.
+- The token wasn't signed with `HS256`.
+
+### The user bounces between Strata and your login app
+
+Your app must read the `return_to` query parameter Strata sends and redirect back to it with `?jwt=<token>` after authenticating. If `return_to` is dropped, the loop can't complete.
+
+## References
+
+- [JSON Web Token (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519)
+- [Metabase JWT SSO](https://www.metabase.com/docs/latest/people-and-groups/authenticating-with-jwt) — the pattern this method follows

@@ -1,0 +1,246 @@
+---
+title: "Expressions"
+description: "Learn how to define field expressions using SQL, lookups, and arrays."
+---
+Learn how to define field expressions using SQL, lookups, and arrays.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Write SQL expressions for dimensions and measures
+- Use lookup expressions for dimension fields
+- Configure primary key expressions
+- Work with array expressions
+
+## Expression Types
+
+### SQL Expressions
+
+SQL expressions are the most common type. They define how to query the field from the database.
+
+**For Dimensions:**
+```yaml
+- type: dimension
+  name: Customer Name
+  data_type: string
+  expression:
+    sql: customer_name
+```
+
+**For Measures:**
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+**Complex SQL:**
+```yaml
+- type: dimension
+  name: Full Name
+  data_type: string
+  expression:
+    sql: CONCAT(first_name, ' ', last_name)
+```
+
+**With CASE statements:**
+```yaml
+- type: dimension
+  name: Order Status
+  data_type: string
+  expression:
+    sql: |
+      CASE
+        WHEN status = 'P' THEN 'Pending'
+        WHEN status = 'C' THEN 'Completed'
+        WHEN status = 'X' THEN 'Cancelled'
+        ELSE 'Unknown'
+      END
+```
+
+## Shorthand
+
+For simple SQL only, you can use a string instead of a nested mapping (same as `expression: { sql: ... }`):
+
+```yaml
+- type: dimension
+  name: Order ID
+  data_type: integer
+  expression: order_id
+
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression: sum(amount)
+```
+
+Use the mapping form when you need `lookup`, `primary_key`, or `array`.
+
+## Primary Keys
+
+Mark a dimension as a primary key. This helps with query optimization and ensures uniqueness.
+
+```yaml
+- type: dimension
+  name: Order ID
+  data_type: integer
+  expression:
+    primary_key: true
+    sql: order_id
+```
+
+**When to use:**
+- Unique identifiers (IDs, codes)
+- One row per entity
+- Helps planner optimize joins
+
+## Lookup Expressions
+
+Lookup expressions indicate that a dimension field is a lookup/dimension field. This is optional but can help with query planning.
+
+```yaml
+- type: dimension
+  name: Product Category
+  data_type: string
+  expression:
+    lookup: true
+    sql: category_name
+```
+
+**When to use:**
+- Dimension fields (not measures)
+- Fields used for grouping/filtering
+- Optional - SQL expressions work without it
+
+## Array Expressions
+
+Array expressions indicate that a field contains array values.
+
+```yaml
+- type: dimension
+  name: Tags
+  data_type: string
+  expression:
+    array: true
+    sql: tag_array
+```
+
+**When to use:**
+- Database columns that are arrays
+- JSON array fields
+- Multi-value dimensions
+
+## Measure Expressions
+
+Measures must include aggregation functions:
+
+**Sum:**
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+**Average:**
+```yaml
+- type: measure
+  name: Average Order Value
+  data_type: decimal
+  expression:
+    sql: avg(amount)
+```
+
+**Count:**
+```yaml
+- type: measure
+  name: Order Count
+  data_type: integer
+  expression:
+    sql: count(*)
+```
+
+**Count Distinct:**
+```yaml
+- type: measure
+  name: Unique Customers
+  data_type: integer
+  expression:
+    sql: count(distinct customer_id)
+```
+
+**Min/Max:**
+```yaml
+- type: measure
+  name: First Order Date
+  data_type: date
+  expression:
+    sql: min(order_date)
+
+- type: measure
+  name: Last Order Date
+  data_type: date
+  expression:
+    sql: max(order_date)
+```
+
+## Expression Best Practices
+
+1. **Use column names directly** for simple fields
+2. **Include aggregation** for all measures (sum, avg, count, etc.)
+3. **Mark primary keys** for unique identifiers
+4. **Use SQL functions** for transformations (CONCAT, CASE, etc.)
+5. **Keep expressions readable** - complex logic should be in views or calculated columns
+
+## Common Patterns
+
+### Concatenation
+```yaml
+- type: dimension
+  name: Full Address
+  data_type: string
+  expression:
+    sql: CONCAT(street, ', ', city, ', ', state, ' ', zip)
+```
+
+### Date Formatting
+```yaml
+- type: dimension
+  name: Order Month
+  data_type: string
+  expression:
+    sql: TO_CHAR(order_date, 'YYYY-MM')
+```
+
+### Null Handling
+```yaml
+- type: dimension
+  name: Customer Name
+  data_type: string
+  expression:
+    sql: COALESCE(customer_name, 'Unknown')
+```
+
+### Conditional Logic
+```yaml
+- type: dimension
+  name: Customer Segment
+  data_type: string
+  expression:
+    sql: |
+      CASE
+        WHEN total_orders > 100 THEN 'VIP'
+        WHEN total_orders > 50 THEN 'Regular'
+        ELSE 'New'
+      END
+```
+
+## Next Steps
+
+- Learn about [relationships](/docs/cli/relationships/) to join tables
+- Read the [SQL expressions deep-dive](/docs/semantic-model/expressions/sql/)
+- Explore [lookup expressions](/docs/semantic-model/expressions/lookups/)
+- Understand [array expressions](/docs/semantic-model/expressions/arrays/)

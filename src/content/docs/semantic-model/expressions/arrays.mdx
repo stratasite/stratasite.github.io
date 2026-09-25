@@ -1,0 +1,73 @@
+---
+title: "Array Expressions"
+description: "Work with array/multi-value fields."
+---
+Work with array/multi-value fields.
+
+## Overview
+
+Array expressions indicate that a field contains array values. Use for database columns that are arrays or JSON arrays.
+
+## Basic Syntax
+
+```yaml
+expression:
+  array: true
+  sql: array_column
+```
+
+## When to Use
+
+Use array expressions for:
+- Database array columns (PostgreSQL arrays)
+- JSON array fields
+- Multi-value dimensions
+
+## Example
+
+```yaml
+- type: dimension
+  name: Tags
+  data_type: string
+  expression:
+    array: true
+    sql: tag_array
+```
+
+## PostgreSQL Arrays
+
+For PostgreSQL array columns:
+
+```yaml
+- type: dimension
+  name: Product Tags
+  data_type: string
+  expression:
+    array: true
+    sql: tags  # PostgreSQL array column
+```
+
+## JSON Arrays
+
+For JSON array fields:
+
+```yaml
+- type: dimension
+  name: Categories
+  data_type: string
+  expression:
+    array: true
+    sql: json_extract_path_text(categories, 'items')  # JSON array
+```
+
+## Best Practices
+
+1. **Use for multi-value fields** - When a field can have multiple values
+2. **Test array handling** - Verify arrays work in your queries
+3. **Document array structure** - Add descriptions explaining array format
+
+## Next Steps
+
+- Learn about [SQL expressions](/docs/semantic-model/expressions/sql/)
+- Explore [lookup expressions](/docs/semantic-model/expressions/lookups/)
+- Understand [dimensions](/docs/semantic-model/fields/dimensions/)

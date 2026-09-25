@@ -1,0 +1,200 @@
+---
+title: "Imports"
+description: "Reuse field definitions across tables."
+---
+Reuse field definitions across tables.
+
+## Overview
+
+Imports allow you to define fields once and reuse them across multiple tables. This reduces duplication and ensures consistency.
+
+## How Imports Work
+
+1. **Imports processed first** - Fields from imported files are loaded
+2. **Local fields merged** - Local field definitions override or extend imports
+3. **Circular dependency detection** - Validated to prevent infinite loops
+
+## Basic Syntax
+
+```yaml
+imports:
+  - path/to/shared_fields.yml
+  - ../common/dates.yml
+```
+
+## Example
+
+### Shared Fields File
+
+**models/common/dates.yml:**
+```yaml
+fields:
+  - type: dimension
+    name: Order Date
+    data_type: date
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: order_date
+```
+
+### Importing Table
+
+**models/sales/tbl.orders.yml:**
+```yaml
+name: Orders
+physical_name: orders
+datasource: warehouse
+cost: 100
+
+imports:
+  - ../common/dates.yml
+
+fields:
+  - type: measure
+    name: Total Revenue
+    data_type: decimal
+    expression:
+      sql: sum(amount)
+```
+
+## Overriding Imported Fields
+
+Local fields can override imported fields:
+
+```yaml
+imports:
+  - ../common/dates.yml
+
+fields:
+  # Override imported Order Date with custom expression
+  - type: dimension
+    name: Order Date
+    data_type: date
+    expression:
+      sql: custom_order_date  # Override imported field
+```
+
+## Extending Imported Fields
+
+Add additional fields alongside imports:
+
+```yaml
+imports:
+  - ../common/dates.yml
+
+fields:
+  # Imported fields are included
+  # Plus these additional fields:
+  - type: measure
+    name: Total Revenue
+    data_type: decimal
+    expression:
+      sql: sum(amount)
+```
+
+## Path Resolution
+
+Paths are relative to the importing file:
+
+```yaml
+# From models/sales/tbl.orders.yml
+imports:
+  - ../common/dates.yml           # models/common/dates.yml
+  - ../inventory/products.yml     # models/inventory/products.yml
+  - common/geo_dimensions.yml     # models/sales/common/geo_dimensions.yml
+```
+
+## Common Patterns
+
+### Shared Date Dimensions
+
+**models/common/dates.yml:**
+```yaml
+fields:
+  - type: dimension
+    name: Order Date
+    data_type: date
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: order_date
+```
+
+**Multiple tables import:**
+```yaml
+# models/sales/tbl.orders.yml
+imports:
+  - ../common/dates.yml
+
+# models/inventory/tbl.stock.yml
+imports:
+  - ../common/dates.yml
+```
+
+### Shared Geography Fields
+
+**models/common/geo_dimensions.yml:**
+```yaml
+fields:
+  - type: dimension
+    name: Region
+    data_type: string
+    expression:
+      sql: region_name
+
+  - type: dimension
+    name: Country
+    data_type: string
+    expression:
+      sql: country_name
+```
+
+## Best Practices
+
+1. **Group related fields** - Create logical groupings (dates, geography, etc.)
+2. **Use descriptive paths** - Clear file names and organization
+3. **Document imports** - Add comments explaining what's imported
+4. **Avoid deep nesting** - Keep import paths simple
+5. **Test imports** - Verify imported fields work correctly
+
+## Validation
+
+The CLI validates:
+- **File existence** - Imported files must exist
+- **Circular dependencies** - Prevents infinite loops
+- **Field conflicts** - Warns about duplicate field names
+
+## Troubleshooting
+
+### Import Not Found
+
+**Error:** `File not found: ../common/dates.yml`
+
+**Solution:**
+- Check file path is correct (relative to importing file)
+- Verify file exists
+- Check file permissions
+
+### Circular Dependency
+
+**Error:** `Circular dependency detected`
+
+**Solution:**
+- Review import chain
+- Remove circular references
+- Restructure shared fields
+
+## Next Steps
+
+- Learn about [tables](/docs/semantic-model/tables/)
+- Read about [fields](/docs/semantic-model/fields/dimensions/)
+- Explore [table schema reference](/docs/semantic-model/tables/)

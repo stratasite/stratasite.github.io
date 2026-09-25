@@ -1,0 +1,153 @@
+---
+title: "Audit"
+description: "Run validation checks on your project with strata audit before deploying."
+---
+Run validation checks on your project with `strata audit` before deploying.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Run all audit checks or individual checks (syntax, models, connections)
+- Understand what each check validates
+- Interpret audit output and fix common issues
+- Use audits in deployment and CI/CD
+
+## Prerequisites
+
+- Strata CLI installed
+- A Strata project with at least `datasources.yml` and/or `models/` (for syntax and models checks)
+- For connection checks: datasources configured and credentials in `.strata`
+
+## Step 1: Run All Audits
+
+Run the full audit (default):
+
+```bash
+strata audit
+strata audit all
+```
+
+Alias: `a` (e.g. `strata a`)
+
+**What happens:** The CLI runs three checks in sequence:
+1. **YAML syntax** - Validates `datasources.yml` and all `models/**/*.yml` files
+2. **Model definitions** - Validates table and relationship structure, imports, cardinality
+3. **Datasource connections** - Tests each datasource in `datasources.yml`
+
+If any check fails, the CLI reports errors and exits with code `1`. Fix the issues and run again.
+
+## Step 2: Run Individual Checks
+
+### Syntax Only
+
+Check YAML syntax of configuration and model files:
+
+```bash
+strata audit syntax
+```
+
+**Validates:**
+- `datasources.yml` (if present)
+- All `models/**/*.yml` files
+
+**Scope:** The syntax check does not currently include `project.yml`, `migrations/*.yml`, or `tests/*.yml`. Those may be added in a future release.
+
+### Models Only
+
+Validate model definitions and schema structure:
+
+```bash
+strata audit models
+```
+
+**Validates:**
+- Required keys present (e.g. table: `name`, `physical_name`, `fields`, `datasource`; relationship: `datasource`, and each relationship definition: `left`, `right`, `sql`, `cardinality`)
+- Field structure correct
+- Relationship definitions valid
+- Import resolution and circular import detection
+- Cardinality values (`one_to_one`, `one_to_many`, `many_to_one`, `many_to_many`)
+
+### Connections Only
+
+Test all datasource connections:
+
+```bash
+strata audit connections
+```
+
+**Tests:** Connection parameters, authentication, and database accessibility for each datasource. Reports success or failure per datasource.
+
+## Understanding Output
+
+### Success
+
+```
+✓ Checking YAML syntax
+✓ Checking model definitions
+✓ Checking data source connections
+```
+
+Exit code: `0`
+
+### Failures
+
+```
+✖ models/sales/tbl.orders.yml: Missing required field 'datasource'
+✖ datasources.yml: Invalid YAML syntax at line 5
+✖ warehouse: Connection failed - authentication error
+```
+
+Exit code: `1`. Fix the reported issues and run `strata audit` again.
+
+## Integration with Deployment
+
+Audits run automatically during deployment unless you skip them:
+
+```bash
+strata deploy  # Runs audits first, then deploys
+strata deploy --skip-audit  # Not recommended
+```
+
+## Integration with CI/CD
+
+Add an audit step before deployment:
+
+```yaml
+- name: Audit
+  run: strata audit
+```
+
+Run audits on every push or pull request to catch issues before merge.
+
+## Best Practices
+
+1. **Run before deploying** - Fix issues early; don't deploy with failures
+2. **Fix errors immediately** - Address each reported file or datasource
+3. **Use in CI/CD** - Automate validation on every push
+4. **Check regularly** - Run audits during development
+
+## Troubleshooting
+
+### Syntax Errors
+
+**Check:** Indentation, colons, quotes in YAML. Use a YAML linter if needed.
+
+**Solution:** Fix the reported file and line; run `strata audit syntax` again.
+
+### Model Validation Failures
+
+**Check:** Required keys in table and relationship files. See [Tables](/docs/semantic-model/tables/) and [Relationships](/docs/semantic-model/relationships/cardinality/).
+
+**Solution:** Add missing keys or fix invalid values (e.g. cardinality).
+
+### Connection Failures
+
+**Check:** `datasources.yml` and `.strata` (host, port, credentials). Ensure the database is reachable.
+
+**Solution:** Run `strata datasource test <key>` to isolate the issue; fix config or credentials.
+
+## Next Steps
+
+- [Deployment](/docs/cli/deployment/) - Deploy after audits pass
+- [Testing](/docs/cli/tests/) - Validate SQL generation
+- [CI/CD](/docs/cli/ci-cd/) - Automate audits and deployment

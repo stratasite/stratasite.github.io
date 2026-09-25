@@ -1,0 +1,42 @@
+---
+title: "Security Hardening"
+description: "Use this checklist to harden production Strata deployments."
+---
+Use this checklist to harden production Strata deployments.
+
+## Runtime
+
+- Run current stable image version
+- Use immutable image tags in production
+- Restrict network access to required ports only
+
+## Secrets
+
+- Store secrets in a managed secrets system
+- Rotate secrets on a defined schedule
+
+Required protected secrets include:
+
+- `LICENSE_KEY`
+- `DB_PASSWORD`
+- `STRATA_SECRET_KEY_BASE`
+- `STRATA_ENCRYPTION_PRIMARY_KEY`
+- `STRATA_ENCRYPTION_DETERMINISTIC_KEY`
+- `STRATA_ENCRYPTION_KEY_DERIVATION_SALT`
+
+## TLS and transport
+
+- Terminate TLS at a trusted reverse proxy or load balancer
+- Use `ASSUME_SSL=true` and `FORCE_SSL=true` when SSL is enabled
+
+## Access control
+
+- Apply least-privilege IAM/service-role policies
+- Restrict container registry credentials to read-only for runtime hosts
+- Restrict admin access to infrastructure and secrets systems
+
+## Logging and audit
+
+- Centralize logs and retain by policy
+- Alert on repeated auth or startup failures
+- Keep deployment change history for traceability

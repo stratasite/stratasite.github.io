@@ -1,0 +1,202 @@
+---
+title: "TPC-DS Tutorial"
+description: "Complete walkthrough of the TPC-DS benchmark semantic model."
+---
+Complete walkthrough of the TPC-DS benchmark semantic model.
+
+## Overview
+
+The TPC-DS Tutorial is a nearly complete model of the TPC-DS benchmark system. It demonstrates best practices for modeling a complex data warehouse in Strata.
+
+## Project Structure
+
+```
+tpcds-tutorial/
+├── project.yml              # Project configuration
+├── datasources.yml          # Datasource connection
+├── models/                  # Semantic model files
+│   ├── catalog/            # Catalog channel models
+│   ├── common/             # Shared dimension tables
+│   ├── inventory/          # Inventory models
+│   └── store/              # Store channel models
+├── migrations/              # Schema migrations
+└── tests/                   # Query validation tests
+```
+
+## Key Components
+
+### Datasource Configuration
+
+```yaml
+tpcds:
+  adapter: postgres
+  name: POSTGRES
+  description: Postgres datasource
+  tier: warm
+  query_timeout: 3600
+  host: localhost
+  port: 5432
+  database: tpcds
+  schema: public
+  ssl: false
+  username: tpcds
+```
+
+### Table Models
+
+#### Fact Tables
+
+**Store Sales** (`models/store/tbl.store_sales.yml`):
+```yaml
+name: Store Sales
+physical_name: store_sales
+datasource: tpcds
+cost: 100  # Fact table: higher cost
+
+fields:
+  - type: dimension
+    name: Store Ticket number
+    data_type: integer
+    expression:
+      primary_key: true
+      sql: ss_ticket_number
+
+  - type: measure
+    name: Store Quantity
+    data_type: integer
+    expression:
+      sql: sum(ss_quantity)
+
+  - type: measure
+    name: Store Sales Price
+    data_type: decimal
+    expression:
+      sql: sum(ss_sales_price)
+```
+
+#### Dimension Tables
+
+**Store** (`models/store/tbl.store.yml`):
+```yaml
+name: Store
+physical_name: store
+datasource: tpcds
+cost: 10  # Dimension table: lower cost
+
+fields:
+  - type: dimension
+    name: Store Name
+    data_type: string
+    expression:
+      sql: s_store_name
+```
+
+### Relationships
+
+**Store Relationships** (`models/store/rel.store.yml`):
+```yaml
+datasource: tpcds
+
+# Store Sales to Date Dimension
+store_sales_sold_date:
+  left: Store Sales
+  right: Date
+  sql: left.ss_sold_date_sk = right.d_date_sk
+  cardinality: many_to_one
+
+# Store Sales to Customer Dimension
+store_sales_customer:
+  left: Store Sales
+  right: Customer
+  sql: left.ss_customer_sk = right.c_customer_sk
+  cardinality: many_to_one
+
+# Store Sales to Store Dimension
+store_sales_store:
+  left: Store Sales
+  right: Store
+  sql: left.ss_store_sk = right.s_store_sk
+  cardinality: many_to_one
+```
+
+## Key Patterns
+
+### 1. Cost Configuration
+
+- **Dimension tables**: `cost: 10` (lower cost = preferred)
+- **Fact tables**: `cost: 100` (higher cost = used when needed)
+
+### 2. Primary Keys
+
+Mark unique identifiers as primary keys:
+
+```yaml
+- type: dimension
+  name: Store Ticket number
+  expression:
+    primary_key: true
+    sql: ss_ticket_number
+```
+
+### 3. Measure Aggregation
+
+All measures include aggregation:
+
+```yaml
+- type: measure
+  name: Store Quantity
+  expression:
+    sql: sum(ss_quantity)
+```
+
+### 4. Relationship Cardinality
+
+Most relationships are `many_to_one`:
+
+```yaml
+store_sales_store:
+  left: Store Sales
+  right: Store
+  sql: left.ss_store_sk = right.s_store_sk
+  cardinality: many_to_one
+```
+
+## Testing
+
+Test files validate SQL generation:
+
+```yaml
+name: Store Sales Positive Values
+
+projections:
+  - Store Sales Price
+  - Store Quantity
+
+assert_sql: "SELECT sum(T0.\"ss_quantity\") AS \"Store Quantity\", sum(T0.\"ss_sales_price\") AS \"Store Sales Price\" FROM store_sales T0"
+```
+
+## Migrations
+
+Example rename migration:
+
+```yaml
+- type: rename
+  hook: pre
+  entity: dimension
+  from: Store Name
+  to: Store Location Name
+```
+
+## Lessons Learned
+
+1. **Organize by domain** - Group related tables (catalog, store, common)
+2. **Use appropriate costs** - Lower for dimensions, higher for facts
+3. **Mark primary keys** - Helps with query optimization
+4. **Define relationships** - Enable cross-table queries
+5. **Test queries** - Validate SQL generation
+
+## Next Steps
+
+- [Explore the project](https://github.com/stratasite/tpcds-tutorial)
+- [Learn star schema pattern](/docs/examples/patterns/star-schema/)
+- [Try customer 360 recipe](/docs/examples/recipes/customer-360/)

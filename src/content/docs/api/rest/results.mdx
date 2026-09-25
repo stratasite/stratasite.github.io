@@ -1,0 +1,122 @@
+---
+title: "Results"
+description: "Fetch, poll, and cancel query execution results."
+---
+Fetch, poll, and cancel query execution results.
+
+## Poll result via query
+
+```
+GET /api/v1/queries/{query_id}/result
+```
+
+**Auth:** Project member
+
+Returns the latest result for a query. Use the `poll_url` from a `pending` create response.
+
+**Query parameters:**
+
+| Parameter | Default | Max |
+|-----------|---------|-----|
+| `branch` | — | — |
+| `limit` | 25 | 100 |
+| `offset` | 0 | — |
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/queries/42/result?limit=25&offset=0"
+```
+
+| HTTP | When |
+|------|------|
+| 202 | Result still pending (queued/running) |
+| 200 | Result settled (succeeded, failed, or cancelled) |
+| 404 | No result exists for this query |
+
+## Show result
+
+```
+GET /api/v1/projects/{project_id}/results/{id}
+```
+
+**Auth:** Project member
+
+Fetch a specific result by ID.
+
+**Query parameters:** `limit`, `offset` (same as above)
+
+**Response shape:**
+
+```json
+{
+  "id": 108,
+  "status": "succeeded",
+  "query_id": 42,
+  "errors": [],
+  "row_count": 1,
+  "columns": ["State", "Web Net Paid"],
+  "error_message": null,
+  "queue_started_at": "2026-06-15T14:30:01Z",
+  "query_started_at": "2026-06-15T14:30:02Z",
+  "query_ended_at": "2026-06-15T14:30:05Z",
+  "rows": [
+    ["CA", 12345.67]
+  ]
+}
+```
+
+`rows` is included only when `status` is `succeeded`.
+
+## Download CSV
+
+Append `.csv` or pass `format=csv`:
+
+```
+GET /api/v1/projects/{project_id}/results/{id}.csv
+GET /api/v1/projects/{project_id}/results/{id}?format=csv
+```
+
+**Auth:** Project member
+
+When a CSV blob is attached, the API redirects to the download URL. Zero-row results return an inline header-only CSV.
+
+**Example:**
+
+```bash
+curl -L -H "Authorization: Bearer $API_KEY" \
+     -H "Accept: text/csv" \
+     "$BASE_URL/api/v1/projects/tpcds/results/108.csv" \
+     -o result.csv
+```
+
+**Errors:**
+
+| HTTP | When |
+|------|------|
+| 404 | Result not succeeded or CSV unavailable |
+
+## Cancel result
+
+```
+DELETE /api/v1/projects/{project_id}/results/{id}
+```
+
+**Auth:** Project member
+
+Cancels a pending result (queued or running). No-op if already settled. Returns the result object.
+
+**Example:**
+
+```bash
+curl -X DELETE \
+     -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/results/108"
+```
+
+## Related
+
+- [Queries](/docs/api/rest/queries/)
+- [Quickstart](/docs/api/rest/quickstart/)
+- [Errors](/docs/api/rest/errors/)

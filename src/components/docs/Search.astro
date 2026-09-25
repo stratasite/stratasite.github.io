@@ -1,0 +1,162 @@
+---
+/**
+ * Docs search. Pagefind builds a static index of every page marked
+ * `data-pagefind-body` at build time (see astro-pagefind in astro.config); this
+ * is the UI over it: a trigger button, and a dialog that queries the index as
+ * you type. Styled with brand tokens rather than Pagefind's default UI.
+ *
+ * In `astro dev` the index comes from the last `astro build`, so run a build
+ * once before expecting results locally.
+ */
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+---
+
+<button
+  type="button"
+  class={`docs-search-trigger inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-strata-peach/50 hover:text-foreground ${className}`}
+  data-docs-search-open
+  aria-label="Search documentation"
+>
+  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path
+      fill-rule="evenodd"
+      d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.45 4.39l3.33 3.33a.75.75 0 11-1.06 1.06l-3.33-3.33A7 7 0 012 9z"
+      clip-rule="evenodd"
+    />
+  </svg>
+  <span class="hidden sm:inline">Search docs</span>
+  <kbd class="hidden rounded border border-border bg-background px-1.5 font-mono text-[0.7rem] text-muted-foreground sm:inline">⌘K</kbd>
+</button>
+
+<dialog class="docs-search m-0 w-full max-w-none bg-transparent p-0 backdrop:bg-black/60 sm:mx-auto sm:mt-[10vh] sm:w-[40rem]" data-docs-search>
+  <div class="flex max-h-[80vh] flex-col overflow-hidden border border-border bg-menu text-menu-foreground shadow-2xl sm:rounded-lg">
+    <form class="flex items-center gap-3 border-b border-menu-border px-4" role="search" onsubmit="return false">
+      <svg class="h-5 w-5 shrink-0 text-menu-muted" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path
+          fill-rule="evenodd"
+          d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.45 4.39l3.33 3.33a.75.75 0 11-1.06 1.06l-3.33-3.33A7 7 0 012 9z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <input
+        type="search"
+        class="h-14 w-full bg-transparent text-base text-menu-foreground outline-none placeholder:text-menu-muted"
+        placeholder="Search the docs"
+        autocomplete="off"
+        spellcheck="false"
+        data-docs-search-input
+      />
+      <button type="button" class="rounded border border-menu-border px-1.5 font-mono text-[0.7rem] text-menu-muted hover:text-menu-foreground" data-docs-search-close>
+        esc
+      </button>
+    </form>
+    <div class="overflow-y-auto p-2" data-docs-search-results>
+      <p class="px-3 py-6 text-center text-sm text-menu-muted">Type to search the developer, self-hosting, and API guides.</p>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('[data-docs-search]');
+  const input = dialog?.querySelector<HTMLInputElement>('[data-docs-search-input]');
+  const results = dialog?.querySelector<HTMLElement>('[data-docs-search-results]');
+
+  if (dialog && input && results) {
+    type Pagefind = {
+      init: () => Promise<void>;
+      search: (q: string) => Promise<{ results: { data: () => Promise<Result> }[] }>;
+    };
+    type Result = { url: string; excerpt: string; meta: { title?: string } };
+
+    let pagefind: Pagefind | null = null;
+    let loadFailed = false;
+    async function load() {
+      if (pagefind || loadFailed) return pagefind;
+      try {
+        // Emitted by Pagefind at build time, not a bundled module, so the
+        // path goes through a variable to keep Vite from trying to resolve it.
+        const bundle = '/pagefind/pagefind.js';
+        pagefind = (await import(/* @vite-ignore */ bundle)) as Pagefind;
+        await pagefind.init();
+      } catch {
+        loadFailed = true;
+      }
+      return pagefind;
+    }
+
+    const open = () => {
+      dialog.showModal();
+      input.select();
+      load();
+    };
+    const close = () => dialog.close();
+
+    document.querySelectorAll('[data-docs-search-open]').forEach((b) => b.addEventListener('click', open));
+    dialog.querySelector('[data-docs-search-close]')?.addEventListener('click', close);
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        dialog.open ? close() : open();
+      }
+    });
+
+    const empty = (msg: string) => `<p class="px-3 py-6 text-center text-sm text-menu-muted">${msg}</p>`;
+
+    let seq = 0;
+    input.addEventListener('input', async () => {
+      const q = input.value.trim();
+      const mine = ++seq;
+      if (!q) {
+        results.innerHTML = empty('Type to search the developer, self-hosting, and API guides.');
+        return;
+      }
+      const pf = await load();
+      if (!pf) {
+        results.innerHTML = empty('Search index not available. Run a build to generate it.');
+        return;
+      }
+      const res = await pf.search(q);
+      if (mine !== seq) return;
+      const hits = await Promise.all(res.results.slice(0, 10).map((r) => r.data()));
+      if (mine !== seq) return;
+      if (!hits.length) {
+        results.innerHTML = empty(`No results for “${q}”.`);
+        return;
+      }
+      results.innerHTML = hits
+        .map(
+          (h) => `
+          <a href="${h.url}" class="block rounded-md px-3 py-2.5 hover:bg-menu-raised focus:bg-menu-raised focus:outline-none">
+            <span class="block font-display text-sm font-semibold text-menu-primary">${h.meta.title ?? h.url}</span>
+            <span class="docs-search-excerpt mt-0.5 block text-[0.8125rem] leading-snug text-menu-muted">${h.excerpt}</span>
+          </a>`
+        )
+        .join('');
+    });
+
+    // Arrow keys move through results; Enter follows the focused one.
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      const links = Array.from(results.querySelectorAll<HTMLAnchorElement>('a'));
+      if (!links.length) return;
+      e.preventDefault();
+      const i = links.indexOf(document.activeElement as HTMLAnchorElement);
+      const next = e.key === 'ArrowDown' ? Math.min(i + 1, links.length - 1) : i <= 0 ? -1 : i - 1;
+      (next < 0 ? input : links[next]).focus();
+    });
+  }
+</script>
+
+<style is:global>
+  .docs-search-excerpt mark {
+    background: transparent;
+    color: var(--menu-primary);
+    font-weight: 600;
+  }
+</style>

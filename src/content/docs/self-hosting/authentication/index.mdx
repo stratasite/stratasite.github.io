@@ -1,0 +1,65 @@
+---
+title: "Authentication & SSO"
+description: "Strata has its own email and password login, and can also delegate sign-in to your identity provider (IdP) through Single Sign-On (SSO). SSO is configured once per Strata server by a system administra"
+---
+Strata has its own email and password login, and can also delegate sign-in to your identity provider (IdP) through Single Sign-On (SSO). SSO is configured once per Strata server by a system administrator.
+
+Strata supports four SSO methods:
+
+| Method | Use when | What Strata receives |
+|---|---|---|
+| [SAML 2.0](/docs/self-hosting/authentication/saml/) | Your enterprise IdP speaks SAML (Okta, Entra ID, Ping, Keycloak, …) | A signed assertion with the user's email and name |
+| [OpenID Connect (OIDC)](/docs/self-hosting/authentication/oidc/) | Your IdP speaks OIDC / OAuth 2.0 | An ID token and userinfo from the IdP |
+| [JWT](/docs/self-hosting/authentication/jwt/) | You control an app that can sign a token (Metabase-style) | A signed `{ email, first_name, last_name, exp }` token |
+| [Reverse proxy](/docs/self-hosting/authentication/reverse-proxy/) | A trusted proxy already authenticated the user | A trusted request header carrying the user's email |
+
+Pick the method your IdP supports. SAML and OIDC are the two standard enterprise protocols; JWT is a lightweight option for a custom login app; reverse proxy is for deployments already sitting behind an authenticating proxy.
+
+## Where to configure SSO
+
+1. Sign in to Strata as a system administrator.
+2. Open **System Settings**.
+3. Open the **SSO** tab (`/system/settings/sso`).
+4. Choose a **Method**, fill in that method's fields, and click **Save SSO settings**.
+
+The method options are **Disabled (password login only)**, **SAML 2.0**, **OpenID Connect (OIDC)**, **JWT**, and **Reverse proxy (trusted header)**.
+
+:::warning
+SSO configuration is loaded when the server starts. After you save changes, Strata shows a banner: *"Settings have changed since this server started — restart all application servers."* **Restart every Strata application server** for new SSO settings to take effect.
+:::
+
+## Callback URLs to register with your IdP
+
+For SAML and OIDC you must register a callback URL back at your IdP. Replace the host with your public Strata URL (the same `APP_HOST` / `APP_PROTOCOL` your users browse to):
+
+| Method | URL to register |
+|---|---|
+| OIDC redirect URI | `https://YOUR_STRATA_HOST/auth/oidc/callback` |
+| SAML ACS URL | `https://YOUR_STRATA_HOST/auth/saml/callback` |
+| JWT return URL | `https://YOUR_STRATA_HOST/auth/jwt` |
+
+Use `http://...` only for a local or non-TLS test environment.
+
+## How users are created (JIT provisioning)
+
+Strata creates users automatically on their first SSO login — you do not pre-create accounts.
+
+- Users are **matched by email address**; the IdP is the source of truth.
+- A first-time user is created with the standard (non-admin) role.
+- If the IdP doesn't send a first/last name, Strata derives the name from the email local part. **Email is the only required piece of identity** — an IdP that sends no email cannot sign a user in.
+- New-user creation respects your **license seat limit**. When no seats are free, login is denied with *"Your Strata license has no free seats."* Existing users are unaffected.
+
+## Keeping password login as a break-glass fallback
+
+The SSO settings include **Keep email/password login available (recommended as a break-glass fallback)**, on by default. Leave it on so an IdP outage or misconfiguration can't lock everyone out of Strata. When it's on, the standard email/password form stays on the login page alongside the **Sign in with SSO** button.
+
+## Secrets
+
+Sensitive values — the OIDC client secret and the JWT shared secret — are encrypted at rest in Strata's database.
+
+## Next steps
+
+- [SAML 2.0](/docs/self-hosting/authentication/saml/)
+- [OpenID Connect (OIDC)](/docs/self-hosting/authentication/oidc/)
+- [JWT](/docs/self-hosting/authentication/jwt/)
+- [Reverse proxy (trusted header)](/docs/self-hosting/authentication/reverse-proxy/)

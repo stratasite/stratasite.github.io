@@ -1,0 +1,446 @@
+---
+title: "Troubleshooting"
+description: "Solutions for common issues when working with Strata."
+---
+Solutions for common issues when working with Strata.
+
+## Quick Reference
+
+| Issue | Likely Cause | Quick Fix |
+|-------|-------------|-----------|
+| Deployment fails | YAML syntax or validation error | Run `strata audit` |
+| Connection refused | Wrong credentials or network | Run `strata datasource test` |
+| Field not found | Name doesn't match or not deployed | Check spelling, redeploy |
+| Cross-datasource error | Measures in different datasources | Use same datasource or blend |
+| Double-counting | Wrong cardinality or expansion | Review `allow_measure_expansion` |
+
+---
+
+## Deployment Issues
+
+### Deployment Fails with Validation Error
+
+**Symptoms:**
+- `strata deploy` exits with error
+- Error mentions "validation failed" or "invalid model"
+
+**Common Causes:**
+
+1. **YAML Syntax Error**
+   ```
+   Error: Invalid YAML in models/sales/tbl.orders.yml
+   ```
+   
+   **Fix:** Check for:
+   - Missing colons after keys
+   - Incorrect indentation (use spaces, not tabs)
+   - Unquoted special characters
+
+2. **Duplicate Field Name**
+   ```
+   Error: Field 'Total Revenue' already exists
+   ```
+   
+   **Fix:** Field names must be unique across entire project. Rename one of the duplicates.
+
+3. **Missing Required Field**
+   ```
+   Error: Table 'Orders' missing required field 'datasource'
+   ```
+   
+   **Fix:** Add the missing field to your YAML file.
+
+**Diagnostic Steps:**
+```bash
+# Run full audit to identify all issues
+strata audit
+
+# Check specific audit type
+strata audit syntax   # YAML syntax only
+strata audit models   # Model validation only
+```
+
+### Deployment Hangs at "Forming Universes"
+
+**Symptoms:**
+- Deployment progress stops at universe formation
+- Takes much longer than expected
+
+**Causes:**
+- Complex relationship graphs
+- Many tables with interconnected joins
+- Near-circular join patterns
+
+**Fixes:**
+1. Simplify relationship structure where possible
+2. Remove unnecessary joins
+3. Wait — complex models take longer (up to several minutes)
+
+### Tests Fail During Deployment
+
+**Symptoms:**
+- Deployment reports test failures
+- SQL assertions don't match
+
+**Diagnostic:**
+```bash
+# Review test expectations
+cat tests/my_test.yml
+
+# Check if field names changed
+strata table list
+```
+
+**Fixes:**
+1. Update test `assert_sql` to match current SQL generation
+2. Ensure field names in test match deployed model exactly
+3. Check if model changes affected generated SQL
+
+---
+
+## Connection Issues
+
+### Cannot Connect to Datasource
+
+**Symptoms:**
+```
+Error: Connection refused to warehouse
+Error: Authentication failed for user 'strata'
+```
+
+**Diagnostic:**
+```bash
+# Test specific datasource
+strata datasource test warehouse
+
+# List configured datasources
+strata datasource list
+
+# Check credentials are set
+cat .strata  # (contains credentials)
+```
+
+**Common Fixes:**
+
+1. **Wrong Host/Port**
+   ```yaml
+   # datasources.yml - verify these values
+   warehouse:
+     host: correct-hostname.example.com
+     port: 5432
+   ```
+
+2. **Missing Credentials**
+   ```bash
+   # Set credentials interactively
+   strata datasource auth warehouse
+   ```
+
+3. **Network Issues**
+   - Check firewall allows connection
+   - Verify VPN is connected (if required)
+   - Test direct connection: `psql -h host -U user -d database`
+
+4. **SSL Required**
+   ```yaml
+   warehouse:
+     ssl: true  # Enable if server requires SSL
+   ```
+
+### Datasource Authorization Error During Deployment
+
+**Symptoms:**
+```
+Datasource error: You are not authorized to perform: athena:StartQueryExecution
+Datasource error: Access denied when writing output to url: s3://...
+```
+
+**Cause:** The credentials configured for the datasource lack the required permissions. For AWS datasources like Athena, the credentials need permissions for the service itself (e.g., Athena query execution) and any dependent resources (e.g., S3 write access for query results).
+
+**Fix:** Verify the IAM user or role behind your datasource credentials has the necessary permissions. See adapter-specific docs for required permissions (e.g., [Athena](/docs/semantic-model/adapters/athena/#authentication)).
+
+### Remote Credentials Not Working
+
+**Symptoms:**
+- Local `strata datasource test` works
+- Deployment fails with connection error
+
+**Cause:** Deploy overlay did not include expected `.strata` credentials, or environment-specific credentials were selected incorrectly.
+
+**Fix:**
+1. Verify local credentials exist under the datasource key in `.strata`.
+2. If using `-e`, verify `.strata.<environment>.<datasource_key>` values.
+3. Re-run deploy with the intended environment:
+   ```bash
+   strata deploy -e staging
+   ```
+4. Confirm datasource config key names match exactly between `datasources.yml` and `.strata`.
+
+---
+
+## Query and Model Issues
+
+### Field Not Found in Query
+
+**Symptoms:**
+```
+Error: Field 'Customer Name' not found
+Error: Dimension 'Order Date' not in universe
+```
+
+**Causes:**
+
+1. **Typo in Field Name**
+   - Field names are case-sensitive
+   - Check exact spelling in model files
+
+2. **Field Not Deployed**
+   - Recent changes not deployed yet
+   ```bash
+   strata deploy
+   ```
+
+3. **Field Not Reachable**
+   - No join path exists to that field
+   - Check relationships connect the tables
+
+**Diagnostic:**
+```bash
+# List all deployed tables and fields
+strata table list
+```
+
+### Cross-Datasource Query Error
+
+**Symptoms:**
+```
+Error: Cannot combine measures from different datasources
+```
+
+**Cause:** Requested measures are in different datasources
+
+**Example:**
+```yaml
+# These can't be combined directly:
+Store Sales Price  → datasource: warehouse
+Web Sales Price    → datasource: analytics_db
+```
+
+**Fixes:**
+
+1. **Move to Same Datasource**
+   - Create tables in same datasource
+   
+2. **Use Extended Blending**
+   - Define `extended_blend_group` for compatible dimensions
+   - Query each datasource separately, blend results
+
+3. **Split Query**
+   - Execute separate queries
+   - Combine results in application layer
+
+### Double-Counting in Aggregations
+
+**Symptoms:**
+- Sums are higher than expected
+- Counts are multiplied
+
+**Causes:**
+
+1. **Wrong Cardinality**
+   ```yaml
+   # If relationship is actually many-to-many but defined as:
+   orders_items:
+     cardinality: one_to_many  # Wrong! Causes duplication
+   ```
+
+2. **Unsafe Measure Expansion**
+   ```yaml
+   # This can cause issues if not truly 1:1
+   customer_details:
+     cardinality: many_to_one
+     allow_measure_expansion: true  # Remove if causing issues
+   ```
+
+**Fixes:**
+1. Verify cardinality matches actual data relationships
+2. Remove `allow_measure_expansion` from problematic joins
+3. Use junction tables for true many-to-many
+
+---
+
+## Git Workflow Issues
+
+### Uncommitted Changes Blocking Deploy
+
+**Symptoms:**
+```
+Error: Working directory has uncommitted changes
+```
+
+**Cause:** Git status is not clean
+
+**Fixes:**
+```bash
+# Option 1: Commit your changes
+git add .
+git commit -m "Update semantic model"
+strata deploy
+
+# Option 2: Force deploy (not recommended for production)
+strata deploy --force
+```
+
+### Wrong Branch Deployed
+
+**Symptoms:**
+- Production has changes you didn't expect
+- Features appear before they should
+
+**Cause:** Deployed from wrong branch
+
+**Prevention:**
+```yaml
+# project.yml - set production branch
+production_branch: main
+```
+
+**Recovery:**
+```bash
+# Checkout correct branch
+git checkout main
+strata deploy
+```
+
+---
+
+## Performance Issues
+
+### Slow Queries
+
+**Symptoms:**
+- Queries take longer than expected
+- Timeouts on large datasets
+
+**Causes and Fixes:**
+
+1. **Using Cold Tier When Hot Available**
+   - Check tier configuration
+   - Ensure hot tier has required data
+
+2. **Missing Partitions**
+   - Add partition constraints for time-filtered queries
+   ```yaml
+   partition:
+     dimension: Order Date
+     predicate: greater_than_or_equal_to
+     filter_value: 2024-01-01
+   ```
+
+3. **Wrong Table Selected**
+   - Aggregated table has higher cost than detail
+   - Lower cost on pre-aggregated tables
+
+4. **Complex Join Paths**
+   - Simplify relationship graph
+   - Consider denormalization
+
+### Slow Deployment
+
+**Symptoms:**
+- Deployment takes many minutes
+- Hangs at specific stages
+
+**Stages and What They Do:**
+
+| Stage | What's Happening | Normal Time |
+|-------|-----------------|-------------|
+| Validating | Checking YAML | Seconds |
+| Building | Creating model objects | Seconds |
+| Forming universes | Path enumeration | 10s - 5min |
+| Testing | Running test files | Depends on tests |
+
+**If Universe Formation Is Slow:**
+- Reduce number of tables/relationships
+- Simplify join patterns
+- This is normal for complex models (100+ tables)
+
+---
+
+## Common Error Messages
+
+### "Name must be unique"
+
+**Full Error:** `Validation failed: Name 'X' must be unique`
+
+**Meaning:** Another field already uses this name
+
+**Fix:** Choose a different, unique name for the field
+
+### "Table not found in datasource"
+
+**Full Error:** `physical_name 'xyz' not found in datasource 'warehouse'`
+
+**Meaning:** The physical table doesn't exist in the database
+
+**Fixes:**
+1. Check table name spelling
+2. Verify table exists: `strata datasource tables warehouse`
+3. Check schema/catalog configuration
+
+### "Invalid cardinality"
+
+**Full Error:** `Invalid cardinality 'many_to_many'`
+
+**Meaning:** You used an unsupported cardinality type
+
+**Fix:** Use only: `many_to_one`, `one_to_many`, or `one_to_one`
+
+### "Measure must have aggregation"
+
+**Full Error:** `Expression for measure 'X' must include aggregation function`
+
+**Meaning:** Measure SQL doesn't have SUM, COUNT, AVG, etc.
+
+**Fix:**
+```yaml
+# Wrong
+expression:
+  sql: amount
+
+# Correct
+expression:
+  sql: sum(amount)
+```
+
+---
+
+## Getting Help
+
+If you can't resolve an issue:
+
+1. **Check Audit Output**
+   ```bash
+   strata audit 2>&1 | tee audit.log
+   ```
+
+2. **Review Recent Changes**
+   ```bash
+   git diff HEAD~5 -- models/
+   ```
+
+3. **Test Incrementally**
+   - Deploy with minimal model
+   - Add components one at a time
+   - Identify which change causes failure
+
+4. **Contact Support**
+   - Include audit output
+   - Include relevant YAML files
+   - Describe expected vs actual behavior
+
+## Next Steps
+
+- [Deployment Guide](/docs/cli/deployment/)
+- [Audit Commands](/docs/cli/audit/)
+- [Datasource Configuration](/docs/semantic-model/datasources/)

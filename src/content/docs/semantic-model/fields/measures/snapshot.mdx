@@ -1,0 +1,165 @@
+---
+title: "Snapshot Measures"
+description: "Capture point-in-time values for inventory and balance analysis."
+---
+Capture point-in-time values for inventory and balance analysis.
+
+## Overview
+
+Snapshot measures capture values at specific points in time (beginning or ending of a period). They're useful for **stateful** metrics like inventory, account balances, or membership counts — cases where summing across days is not meaningful, and you care about the value **at the boundary of a period**.
+
+## Requirements
+
+1. **Table must have `snapshot_date`** – Identifies the date dimension that drives snapshot behavior.
+2. **Measure must specify `snapshot`** – `ending` or `beginning`.
+
+The `snapshot_date` can:
+
+- Reference a date dimension defined **on the same table**, or
+- Refer to a date dimension in the table’s **universe**, as long as the association is unambiguous (for example, a single “As Of Date” dimension that always joins to this fact).
+
+## Table Configuration
+
+Set the snapshot date dimension on the table:
+
+```yaml
+name: Inventory
+physical_name: inventory
+datasource: warehouse
+cost: 100
+snapshot_date: Date  # Required for snapshot measures
+
+fields:
+  - type: dimension
+    name: Date
+    data_type: date
+    expression:
+      sql: snapshot_date
+```
+
+## Measure Configuration
+
+### Ending Snapshot
+
+Capture value at the end of the period:
+
+```yaml
+- type: measure
+  name: Ending Inventory
+  data_type: integer
+  snapshot: ending
+  expression:
+    sql: sum(quantity)
+```
+
+### Beginning Snapshot
+
+Capture value at the beginning of the period:
+
+```yaml
+- type: measure
+  name: Beginning Inventory
+  data_type: integer
+  snapshot: beginning
+  expression:
+    sql: sum(quantity)
+```
+
+## How It Works
+
+When a user queries a snapshot measure:
+
+1. The planner identifies the **snapshot date dimension** for the table.
+2. It filters rows to the requested time period (for example, a specific month or week).
+3. It chooses the appropriate snapshot within each bucket:
+   - `snapshot: ending` → the **last** snapshot in the bucket.
+   - `snapshot: beginning` → the **first** snapshot in the bucket.
+4. It generates SQL that aggregates the underlying values at those boundary timestamps only, rather than summing every row in the period.
+
+This means that:
+
+- Grouping by a period (day/week/month/etc.) yields “as of end of period” or “as of start of period” values.
+- Grouping by non-time dimensions (for example, `Product` or `Store`) still respects the snapshot semantics as long as the query includes a time filter or grain.
+
+## Use Cases
+
+### Inventory Analysis
+
+```yaml
+name: Inventory
+snapshot_date: Date
+
+fields:
+  - type: measure
+    name: Ending Inventory
+    snapshot: ending
+    expression:
+      sql: sum(quantity)
+```
+
+### Account Balances
+
+```yaml
+name: Accounts
+snapshot_date: Date
+
+fields:
+  - type: measure
+    name: Ending Balance
+    snapshot: ending
+    expression:
+      sql: sum(balance)
+```
+
+## Complete Example
+
+```yaml
+name: Inventory
+physical_name: inventory
+datasource: warehouse
+cost: 100
+snapshot_date: Date
+
+fields:
+  - type: dimension
+    name: Date
+    data_type: date
+    expression:
+      sql: snapshot_date
+
+  - type: dimension
+    name: Product ID
+    data_type: integer
+    expression:
+      sql: product_id
+
+  - type: measure
+    name: Beginning Inventory
+    data_type: integer
+    snapshot: beginning
+    expression:
+      sql: sum(quantity)
+
+  - type: measure
+    name: Ending Inventory
+    data_type: integer
+    snapshot: ending
+    expression:
+      sql: sum(quantity)
+```
+
+## Best Practices
+
+1. **Set `snapshot_date`** – Required on the table; keep the association with the driving date dimension clear.
+2. **Use descriptive names** – e.g. "Ending Inventory" not just "Inventory".
+3. **Document purpose** – Note that the measure is point-in-time and should not be summed across long ranges.
+4. **Test queries** – Verify snapshot behavior by comparing:
+   - Daily snapshots vs. month‑end values, and
+   - Regular sum measures vs. snapshot measures for the same table.
+
+## Next Steps
+
+- [Measures](/docs/semantic-model/fields/measures/)
+- [Exclusions](/docs/advanced/exclusions/)
+- [Inclusions](/docs/advanced/inclusions/)
+- [Temporal decorators](/docs/advanced/decorators/temporal/)

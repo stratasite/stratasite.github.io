@@ -100,7 +100,7 @@ const canonical = new URL(path, site.domain).href;
         name: 'Strata',
         url: site.domain,
         logo: `${site.domain}/logo.png`,
-        sameAs: [site.docsUrl, site.blogUrl],
+        sameAs: [`${site.domain}${site.docsUrl}`, site.blogUrl],
         contactPoint: {
           '@type': 'ContactPoint',
           email: 'hello@strata.do',

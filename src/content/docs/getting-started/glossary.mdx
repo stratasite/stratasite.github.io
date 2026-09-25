@@ -1,0 +1,53 @@
+---
+title: "Key Terminologies"
+description: "Definitions of Strata-specific and related terms, plus guidance on choosing the right modeling approach."
+---
+Definitions of Strata-specific and related terms, plus guidance on choosing the right modeling approach.
+
+## Key Terms
+
+These terms are used throughout the docs. If you are new to Strata (or to semantic layers in general), this is a good reference.
+
+**Fact table grain** — The level of detail of a fact table (e.g. one row per order line, per day, per invoice). Strata assumes safe cardinality; incompatible grains are handled via blending or by restricting measures to safe join paths.
+
+**Universe** — The complete, cardinality-safe join tree reachable from a chosen root (fact) table. Conceptually, the "virtual table" formed by joining that fact to all dimension tables it can safely reach. The query planner uses universes for query routing and to decide which dimensions can group a given measure.
+
+**Automatic data blending** — Strata’s way of combining measures from multiple fact tables (often at different grains) in one query without you writing the joins. The engine aggregates each fact in its own universe and merges results on common dimensions. When dimensions from different tables should count as the same for that merge, you assign them an **extended blend group**. Industry terms you may hear: *data blending*, *multipass SQL*.
+
+**Extended blend group** — A named group (e.g. `activity_date`) that you assign to dimensions so they are treated as one logical dimension during **automatic data blending**. Dimensions in the same group are semantically equivalent for the merge, so the planner can combine queries across tables that share that concept.
+
+**Snapshot measure** — A measure that captures a value at a **point in time** (beginning or end of a period) rather than summing over the period. Used for stateful metrics: inventory, balances, membership counts. Not for transactional flows.
+
+**Compound measure** — A measure whose expression references other measures or dimensions by name (e.g. `[Total Revenue] - [Total Cost]`). Resolved at query time; all referenced fields must be in the same datasource and universe.
+
+**Complex dimension** — A dimension whose expression references other dimensions (e.g. `CASE WHEN [Status Code] = 'A' THEN 'Active' ...`). Only dimensions can be referenced; not measures. Same universe required.
+
+**Inclusion measure** — A measure that temporarily **includes** extra dimensions in an intermediate aggregation to compute correct metrics (like medians or averages), then re-aggregates at the query grain and drops those dimensions in the final result. This solves the problem of computing accurate statistics when underlying data has uneven counts per group (e.g., computing daily median account view hours from per-title data in a streaming company). *Industry analogs for this pattern:* Tableau's **INCLUDE Level of Detail**, MicroStrategy level metrics. Looker does not support this pattern. See: [Inclusions](/docs/advanced/inclusions/)
+
+**Exclusion** — Advanced control that **removes** dimensions from a measure's grouping or filtering behavior (each can be set independently). Used for "% of total" measures and other cases where you want a measure to ignore certain dimensions' grouping or filters. *Industry analogs:* Tableau's **EXCLUDE Level of Detail** , Power BI DAX filter-context functions (e.g. REMOVEFILTERS, ALLEXCEPT). See: [Exclusions](/docs/advanced/exclusions/)
+
+
+---
+
+## When to Use What
+
+### Snapshot measure vs normal aggregation
+
+- **Use a snapshot measure** when the metric is **stateful**: inventory on hand, account balance, headcount. Summing across days is meaningless; you want the value at the **boundary** of the period (beginning or ending).
+- **Use a normal measure** (e.g. `sum(amount)`) for **flows**: revenue, transactions, units sold. These are additive over time.
+
+### Extended blend groups vs remodeling tables
+
+- **Use extended blend groups** when the same **logical** dimension (e.g. "activity date") exists in multiple tables with different column names or grains, and you want one query to group or filter by that concept across those tables. No need to change table structure.
+- **Remodel or pre-aggregate** when you need a **different grain** or a dedicated bridge table to fix cardinality; blend groups do not replace proper relationships or grain alignment.
+
+### Inclusion, exclusion, or separate measure?
+
+- **Use an inclusion** when you need **multi-level aggregation**: aggregate at an intermediate grain (e.g., sum per account), then compute a statistic over those results (e.g., median across accounts). Essential for correct medians, averages, and percentiles when underlying data has uneven counts per group.
+- **Use an exclusion** when one measure should behave differently depending on which dimensions are in the query (e.g., "revenue ignoring category" for a %-of-total denominator, or "revenue only by product"). Exclusions control how dimensions affect grouping and filtering.
+- **Define a separate measure** when the formula or aggregation is genuinely different (e.g., a distinct metric with its own name and definition). Inclusions and exclusions tune **aggregation behavior** of the same underlying expression; they do not change the core formula.
+
+### Validating your model
+
+As you build the model, use the Strata UI to build queries and **inspect the generated SQL** (CTEs, joins, grouping). If the SQL or results don’t match what you expect, check relationships, grains, extended blend groups, and exclusion/inclusion settings against the docs.
+

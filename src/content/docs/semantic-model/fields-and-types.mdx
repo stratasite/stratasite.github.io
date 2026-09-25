@@ -1,0 +1,329 @@
+---
+title: "Fields and Types"
+description: "Understand dimensions, measures, and data types in Strata."
+---
+Understand dimensions, measures, and data types in Strata.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Distinguish between dimensions and measures
+- Choose appropriate data types
+- Configure field properties (format, display types)
+- Understand when to use different field options
+
+## Dimensions vs Measures
+
+### Dimensions
+
+Dimensions are categorical fields used for grouping and filtering. They represent attributes of your data.
+
+**Characteristics:**
+- Used in GROUP BY clauses
+- Can be filtered
+- Typically lower cardinality
+- Examples: Customer Name, Product Category, Order Date
+
+**Example:**
+```yaml
+- type: dimension
+  name: Customer Name
+  data_type: string
+  expression:
+    sql: customer_name
+```
+
+### Measures
+
+Measures are aggregatable metrics. They represent quantitative values that can be summed, averaged, or counted.
+
+**Characteristics:**
+- Used with aggregation functions (SUM, AVG, COUNT)
+- Cannot be used in GROUP BY
+- Examples: Total Revenue, Order Count, Average Order Value
+
+**Example:**
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+## Data Types
+
+Strata supports the following data types:
+
+### string
+Text values. Use for names, descriptions, codes, etc.
+
+```yaml
+- type: dimension
+  name: Product Name
+  data_type: string
+  expression:
+    sql: product_name
+```
+
+### integer
+Whole numbers. Use for counts, IDs, quantities.
+
+```yaml
+- type: dimension
+  name: Order ID
+  data_type: integer
+  expression:
+    primary_key: true
+    sql: order_id
+```
+
+### bigint
+Large whole numbers. Use for very large integers.
+
+```yaml
+- type: dimension
+  name: Customer ID
+  data_type: bigint
+  expression:
+    sql: customer_id
+```
+
+### decimal
+Floating-point numbers. Use for monetary values, percentages, measurements.
+
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+### date
+Date values (without time). Use for date dimensions.
+
+```yaml
+- type: dimension
+  name: Order Date
+  data_type: date
+  expression:
+    sql: order_date
+  grains:
+    - day
+    - week
+    - month
+    - quarter
+    - year
+```
+
+### date_time
+Timestamp values (with time). Use for precise timestamps.
+
+```yaml
+- type: dimension
+  name: Created At
+  data_type: date_time
+  expression:
+    sql: created_at
+  grains:
+    - raw
+    - hour
+    - day
+    - week
+    - month
+```
+
+### boolean
+True/false values.
+
+```yaml
+- type: dimension
+  name: Is Active
+  data_type: boolean
+  expression:
+    sql: is_active
+```
+
+### binary
+Binary data. Rarely used in analytics.
+
+## Field Properties
+
+### Display Types
+
+Control how fields are rendered in the UI:
+
+- **default**: Standard text display
+- **html**: Render as HTML
+- **url**: Display as clickable link
+- **email**: Display as email link
+- **phone_number**: Format as phone number
+- **image**: Display as image
+
+```yaml
+- type: dimension
+  name: Product Image
+  data_type: string
+  display_type: image
+  expression:
+    sql: image_url
+```
+
+### Format
+
+Control how values are displayed using the `format` property (shortcut string or hash). See [Field format](/docs/semantic-model/fields/formatters/) for types, shortcuts, and defaults.
+
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  format: currency:2
+  expression:
+    sql: sum(amount)
+```
+
+### Hidden Fields
+
+Hide fields from the UI while keeping them available for calculations:
+
+```yaml
+- type: dimension
+  name: Internal ID
+  data_type: integer
+  hidden: true
+  expression:
+    sql: internal_id
+```
+
+### Value Listing (Dimensions Only)
+
+Control whether dimension values are listed in filters:
+
+```yaml
+# Disable listing for high-cardinality dimensions
+- type: dimension
+  name: Customer ID
+  data_type: integer
+  disable_value_listing: true
+  expression:
+    sql: customer_id
+
+# Limit list size
+- type: dimension
+  name: Product Category
+  data_type: string
+  value_list_size: 500
+  expression:
+    sql: category
+```
+
+### Synonyms
+
+Provide alternative names for a field. Synonyms help AI-powered search and natural language queries find the right field when users refer to it by different names.
+
+```yaml
+- type: dimension
+  name: Customer Name
+  data_type: string
+  synonyms:
+    - client name
+    - buyer name
+    - account name
+  expression:
+    sql: customer_name
+```
+
+### Grains (Date/DateTime Only)
+
+Specify supported granularities for date fields:
+
+```yaml
+- type: dimension
+  name: Order Date
+  data_type: date
+  grains:
+    - day
+    - week
+    - month
+    - quarter
+    - year
+  expression:
+    sql: order_date
+```
+
+Available grains: `raw`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
+
+## Complete Example
+
+```yaml
+fields:
+  # Primary key dimension
+  - type: dimension
+    name: Order ID
+    description: Unique order identifier
+    data_type: integer
+    expression:
+      primary_key: true
+      sql: order_id
+
+  # Date dimension with multiple grains
+  - type: dimension
+    name: Order Date
+    description: Date when order was placed
+    data_type: date
+    grains:
+      - day
+      - week
+      - month
+      - quarter
+      - year
+    expression:
+      sql: order_date
+
+  # High-cardinality dimension (no value listing)
+  - type: dimension
+    name: Customer ID
+    description: Customer identifier
+    data_type: integer
+    disable_value_listing: true
+    expression:
+      sql: customer_id
+
+  # Formatted measure with synonyms
+  - type: measure
+    name: Total Revenue
+    description: Sum of all order amounts
+    data_type: decimal
+    format: currency:2
+    synonyms:
+      - total sales
+      - gross revenue
+      - sales amount
+    expression:
+      sql: sum(amount)
+
+  # Count measure
+  - type: measure
+    name: Order Count
+    description: Number of orders
+    data_type: integer
+    expression:
+      sql: count(*)
+```
+
+## Best Practices
+
+1. **Use appropriate data types** - Match your database column types
+2. **Add descriptions** - Help users understand what each field represents
+3. **Set grains for dates** - Enable flexible date grouping
+4. **Disable value listing** for high-cardinality dimensions (IDs, timestamps)
+5. **Use format** for better UX (currency, percentages)
+6. **Mark primary keys** - Helps with query optimization
+
+## Next Steps
+
+- Learn about [expressions](/docs/semantic-model/expressions/) (SQL, lookups, arrays)
+- Read the [dimensions deep-dive](/docs/semantic-model/fields/dimensions/)
+- Read the [measures deep-dive](/docs/semantic-model/fields/measures/)
+- Explore [data types reference](/docs/semantic-model/fields/data-types/)

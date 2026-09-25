@@ -1,0 +1,213 @@
+---
+title: "Field format"
+description: "Control how field values are displayed in the UI, exports, and charts."
+---
+Control how field values are displayed in the UI, exports, and charts.
+
+## Overview
+
+Use the **`format`** property on dimensions and measures in your table YAML. Strata stores a format definition as a hash on each field and applies it when rendering query results.
+
+`format` accepts two equivalent YAML forms:
+
+1. **Shortcut string** — compact colon-separated syntax (for example `currency:2`, `percent:2`)
+2. **Hash** — explicit `type` plus options (for example `type: percent`, `precision: 2`)
+
+Both forms produce the same stored definition. Use whichever reads better in your model:
+
+- **Shortcut** — best for common cases with one or two options
+- **Hash** — best when you need several options (`unit`, `abbreviate`, `template`, custom `pattern`, etc.) or want maximum clarity in review
+
+Field-level `format` is the default for that field. Individual queries and projections can override it per column in the Strata app.
+
+## Shortcut syntax
+
+| Shortcut | Stored format |
+|----------|---------------|
+| `number:2` | `{ type: number, precision: 2 }` |
+| `number:2:abbreviate` | `{ type: number, precision: 2, abbreviate: true }` |
+| `number:abbreviate` | `{ type: number, abbreviate: true }` |
+| `currency:2` | `{ type: currency, precision: 2 }` |
+| `currency:2:€` | `{ type: currency, precision: 2, unit: "€" }` |
+| `currency:2:abbreviate` | `{ type: currency, precision: 2, abbreviate: true }` |
+| `percent:1` | `{ type: percent, precision: 1 }` |
+| `date:short` | `{ type: date, pattern: "%b %d, %Y" }` |
+| `date:long` | `{ type: date, pattern: "%B %d, %Y" }` |
+| `date:%m/%d/%Y` | Custom strftime pattern |
+| `datetime:short` | `{ type: datetime, pattern: "%b %d, %Y %I:%M %p" }` |
+| `datetime:iso` | `{ type: datetime, pattern: "%Y-%m-%d %H:%M:%S" }` |
+| `html:<strong>{{value}}</strong>` | `{ type: html, template: "..." }` |
+| `javascript:formatValue` | `{ type: javascript, function: "formatValue" }` |
+
+Date and datetime shortcuts also support `long` and `iso`. Any other segment after the type is treated as a strftime `pattern`.
+
+If a shortcut is ambiguous in your YAML editor, quote it: `format: "percent:2"`.
+
+## Hash syntax
+
+Valid `type` values: `raw`, `number`, `currency`, `percent`, `date`, `datetime`, `html`, `javascript`.
+
+| type | Common keys |
+|------|-------------|
+| `number` | `precision`, `abbreviate`, `delimiter`, `separator`, `units` |
+| `currency` | `precision`, `unit`, `abbreviate`, `delimiter`, `separator`, `units` |
+| `percent` | `precision` |
+| `date`, `datetime` | `pattern` (strftime) |
+| `html` | `template` (use `{{value}}` for the cell value) |
+| `javascript` | `function` (name registered in your Strata deployment) |
+
+`type` is required when `format` is set. Unrecognized keys are ignored.
+
+## Examples
+
+### Currency (shortcut)
+
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  format: currency:2
+  expression:
+    sql: sum(amount)
+```
+
+**Output:** `$1,234.56`
+
+### Percentage (hash)
+
+```yaml
+- type: measure
+  name: Profit Margin
+  data_type: decimal
+  format:
+    type: percent
+    precision: 2
+  expression:
+    sql: sum(profit) / sum(revenue)
+```
+
+**Output:** `45.67%` when the stored value is a ratio such as `0.4567`.
+
+### Percentage (shortcut)
+
+The hash example above is equivalent to:
+
+```yaml
+format: percent:2
+```
+
+### Thousands separator
+
+```yaml
+- type: measure
+  name: Order Count
+  data_type: integer
+  format: number:0
+  expression:
+    sql: count(*)
+```
+
+**Output:** `1,234`
+
+### Abbreviated large numbers
+
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  format: number:2:abbreviate
+  expression:
+    sql: sum(amount)
+```
+
+**Output:** `1.23M`, `1.23B`, etc.
+
+### Date display
+
+```yaml
+- type: dimension
+  name: Order Date
+  data_type: date
+  format: date:short
+  expression:
+    sql: order_date
+```
+
+### HTML template
+
+```yaml
+- type: dimension
+  name: Status
+  data_type: string
+  format:
+    type: html
+    template: "<span class='badge'>{{value}}</span>"
+  expression:
+    sql: status
+```
+
+### JavaScript format
+
+```yaml
+- type: measure
+  name: Custom Format
+  data_type: decimal
+  format: javascript:formatValue
+  expression:
+    sql: sum(amount)
+```
+
+Register `formatValue` in your Strata deployment. It receives the cell value and optional row context.
+
+## Defaults when `format` is omitted
+
+Measures inherit formatting from `data_type`:
+
+| data_type | Default format |
+|-----------|----------------|
+| `integer`, `bigint` | `{ type: number, abbreviate: true }` |
+| `decimal` | `{ type: number, abbreviate: true, precision: 2 }` |
+| `date` | `{ type: date, pattern: "%Y-%m-%d" }` |
+| `date_time` | `{ type: datetime, pattern: "%Y-%m-%d %H:%M:%S" }` |
+| Other | No default |
+
+Numeric **dimensions** have no default format.
+
+## Format vs display type
+
+`display_type` controls rendering mode (URL, email, image, etc.). **`format`** controls how the value text is presented (numbers, dates, templates). Both can apply on the same field.
+
+```yaml
+- type: measure
+  name: Revenue
+  display_type: default
+  format: currency:2
+  expression:
+    sql: sum(amount)
+```
+
+## Validation
+
+`strata audit models` checks each field `format` when present:
+
+- Shortcut strings must start with a valid `type`
+- Hash forms must include `type`
+- Unknown keys such as `formatter` are reported as errors
+
+Deploy with `strata deploy` after your model passes audit.
+
+## Best practices
+
+1. Use **`currency:2`** or a hash with `unit` for monetary measures
+2. Use **`percent`** with the right `precision` for ratios stored as decimals (0–1)
+3. Use **`number:0`** for integer counts without abbreviation
+4. Use **`number:2:abbreviate`** for very large metrics in dashboards
+5. Prefer SQL for business logic; use **`javascript`** format only for display-specific behavior
+
+## Next Steps
+
+- Learn about [dimensions](/docs/semantic-model/fields/dimensions/)
+- Learn about [measures](/docs/semantic-model/fields/measures/)
+- Explore [data types](/docs/semantic-model/fields/data-types/)
+- Read about [display types](/docs/semantic-model/fields/dimensions/#display_type)
+- Run [strata audit](/docs/cli/audit/) before deploy

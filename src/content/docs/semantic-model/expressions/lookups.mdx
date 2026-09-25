@@ -1,0 +1,78 @@
+---
+title: "Lookup Expressions"
+description: "Indicate dimension fields with lookup expressions."
+---
+Indicate dimension fields with lookup expressions.
+
+## Overview
+
+Lookup expressions are optional indicators that a dimension field is a lookup/dimension field. They help the planner understand field semantics.
+
+## Basic Syntax
+
+```yaml
+expression:
+  lookup: true
+  sql: column_name
+```
+
+## When to Use
+
+Lookup expressions are optional but can help with:
+- Query planning optimization
+- Field semantics documentation
+- Planner understanding of field types
+
+## Example
+
+```yaml
+- type: dimension
+  name: Product Category
+  data_type: string
+  expression:
+    lookup: true
+    sql: category_name
+```
+
+## Notes
+
+- **Optional** - SQL expressions work without `lookup: true`
+- **Dimensions only** - Not used for measures
+- **Semantic indicator** - Helps planner understand field purpose
+
+## Complete Example
+
+```yaml
+fields:
+  - type: dimension
+    name: Customer Name
+    data_type: string
+    expression:
+      lookup: true
+      sql: customer_name
+
+  - type: dimension
+    name: Product Category
+    data_type: string
+    expression:
+      lookup: true
+      sql: category_name
+
+  - type: measure
+    name: Total Revenue
+    data_type: decimal
+    expression:
+      sql: sum(amount)  # No lookup for measures
+```
+
+## Best Practices
+
+1. **Use for clarity** - Makes field semantics explicit
+2. **Optional** - Not required, but can help documentation
+3. **Dimensions only** - Don't use for measures
+
+## Next Steps
+
+- Learn about [SQL expressions](/docs/semantic-model/expressions/sql/)
+- Explore [array expressions](/docs/semantic-model/expressions/arrays/)
+- Understand [dimensions](/docs/semantic-model/fields/dimensions/)

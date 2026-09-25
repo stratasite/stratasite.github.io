@@ -108,4 +108,22 @@ const legal = defineCollection({
   }),
 });
 
-export const collections = { features, compare, casestudies, legal };
+/**
+ * Product documentation — the developer guide, the self-hosting guide, and the
+ * REST API guide, served at `/docs/<path>/`. The page tree (order, grouping,
+ * which guide a page belongs to) lives in `src/config/docs.ts`, not in
+ * frontmatter, so reordering never touches content. The H1 is the `title`
+ * here; the body starts at the first paragraph.
+ */
+const docs = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    // Short label for the sidebar and prev/next links; falls back to title.
+    sidebarLabel: z.string().optional(),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { features, compare, casestudies, legal, docs };

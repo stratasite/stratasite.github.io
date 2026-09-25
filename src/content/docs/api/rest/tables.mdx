@@ -1,0 +1,103 @@
+---
+title: "Tables"
+description: "Discover semantic tables and their field definitions."
+---
+Discover semantic tables and their field definitions.
+
+## List tables
+
+```
+GET /api/v1/projects/{project_id}/tables
+```
+
+**Auth:** Project member
+
+**Query parameters:**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `branch` | Branch uid | Production branch |
+| `page` | Page number | 1 |
+| `limit` | Results per page (max 1000) | 20 |
+| `q` | Search name or description (case-insensitive) | — |
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/tables?q=web&limit=100"
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "results": [
+    {
+      "uid": "web_sales",
+      "name": "Web Sales",
+      "description": "Web channel sales fact",
+      "physical_name": "web_sales",
+      "source": null,
+      "tags": [],
+      "cost": 10,
+      "updated_at": "2026-06-01T12:00:00Z"
+    }
+  ],
+  "page": 1,
+  "total_pages": 1,
+  "total_count": 3,
+  "limit": 100
+}
+```
+
+## Show table
+
+```
+GET /api/v1/projects/{project_id}/tables/{id}
+```
+
+**Auth:** Project member
+
+**Query parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `branch` | Branch uid |
+| `include_metadata` | When `true`, include warehouse metadata |
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "$BASE_URL/api/v1/projects/tpcds/tables/web_sales?include_metadata=true"
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "uid": "web_sales",
+  "name": "Web Sales",
+  "physical_name": "web_sales",
+  "cost": 10,
+  "fields": [
+    {
+      "uid": "web_net_paid",
+      "name": "Web Net Paid",
+      "semantic_type": "measure",
+      "data_type": "decimal",
+      "sql": "sum(ws_net_paid)",
+      "lookup": false
+    }
+  ],
+  "metadata": { }
+}
+```
+
+The `fields` array includes per-table SQL expressions — useful for understanding how measures and dimensions map to the warehouse.
+
+## Related
+
+- [Fields](/docs/api/rest/fields/)
+- [Semantic model — tables](/docs/semantic-model/tables/)

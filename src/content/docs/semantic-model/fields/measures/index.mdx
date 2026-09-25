@@ -1,0 +1,211 @@
+---
+title: "Measures"
+description: "Measure fields represent aggregatable metrics."
+---
+Measure fields represent aggregatable metrics.
+
+## Overview
+
+Measures are the quantitative fields in your semantic model. They represent metrics that can be aggregated (summed, averaged, counted, etc.).
+
+## Measure Types
+
+- **Simple measures** — Single SQL aggregation (e.g. `sum(amount)`, `count(*)`)
+- **[Compound measures](/docs/semantic-model/fields/measures/compound/)** — Expressions that reference other measures (e.g. `[Total Revenue] - [Total Cost]`)
+- **[Snapshot measures](/docs/semantic-model/fields/measures/snapshot/)** — Point-in-time values (`beginning` or `ending` of a period)
+
+## Characteristics
+
+- **Aggregatable** - Must include aggregation functions (SUM, AVG, COUNT, etc.)
+- **Cannot be grouped** - Measures are not used in GROUP BY
+- **Examples**: Total Revenue, Order Count, Average Order Value, Profit Margin
+
+## Basic Definition
+
+```yaml
+- type: measure
+  name: Total Revenue
+  description: Sum of all order amounts
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+## Measure Properties
+
+### name
+
+Display name shown to users.
+
+### description
+
+Optional description.
+
+### data_type
+
+Typically `decimal` or `integer`. See [data types](/docs/semantic-model/fields/data-types/).
+
+### expression
+
+SQL expression with aggregation. **Required:** must include aggregation (sum, avg, count, min, max, etc.).
+
+```yaml
+expression:
+  sql: sum(amount)
+```
+
+## Optional Properties
+
+### hidden
+
+Hide from UI while keeping available for calculations.
+
+### format
+
+Apply formatting (shortcut string or hash). [Field format →](/docs/semantic-model/fields/formatters/)
+
+### synonyms
+
+Alternative names for this measure. Helps AI-powered search and natural language queries match fields when users use different terminology.
+
+```yaml
+synonyms:
+  - total sales
+  - gross revenue
+  - sales amount
+```
+
+### snapshot
+
+For point-in-time measures: `ending` or `beginning`. Table must have `snapshot_date`. [Snapshot measures →](/docs/semantic-model/fields/measures/snapshot/)
+
+### exclusion_type / exclusions
+
+Exclude certain dimensions. [Exclusions →](/docs/advanced/exclusions/)
+
+### inclusions
+
+Force calculation at a lower level before rolling up. [Inclusions →](/docs/advanced/inclusions/)
+
+## Aggregation Functions
+
+### Sum
+
+```yaml
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+### Average
+
+```yaml
+- type: measure
+  name: Average Order Value
+  data_type: decimal
+  expression:
+    sql: avg(amount)
+```
+
+### Count
+
+```yaml
+- type: measure
+  name: Order Count
+  data_type: integer
+  expression:
+    sql: count(*)
+```
+
+### Count Distinct
+
+```yaml
+- type: measure
+  name: Unique Customers
+  data_type: integer
+  expression:
+    sql: count(distinct customer_id)
+```
+
+### Min/Max
+
+```yaml
+- type: measure
+  name: First Order Date
+  data_type: date
+  expression:
+    sql: min(order_date)
+
+- type: measure
+  name: Last Order Date
+  data_type: date
+  expression:
+    sql: max(order_date)
+```
+
+## Common Patterns
+
+### Simple Sum
+
+```yaml
+- type: measure
+  name: Total Sales
+  data_type: decimal
+  format: currency:2
+  expression:
+    sql: sum(sales_amount)
+```
+
+### Count with Filter
+
+```yaml
+- type: measure
+  name: Completed Orders
+  data_type: integer
+  expression:
+    sql: count(CASE WHEN status = 'completed' THEN 1 END)
+```
+
+### Percentage (simple)
+
+```yaml
+- type: measure
+  name: Profit Margin
+  data_type: decimal
+  format: percent:2
+  expression:
+    sql: sum(profit) / sum(revenue)
+```
+
+For ratios that reference other **measures** by name, use [compound measures](/docs/semantic-model/fields/measures/compound/).
+
+### Complex Calculation
+
+```yaml
+- type: measure
+  name: Revenue per Customer
+  data_type: decimal
+  format: currency:2
+  expression:
+    sql: sum(amount) / count(distinct customer_id)
+```
+
+## Best Practices
+
+1. **Always include aggregation** - SUM, AVG, COUNT, etc.
+2. **Use appropriate data types** - `decimal` for money, `integer` for counts
+3. **Add format** - Currency, percentage shortcuts
+4. **Add descriptions** - Help users understand measures
+5. **Use descriptive names**
+6. **Test calculations** - Verify measures are correct
+
+## Next Steps
+
+- [Compound measures](/docs/semantic-model/fields/measures/compound/) - Expressions referencing other measures
+- [Snapshot measures](/docs/semantic-model/fields/measures/snapshot/) - Point-in-time values
+- [Dimensions](/docs/semantic-model/fields/dimensions/)
+- [Data types](/docs/semantic-model/fields/data-types/)
+- [Field format](/docs/semantic-model/fields/formatters/)
+- [Expressions](/docs/semantic-model/expressions/sql/)

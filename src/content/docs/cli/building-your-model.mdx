@@ -1,0 +1,160 @@
+---
+title: "Building Your Semantic Model"
+description: "You have a datasource but no model yet. There are two supported ways to get from warehouse tables to models//.yml — build them yourself with the CLI, or have a coding agent build the whole model in on"
+---
+You have a datasource but no model yet. There are two supported ways to get from warehouse tables to `models/**/*.yml` — build them yourself with the CLI, or have a coding agent build the whole model in one pass.
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Choose between the interactive CLI flow and a coding agent
+- Understand what `AGENTS.md` is and why every Strata project has one
+- Know where your approval is required, and what agents must never do
+- Validate the model and deploy it
+
+## Prerequisites
+
+- A project created with `strata init` (see [Projects](/docs/cli/projects/))
+- At least one datasource added and passing `strata datasource test` (see [Datasources](/docs/cli/datasources/))
+- For the agent path: a coding agent that can open the project directory — Claude Code, Codex, Cursor, or similar
+
+## Two Ways to Build
+
+| Path | Best for | What you run | What you review |
+|------|----------|--------------|-----------------|
+| **Build it yourself** | A handful of tables; learning how Strata models work | `strata create table`, `strata create relation` | Each field as the CLI prompts you |
+| **Coding agent** | Twenty tables and up; a first pass over a whole schema | Your agent, in the project directory | One proposal, then the generated YAML |
+
+:::tip
+Both paths write the same YAML into `models/`. Mix them or switch between them at any time — generate a first pass with an agent, then refine individual tables with `strata create table`.
+:::
+
+## Path A: Build Tables Yourself
+
+### Step 1: Create a table model
+
+```bash
+strata create table sales/orders
+```
+
+The CLI lists tables in your datasource, pulls the column metadata, and walks you through naming fields and marking them as dimensions or measures. Full walkthrough: [Creating Tables](/docs/cli/tables/).
+
+### Step 2: Add relationships
+
+```bash
+strata create relation sales/orders_customers
+```
+
+Defines how two logical tables join. See [Relationships](/docs/cli/relationships/).
+
+### Step 3: Review
+
+```bash
+strata table list
+```
+
+Edit the generated YAML directly for anything the prompts didn't cover — expressions, descriptions, costs.
+
+## Path B: Let a Coding Agent Build the Model
+
+### What AGENTS.md Is
+
+`strata init` writes an **`AGENTS.md`** into your project root, and it is committed to git. Claude Code, Codex, and Cursor read it automatically when they open the project.
+
+It is the contract the agent works to: Strata's YAML schema, naming and uniqueness rules, join and cardinality constraints, the deploy contracts every field and relationship must satisfy, the read-only discovery commands to use instead of guessing at schemas, and the things Strata does not support (so the agent stops and asks rather than inventing a workaround).
+
+Because that file ships with the project, you do not need a custom prompt or any per-agent setup.
+
+:::note
+`strata init --source` clones an existing repository as-is. If that repository predates `AGENTS.md`, run `strata init` in a scratch directory and copy the file over.
+:::
+
+### Step 1: Open the project in your agent
+
+Start the agent from the **project root** — the directory holding `project.yml` and `AGENTS.md`. An agent started a level up will not read the rules.
+
+### Step 2: Ask for the model
+
+```
+Build the semantic model for the tables in my <datasource key> datasource.
+Follow AGENTS.md. Show me your proposal before writing any files.
+```
+
+The agent discovers the schema with the read-only commands rather than guessing:
+
+```bash
+strata datasource list --agent
+strata datasource tables MY_DS --agent
+strata datasource meta MY_DS TABLE_NAME --agent
+strata table list --agent
+```
+
+The `--agent` flag returns JSON instead of interactive output. It is also implied whenever the CLI is not attached to a terminal, so these work the same when an agent shells out.
+
+### Step 3: Review and approve the proposal
+
+:::warning
+Approval is required before any file write. `AGENTS.md` instructs agents to describe the tables, fields, joins, and semantic impact first, then wait.
+:::
+
+This is the review that matters. Check:
+
+- **Fact vs dimension** classification of each table
+- **Dimension names that are intentionally shared** across tables, versus **measure names that must stay distinct per fact** — reusing one measure name across facts double-counts
+- **Join paths** — one join per logical table pair; a second FK to the same dimension needs a separate role-playing table
+- **Names**, because they are what analysts query. Renaming after a deploy affects saved reports and dashboards.
+
+### Step 4: The agent writes and audits
+
+The agent writes `models/**/*.yml` and runs `strata audit all --agent` after every change. If the audit reports something it cannot fix within Strata's rules, it is told to stop and report rather than keep patching YAML.
+
+### What Agents Will Not Do
+
+`AGENTS.md` puts these off limits:
+
+- **Deploying.** `strata deploy` is yours.
+- **Datasources and secrets.** `strata datasource add` and anything writing credentials into `.strata` are yours.
+- **The interactive generators.** `strata create table`, `strata create relation`, and `strata create migration` are prompt-driven; agents write the YAML directly instead.
+- **Anything that is not model YAML.** Agents may create or edit `models/**/*.yml`, `migrations/*.yml`, and `tests/*.yml` — no scripts, notebooks, or scratch validators. `strata audit` warns about stray files it finds in the project.
+
+## Validate and Deploy
+
+Both paths end the same way.
+
+### Step 1: Audit
+
+```bash
+strata audit all
+```
+
+Checks YAML syntax, model definitions, and datasource connectivity. See [Audit](/docs/cli/audit/).
+
+### Step 2: Deploy
+
+```bash
+strata deploy
+```
+
+:::info
+You run the deploy, not the agent. Deploy re-runs the audits and publishes the model to the semantic layer for the current git branch — which is what the Strata web app queries.
+:::
+
+See [Deployment](/docs/cli/deployment/).
+
+## Troubleshooting
+
+**The agent ignored the rules and invented YAML keys.** Start it from the project root so it reads `AGENTS.md`, and point it at the file explicitly.
+
+**The agent asks for database credentials.** It should not have them. Run `strata datasource add` yourself; credentials live in `.strata`, which is gitignored.
+
+**The agent left scripts behind.** Delete them — `strata audit all` lists unexpected files. Everything the model needs is YAML under `models/`.
+
+**A topic isn't covered by AGENTS.md.** Point the agent at the full documentation export: `https://strata.do/docs/llms.txt`.
+
+## Next Steps
+
+- [Creating Tables](/docs/cli/tables/) - The interactive table flow in detail
+- [Relationships](/docs/cli/relationships/) - Joins and cardinality
+- [Audit](/docs/cli/audit/) - What each check validates
+- [Deployment](/docs/cli/deployment/) - Publishing to the server
+- [AI Agents and Strata](/docs/api/ai-agents/) - Working with agents beyond the CLI

@@ -1,0 +1,121 @@
+---
+title: "Cost Optimization"
+description: "Optimize query performance with cost-based routing."
+---
+Optimize query performance with cost-based routing.
+
+## Overview
+
+Cost optimization helps the planner choose the best table when multiple tables can answer the same question. Lower cost = preferred.
+
+## Table Cost
+
+Set cost on each table:
+
+```yaml
+name: Store Sales
+cost: 100  # Higher cost = used when needed
+```
+
+```yaml
+name: Date Dimension
+cost: 10  # Lower cost = preferred
+```
+
+## Cost Guidelines
+
+### Dimension Tables
+
+Lower cost (preferred):
+
+```yaml
+name: Customer
+cost: 10  # Dimension tables: 10
+```
+
+### Fact Tables
+
+Higher cost (used when needed):
+
+```yaml
+name: Sales
+cost: 100  # Fact tables: 100
+```
+
+### Tier-Based Cost
+
+Match cost to datasource tier:
+
+```yaml
+# Hot tier datasource
+warehouse:
+  tier: hot
+  # Tables in hot tier: cost 10-50
+
+# Cold tier datasource
+archive:
+  tier: cold
+  # Tables in cold tier: cost 200-500
+```
+
+## Cost Ranges
+
+**Recommended ranges:**
+- Dimension tables: `10`
+- Fact tables: `100`
+- Hot tier: `10-50`
+- Warm tier: `50-100`
+- Cold tier: `100-500`
+
+## How It Works
+
+When multiple tables can answer a query:
+1. Planner identifies all possible tables
+2. Checks partition constraints
+3. Selects table with lowest cost
+4. Routes query to selected table
+
+## Examples
+
+### Star Schema
+
+```yaml
+# Dimension (low cost)
+name: Customer
+cost: 10
+
+# Dimension (low cost)
+name: Product
+cost: 10
+
+# Fact (high cost)
+name: Sales
+cost: 100
+```
+
+### Multi-Tier
+
+```yaml
+# Hot tier table
+name: Recent Sales
+datasource: hot_warehouse
+cost: 10
+
+# Cold tier table
+name: Historical Sales
+datasource: cold_archive
+cost: 200
+```
+
+## Best Practices
+
+1. **Set appropriate costs** - Lower for dimensions, higher for facts
+2. **Match tier to cost** - Hot tier = lower cost
+3. **Use partitions** - Help planner route queries
+4. **Test query routing** - Verify planner selects correct table
+
+## Next Steps
+
+- Learn about [partitions](/docs/advanced/partitions/)
+- Explore [multi-datasource queries](/docs/advanced/multi-datasource/)
+- Read about [decorators](/docs/advanced/decorators/temporal/)

@@ -1,0 +1,20 @@
+---
+/** One panel of a docs `<Tabs>` block. See Tabs.astro. */
+interface Props {
+  value: string;
+  label?: string;
+  default?: boolean;
+}
+const { value, label, default: isDefault = false } = Astro.props;
+---
+
+<section
+  data-tab-panel
+  data-value={value}
+  data-label={label ?? value}
+  data-default={isDefault ? '' : undefined}
+  role="tabpanel"
+  class="prose-strata prose-docs"
+>
+  <slot />
+</section>

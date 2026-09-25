@@ -1,0 +1,57 @@
+---
+/**
+ * Tab strip for docs MDX, a drop-in for Docusaurus's `<Tabs>` / `<TabItem>`:
+ *
+ *   <Tabs>
+ *     <TabItem value="mac" label="macOS" default>…</TabItem>
+ *     <TabItem value="linux" label="Linux">…</TabItem>
+ *   </Tabs>
+ *
+ * Panels declare their own label, so the strip is built client-side from the
+ * panels; without JavaScript every panel simply renders in order. Injected into
+ * every docs page through the route's `components` prop, so MDX needs no import.
+ */
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+---
+
+<div class={`doc-tabs not-prose my-6 ${className}`} data-doc-tabs>
+  <div role="tablist" class="flex flex-wrap gap-1 border-b border-border"></div>
+  <div class="doc-tab-panels pt-4">
+    <slot />
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-doc-tabs]').forEach((root) => {
+    const list = root.querySelector<HTMLElement>(':scope > [role="tablist"]')!;
+    const panels = Array.from(
+      root.querySelectorAll<HTMLElement>(':scope > .doc-tab-panels > [data-tab-panel]')
+    );
+    if (!panels.length) return;
+
+    const select = (value: string) => {
+      panels.forEach((p) => (p.hidden = p.dataset.value !== value));
+      list.querySelectorAll<HTMLElement>('[role="tab"]').forEach((b) => {
+        b.setAttribute('aria-selected', String(b.dataset.tab === value));
+      });
+    };
+
+    panels.forEach((p) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.role = 'tab';
+      btn.dataset.tab = p.dataset.value;
+      btn.textContent = p.dataset.label ?? p.dataset.value ?? '';
+      btn.className =
+        '-mb-px rounded-t-md border-b-2 border-transparent px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground aria-selected:border-primary aria-selected:text-primary';
+      btn.addEventListener('click', () => select(p.dataset.value!));
+      list.appendChild(btn);
+    });
+
+    const initial = panels.find((p) => 'default' in p.dataset) ?? panels[0];
+    select(initial.dataset.value!);
+  });
+</script>

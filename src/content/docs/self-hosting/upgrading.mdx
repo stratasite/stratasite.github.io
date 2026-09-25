@@ -1,0 +1,98 @@
+---
+title: "Upgrading"
+description: "This guide covers upgrades for all supported deployment paths."
+---
+This guide covers upgrades for all supported deployment paths.
+
+## Upgrade Principles (All Paths)
+
+- Use immutable image tags.
+- Back up database and storage before upgrading.
+- Upgrade all running Strata instances to the same image tag.
+- Migrations run automatically on startup.
+
+## 1. Pre-Upgrade Backup
+
+### Database
+
+```bash
+PGPASSWORD=$DB_PASSWORD pg_dump \
+  -h $DB_HOST \
+  -U $DB_USERNAME \
+  -Fc strata_production \
+  > backup-$(date +%Y%m%d-%H%M%S).dump
+```
+
+### Storage (Local Backend)
+
+```bash
+docker compose cp web:/rails/storage ./storage-backup-$(date +%Y%m%d)
+```
+
+If you use object storage (`STORAGE_BACKEND=amazon|google|microsoft`), use your provider backup/versioning controls.
+
+## 2. Upgrade by Deployment Path
+
+### Quick Install / Single-Host Docker Compose
+
+```bash
+cd /path/to/strata
+curl -fsSL https://strata.do/server/install.sh | bash
+```
+
+The installer preserves `.env`, updates compose config, pulls the selected image tag, and restarts services. Re-running the installer renames the background service from `worker` to `job` in `docker-compose.yml` (stop the old stack first if you have a running `worker` container).
+
+### Production Deployment (VM / On-Prem)
+
+1. Set target image tag in `.env`:
+
+```bash
+STRATA_VERSION=1.0.0
+```
+
+2. Pull and restart:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+3. Verify:
+
+```bash
+docker compose logs -f web job
+curl http://<your-host-or-alb>/up
+```
+
+### AWS ECS Manual Deployment
+
+1. Select target Strata image tag.
+2. Create new task definition revisions for **web** and **job** services.
+3. Update the **web** ECS service first, then the **job** service (force new deployment).
+4. Verify ALB `/up` and application logs in CloudWatch for both services.
+
+## 3. Rollback
+
+### Docker Compose
+
+1. Set previous `STRATA_VERSION` in `.env`.
+2. Restart:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+3. If required, restore database and storage backups.
+
+### AWS ECS
+
+1. Revert the ECS service to the previous task definition revision.
+2. Verify ALB `/up` and application logs.
+3. If required, restore database and storage backups.
+
+## 4. Multi-Node and HA Notes
+
+- Upgrade in rolling order, keeping at least one healthy instance when possible.
+- Keep `STRATA_SECRET_KEY_BASE` and all Strata encryption keys identical across all nodes.
+- Ensure only one migration writer at a time (via normal rollout sequencing).

@@ -1,0 +1,66 @@
+---
+title: "Snowflake Schema Pattern"
+description: "Model normalized data warehouses using the snowflake schema pattern."
+---
+Model normalized data warehouses using the snowflake schema pattern.
+
+## Overview
+
+Snowflake schema extends star schema by normalizing dimension tables. Dimensions can join to other dimensions.
+
+## Structure
+
+```
+Fact Table
+├── Dimension 1
+│   └── Sub-Dimension 1
+├── Dimension 2
+└── Dimension 3
+    └── Sub-Dimension 3
+```
+
+## Example
+
+### Fact Table
+
+```yaml
+name: Sales
+cost: 100
+```
+
+### Dimension to Dimension
+
+```yaml
+datasource: warehouse
+
+# Fact to Dimension
+sales_customer:
+  left: Sales
+  right: Customer
+  sql: left.customer_id = right.id
+  cardinality: many_to_one
+
+# Dimension to Dimension
+customer_address:
+  left: Customer
+  right: Address
+  sql: left.address_id = right.id
+  cardinality: many_to_one
+```
+
+## Use Cases
+
+- **Normalized dimensions** - Reduce data duplication
+- **Hierarchical data** - Product categories, geography
+- **Complex relationships** - Multiple levels of dimensions
+
+## Best Practices
+
+1. **Use when needed** - Only normalize if it adds value
+2. **Set appropriate costs** - All dimensions: cost 10
+3. **Document relationships** - Explain dimension hierarchies
+
+## Next Steps
+
+- [Learn star schema](/docs/examples/patterns/star-schema/)
+- [Explore fact-dimension pattern](/docs/examples/patterns/fact-dimension/)

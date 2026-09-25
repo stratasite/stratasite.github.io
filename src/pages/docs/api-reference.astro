@@ -1,0 +1,123 @@
+---
+/**
+ * Interactive REST API reference, rendered from public/docs/openapi/ by Redoc.
+ * Redoc brings its own three-column layout, so this page only supplies the
+ * guide switcher and a theme built from the brand tokens at runtime; the spec
+ * file is the source of truth and is linked for download.
+ */
+import Base from '../../layouts/Base.astro';
+import Search from '../../components/docs/Search.astro';
+import { guides } from '../../config/docs';
+
+const spec = '/docs/openapi/strata-api-v1.yaml';
+---
+
+<Base
+  title="REST API Reference — Strata Docs"
+  description="Every Strata REST API endpoint, request, and response schema, generated from the OpenAPI specification."
+>
+  <div class="sticky top-16 z-40 border-b border-border bg-background">
+    <div class="mx-auto flex h-12 max-w-[90rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <nav class="-mb-px flex h-full items-stretch gap-1 overflow-x-auto" aria-label="Guides">
+        {guides.map((g) => (
+          <a
+            href={g.href}
+            class={`flex items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors ${
+              g.id === 'api-reference'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            aria-current={g.id === 'api-reference' ? 'true' : undefined}
+          >
+            {g.label}
+          </a>
+        ))}
+      </nav>
+      <div class="flex items-center gap-3">
+        <a class="hidden text-sm text-muted-foreground hover:text-foreground sm:inline" href={spec} download>Download spec</a>
+        <Search />
+      </div>
+    </div>
+  </div>
+
+  <div id="redoc" class="redoc-host" data-spec={spec}>
+    <p class="px-6 py-16 text-center text-muted-foreground">Loading the API reference…</p>
+  </div>
+</Base>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js"></script>
+<script is:inline>
+  (function () {
+    var host = document.getElementById('redoc');
+    if (!host || !window.Redoc) return;
+    var css = getComputedStyle(document.documentElement);
+    var v = function (name) {
+      return css.getPropertyValue(name).trim();
+    };
+    Redoc.init(
+      host.dataset.spec,
+      {
+        hideDownloadButton: true,
+        scrollYOffset: 112,
+        expandResponses: '200',
+        theme: {
+          colors: {
+            primary: { main: v('--primary') },
+            text: { primary: v('--foreground'), secondary: v('--muted-foreground') },
+            border: { dark: v('--border'), light: v('--border') },
+            http: {
+              get: v('--chart-5'),
+              post: v('--strata-orange'),
+              put: v('--chart-6'),
+              delete: v('--strata-rust'),
+            },
+          },
+          typography: {
+            fontSize: '15px',
+            fontFamily: v('--font-sans'),
+            headings: { fontFamily: v('--font-display'), fontWeight: '700' },
+            code: { fontFamily: v('--font-mono'), backgroundColor: v('--surface-2'), color: v('--strata-peach') },
+            links: { color: v('--primary'), hover: v('--foreground') },
+          },
+          sidebar: {
+            backgroundColor: v('--background'),
+            textColor: v('--muted-foreground'),
+            activeTextColor: v('--primary'),
+            groupItems: { textTransform: 'uppercase' },
+          },
+          rightPanel: { backgroundColor: v('--code-surface'), textColor: v('--foreground') },
+          codeBlock: { backgroundColor: v('--strata-ink-night') },
+          schema: {
+            nestedBackground: v('--surface'),
+            linesColor: v('--border'),
+            typeNameColor: v('--muted-foreground'),
+            typeTitleColor: v('--strata-peach'),
+            requireLabelColor: v('--strata-orange'),
+          },
+        },
+      },
+      host
+    );
+  })();
+</script>
+
+<style is:global>
+  /* Redoc paints a few surfaces from its own defaults; pin them to the page. */
+  .redoc-host .redoc-wrap,
+  .redoc-host .api-content {
+    background: var(--background);
+  }
+  .redoc-host .menu-content {
+    border-right: 1px solid var(--border);
+  }
+  .redoc-host h1,
+  .redoc-host h2,
+  .redoc-host h3,
+  .redoc-host h5 {
+    color: var(--foreground) !important;
+  }
+  .redoc-host table th,
+  .redoc-host table td {
+    font-feature-settings: 'tnum' 1;
+  }
+</style>

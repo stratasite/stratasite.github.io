@@ -1,0 +1,200 @@
+---
+title: "Core Concepts"
+description: "Understanding the fundamental concepts of Strata's semantic layer."
+---
+Understanding the fundamental concepts of Strata's semantic layer.
+
+## What is a Semantic Layer?
+
+A semantic layer is an abstraction that sits between your raw database tables and business users. It translates business-friendly field names (like "Total Revenue") into optimized SQL queries against your physical database.
+
+**Benefits:**
+- **Self-service analytics**: Business users can explore data without writing SQL
+- **Consistency**: Single source of truth for metrics and definitions
+- **Performance**: Optimized query generation with cost-based routing
+- **Security**: Centralized access control and data governance
+
+:::info[Git-Based Workflow]
+**All semantic models are version-controlled YAML files.** Unlike UI-based BI tools where changes are made through point-and-click interfaces:
+- **Version control**: Full Git history for all changes
+- **Code review**: PR-based workflows for model changes
+- **Branching**: Test changes in branches before deploying to production
+- **CI/CD**: Automated testing and deployment pipelines
+:::
+
+## Key Components
+
+### Tables
+
+Tables (`tbl.*.yml`) represent physical database tables with semantic metadata. They define:
+- **Dimensions**: Fields to group data or generally provides descriptive information (e.g., Customer Name, Product Category)
+- **Measures**: Aggregatable metrics, typically numeric (e.g., Total Sales, Average Order Value)
+- **Cost**: Query optimization hint
+- **Partitions**: Data availability constraints
+
+**Example:**
+```yaml
+name: Store Sales
+physical_name: store_sales
+datasource: tpcds
+cost: 100
+
+# Partition logic helps the engine choose alternative tables when this one
+# can't satisfy the query. Date range is the only partition type supported.
+partitions:
+  - dimension: Date
+    predicate: between
+    filter_value: 24m   # 24 months ago
+    filter_value_end: 1d # yesterday
+
+fields:
+  - type: dimension
+    name: Store Name
+    data_type: string
+    expression:
+      sql: s_store_name
+
+  - type: measure
+    name: Total Revenue
+    data_type: decimal
+    expression:
+      sql: sum(ss_sales_price)
+```
+
+### Relationships
+
+Relations (`rel.*.yml`) define how tables join together. They specify:
+- **Left and right tables**: Which tables to join
+- **Join condition**: SQL expression for the join
+- **Cardinality**: Relationship type (one-to-one, one-to-many, many-to-one)
+
+**Example:**
+```yaml
+datasource: tpcds
+
+store_sales_store:
+  left: Store Sales
+  right: Store
+  sql: left.ss_store_sk = right.s_store_sk
+  cardinality: many_to_one
+```
+
+### Datasources
+
+Datasources connect Strata to your databases. They support:
+- **Multiple adapters**: PostgreSQL, Snowflake, MySQL, SQL Server, Athena, Trino, DuckDB, Druid
+- **Tier configuration**: Hot (fast), Warm (moderate), Cold (archival)
+- **Connection pooling**: Efficient query execution
+
+## Core Design Principles
+
+:::tip[Unique Naming Principle — Design Philosophy]
+**Field names must be unique across your entire semantic layer for a given type.** You can't have more than one dimension or measure with same name.
+
+When you define a measure called "Total Revenue", that name cannot be used anywhere else in your project — not in another table, not as a measure again.
+
+**Benefits:**
+- **Unambiguous references**: When a query asks for "Total Revenue", there's exactly one definition
+- **Simpler compound measures**: Reference fields by name without table prefixes: `[Total Revenue] - [Total Cost]`
+- **Consistent analytics**: Everyone uses the same metric definitions organization-wide
+- **AI-friendly**: LLMs can understand your model without disambiguation
+:::
+
+:::danger[No Many-to-Many Relationships]
+**Strata does not support many-to-many (`many_to_many`) relationships.** This is an intentional design constraint to ensure predictable query behavior.
+
+**Why this limitation exists:**
+- Prevents double-counting in aggregations (a common source of bugs)
+- Forces explicit modeling that makes data relationships clearer
+- Ensures consistent query results
+
+**Workaround:**
+If you need many-to-many relationships (e.g., Users ↔ Roles), create a **junction/bridge table** with two separate relationships:
+- `Users → UserRoles` (one_to_many)
+- `UserRoles → Roles` (many_to_one)
+
+**Trade-off:** This requires additional YAML files and explicit modeling, but results in more maintainable and predictable semantic models.
+:::
+
+### Fact table grain and join safety
+
+Every fact table in your model has a **grain** — the level of detail at which each row is stored.
+
+Strata’s universe formation and routing logic assume that:
+
+- Joins between tables respect their true cardinality (see [Cardinality](/docs/semantic-model/relationships/cardinality/)).
+- Many-to-many joins are modeled explicitly via bridge tables rather than hidden in a single relationship.
+
+If two facts live at incompatible grains (for example, one is “daily inventory” and the other is “per‑transaction sales”), Strata will:
+
+- **Restrict measures to safe join paths** when building universes: measures are only exposed on paths where every join is one-to-one (or explicitly allows measure expansion). On many-to-one or one-to-many paths, only dimensions are exposed, so measures are not double-counted.
+- Use **automatic data blending** across universes when no single path can safely serve all measures—each fact is queried in its own universe and results are merged on common dimensions.
+
+## How It Works
+
+### 1. Model Definition
+
+Data engineers define semantic models using YAML files:
+- Table models describe fields and metadata
+- Relationship models define joins
+- Migrations track changes over time. We'll discuss about migration in coming sections.
+
+### 2. Deployment
+
+Models are deployed to a Strata server:
+- YAML files are validated
+- Semantic model is built
+- Universe paths are generated (all possible query paths)
+
+### 3. Query Planning
+
+When a user creates a query:
+- **Universe Resolution**: Strata's planners finds optimal data paths
+- **Build**: Builds query execution plan
+- **Converts** semantic query to optimized SQL
+- **Execution**: Runs query against datasource
+
+### 4. Result Delivery
+
+Query results are:
+- Cached for performance
+- Formatted according to field definitions
+- Returned to the user interface
+
+## Project Structure
+
+A typical Strata project:
+
+```
+my-project/
+├── project.yml              # Project metadata
+├── datasources.yml          # Datasource configurations
+├── .strata                  # Local secrets (gitignored)
+├── models/                  # Semantic model files
+│   ├── sales/
+│   │   ├── tbl.orders.yml
+│   │   ├── tbl.customers.yml
+│   │   └── rel.sales.yml
+│   └── inventory/
+│       └── tbl.products.yml
+├── migrations/              # Schema migrations
+│   └── 20260101_rename_field.yml
+└── tests/                   # Query validation tests
+    └── revenue_positive.yml
+```
+
+## Workflow
+
+1. **Initialize**: Create project with `strata init`
+2. **Configure**: Add datasources with `strata datasource add`
+3. **Model**: Create tables and relationships
+4. **Validate**: Validate with `strata audit` and test files
+5. **Deploy**: Upload to server with `strata deploy`
+
+## Next Steps
+
+- [Key terms and when to use what](/docs/getting-started/glossary/) — Glossary and decision guide
+- Learn how to [create tables](/docs/cli/tables/)
+- Understand [field types and expressions](/docs/semantic-model/fields-and-types/)
+- Explore [relationships](/docs/cli/relationships/)
+- Read about [universe formation](/docs/advanced/universe-formation/) and [advanced features](/docs/advanced/)

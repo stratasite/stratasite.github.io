@@ -1,0 +1,51 @@
+---
+title: "Reverse proxy (trusted header)"
+description: "If a reverse proxy in front of Strata already authenticates your users — for example oauth2-proxy, Cloudflare Access, or an SSO gateway — Strata can trust the user identity the proxy injects in a requ"
+---
+If a reverse proxy in front of Strata already authenticates your users — for example oauth2-proxy, Cloudflare Access, or an SSO gateway — Strata can trust the user identity the proxy injects in a request header. In this mode Strata performs **no authentication of its own**; it takes the header at face value.
+
+For shared behavior — how users are auto-created and license seats — see [Authentication & SSO](/docs/self-hosting/authentication/).
+
+:::warning
+**Strata must be network-isolated behind the proxy.** In this mode any request that can reach Strata directly can set these headers and impersonate any user. Ensure Strata is only reachable through the proxy — never expose it directly — before enabling reverse-proxy mode.
+:::
+
+## How it works
+
+1. Your proxy authenticates the user and forwards the request to Strata with the user's identity in a header (for example `X-Auth-Request-Email`).
+2. On every request, Strata reads the configured header, and signs the user in (creating the account on first login).
+
+Sessions in this mode are **per-request and not persisted** — there is no Strata login page and no session cookie, because the proxy re-authenticates every request.
+
+## Fields in Strata
+
+In **System Settings → SSO**, choose method **Reverse proxy (trusted header)** and fill in:
+
+| Field | Required | What it is |
+|---|---|---|
+| **Email header** | Yes | The request header your proxy sets with the user's email, for example `X-Auth-Request-Email`. |
+| **Display name header** | No | The header carrying the user's full name, for example `X-Auth-Request-User`. Strata splits it into first/last name; if absent, the name is derived from the email. |
+
+Click **Save SSO settings**, then restart all Strata application servers.
+
+## Configure your proxy
+
+Configure your proxy to set the email header on every request forwarded to Strata, matching the header name you entered above. For example, oauth2-proxy can be configured to pass `X-Auth-Request-Email` (and `X-Auth-Request-User`) to upstream services.
+
+Also configure the proxy to **strip these headers from inbound client requests** so a client can't send them itself — the proxy should be the only source of these headers.
+
+## Troubleshooting
+
+### Every request is unauthenticated
+
+- The proxy isn't setting the email header, or the header name in Strata doesn't exactly match what the proxy sends.
+- Confirm requests actually pass through the proxy and not directly to Strata.
+
+### New users can't sign in
+
+The account is being created just in time and your **license seat limit** is reached. Free a seat or raise the limit; existing users are unaffected.
+
+## References
+
+- [oauth2-proxy](https://oauth2-proxy.github.io/oauth2-proxy/) — a common authenticating proxy
+- [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) — identity-aware proxy

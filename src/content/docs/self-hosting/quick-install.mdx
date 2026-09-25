@@ -1,0 +1,160 @@
+---
+title: "Quick Install"
+description: "Get Strata running in minutes — no prior setup required."
+---
+Get Strata running in minutes — no prior setup required.
+
+<Tabs>
+  <TabItem value="docker" label="Docker" default>
+
+## Docker
+
+One command. No configuration needed.
+
+```bash
+docker run -d -p 8080:80 -v strata_data:/data --name strata ghcr.io/stratasite/server:latest
+```
+
+Strata starts a bundled PostgreSQL instance and auto-generates encryption secrets on first boot. Both are persisted to the `strata_data` volume.
+
+The `-v strata_data:/data` flag is optional — omitting it lets Docker manage the volume automatically, but naming it makes it easier to inspect and back up later.
+
+Open [http://localhost:8080](http://localhost:8080), enter your license key, then create your admin account.
+You can get your FREE license key at [license.strata.do](https://license.strata.do)
+
+Your server is now running — see [Next Steps](#next-steps) to deploy your first semantic model.
+
+:::caution[Bundled database]
+The bundled Postgres is for local evaluation. For persistent production data, use a dedicated PostgreSQL instance — see the [Production Deployment](/docs/self-hosting/production-deployment/) guide.
+:::
+
+### Stopping and removing
+
+```bash
+docker stop strata && docker rm strata
+```
+
+To also wipe stored data:
+
+```bash
+docker volume rm strata_data
+```
+
+  </TabItem>
+  <TabItem value="installer" label="Installer Script">
+
+## Installer Script
+
+The installer validates prerequisites, configures your environment, and starts Strata as Docker Compose services.
+
+```bash
+curl -fsSL https://strata.do/server/install.sh | bash
+```
+
+Override the install directory if needed (default: `./strata`):
+
+```bash
+STRATA_INSTALL_DIR=/opt/strata curl -fsSL https://strata.do/server/install.sh | bash
+```
+
+### What gets prompted
+
+| Prompt | Required | Description |
+|--------|----------|-------------|
+| `DB_HOST` | No | PostgreSQL hostname or IP. Leave empty to use the bundled Postgres. |
+| `DB_PORT` | No | PostgreSQL port (default: 5432) |
+| `DB_USERNAME` | No | PostgreSQL username. Leave empty when using bundled Postgres. |
+| `DB_PASSWORD` | No | PostgreSQL password. Leave empty when using bundled Postgres. |
+| `PORT` | No | Host port for the web UI (default: 3000) |
+
+After setup, open `http://<your-host>:<PORT>`, enter your license key, then create your admin account.
+You can get your FREE license key at [license.strata.do](https://license.strata.do)
+
+Your server is now running — see [Next Steps](#next-steps) to deploy your first semantic model.
+
+### Managing Strata
+
+```bash
+# View logs
+cd /path/to/strata && docker compose logs -f
+
+# Stop
+cd /path/to/strata && docker compose down
+
+# Edit configuration, then restart
+nano /path/to/strata/.env
+docker compose up -d
+```
+
+### Upgrading
+
+Re-run the installer from your install directory. Your `.env` is preserved — the new image is pulled and containers restart automatically.
+
+```bash
+cd /path/to/strata
+curl -fsSL https://strata.do/server/install.sh | bash
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Next Steps
+
+With the server running and your admin account created, put a semantic model on it:
+
+1. [Install the Strata CLI](/docs/getting-started/installation/) — `gem install strata-cli`
+2. Run `strata project sample` — it signs you in via browser and sets up the TPC-DS tutorial project
+3. `cd tpc-ds-retail-sample && strata deploy --skip-audit`, then refresh your server UI to explore the model
+
+See the [Tutorial](/docs/getting-started/tutorial/) for the full walkthrough, or [Quick Start](/docs/getting-started/quickstart/) to start a project from scratch.
+
+## Advanced
+
+The sections below cover internals and operational details.
+
+### Runtime Topology
+
+The Installer runs two containers from the same image:
+
+| Service | Role |
+|---------|------|
+| `web` | Handles web requests and runs database migrations on boot. |
+| `job` | Processes background jobs. Starts after `web` is healthy. |
+
+The Docker tab runs a single container that handles both roles.
+
+Tune performance settings (`WEB_CONCURRENCY`, `WEB_THREADS`, `JOB_CONCURRENCY`, `JOB_THREADS`) — see [Environment Variables](/docs/self-hosting/environment-variables/#performance).
+
+### What the Installer Does Internally
+
+1. **Checks prerequisites** — verifies Docker 24+ and Docker Compose v2.20+ are installed
+2. **Prompts for configuration** — collects database connection details and preferred port
+3. **Writes configuration** — creates `docker-compose.yml` and `.env` in the install directory; encryption secrets are generated automatically
+4. **Pulls and starts** — pulls the Strata Docker image and starts the containers
+5. **Health check** — waits for the application to pass the `/up` health check
+
+### Troubleshooting
+
+**Container exits immediately** — check logs for database connection errors:
+
+```bash
+docker compose logs --tail 30 web
+```
+
+Common causes: incorrect `DB_HOST`, `DB_PORT`, `DB_USERNAME`, or `DB_PASSWORD`; PostgreSQL not accepting connections from the Docker host; firewall blocking the port.
+
+**Health check never passes** — on first run, database setup can take 30–60 seconds. Watch the logs:
+
+```bash
+docker compose logs -f web
+```
+
+Expected output:
+```
+[Strata] Waiting for PostgreSQL...
+[Strata] PostgreSQL is ready.
+[Strata] Preparing databases...
+[Strata] Databases ready.
+```

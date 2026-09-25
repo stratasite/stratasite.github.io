@@ -1,0 +1,69 @@
+---
+title: "DuckDB Adapter"
+description: "Connect to DuckDB embedded analytics databases."
+---
+Connect to DuckDB embedded analytics databases.
+
+## Configuration
+
+```yaml
+duckdb_data:
+  adapter: duckdb
+  name: DuckDB Database
+  tier: hot
+  query_timeout: 600
+  
+  # Required
+  file: /path/to/your/duckdb/database.db
+  
+  # Optional
+  schema: main  # Default: main
+```
+
+## Required Fields
+
+- **file** - Path to DuckDB database file (relative or absolute)
+
+## Optional Fields
+
+- **schema** - Schema name (default: `main`)
+
+## Example
+
+```yaml
+duckdb_data:
+  adapter: duckdb
+  name: DuckDB Database
+  tier: hot
+  query_timeout: 600
+  file: /path/to/analytics.db
+  schema: main
+```
+
+## DuckDB Configuration
+
+Optional DuckDB-specific parameters:
+
+```yaml
+duck_config:
+  access_mode: READ_WRITE
+  memory_limit: 1GB
+  threads: 4
+```
+
+## Notes
+
+- **In-process database** - No network configuration (host/port) required
+- **File-based** - Database stored in a single file
+- **Fast analytics** - Optimized for analytical queries
+- **Local use** - Best for local development or embedded analytics
+
+## Best Practices
+
+1. **Use for local development** - Fast, file-based analytics
+2. **Set hot tier** - DuckDB is fast for local queries
+3. **Use absolute paths** - More reliable than relative paths
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

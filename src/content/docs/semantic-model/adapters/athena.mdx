@@ -1,0 +1,113 @@
+---
+title: "Athena Adapter"
+description: "Connect to AWS Athena."
+---
+Connect to AWS Athena.
+
+## Configuration
+
+```yaml
+athena_data:
+  adapter: athena
+  name: AWS Athena
+  tier: cold
+  query_timeout: 600
+  
+  # Required
+  region: us-east-1
+  s3_output_location: s3://your-athena-results-bucket/queries/
+  database: default
+  
+  # Optional
+  catalog: awsdatacatalog  # Default: awsdatacatalog
+  workgroup: primary
+  
+  # AWS Authentication (set via strata datasource auth or environment variables)
+  # access_key_id:
+  # secret_access_key:
+```
+
+## Required Fields
+
+- **region** - AWS region where Athena is located
+- **s3_output_location** - S3 location for query results
+- **database** - Athena database/schema name
+
+## Optional Fields
+
+- **catalog** - Catalog name (default: `awsdatacatalog`)
+- **workgroup** - Workgroup name
+- **access_key_id** - AWS access key (set via `strata datasource auth` or environment)
+- **secret_access_key** - AWS secret key (set via `strata datasource auth` or environment)
+
+## Example
+
+```yaml
+athena_data:
+  adapter: athena
+  name: AWS Athena
+  tier: cold
+  query_timeout: 600
+  region: us-east-1
+  s3_output_location: s3://my-athena-results/queries/
+  database: analytics
+  catalog: awsdatacatalog
+  workgroup: primary
+```
+
+## Authentication
+
+### Option 1: IAM Role (Recommended)
+
+For EC2/ECS/Lambda deployments, use an IAM role attached to the compute environment. No explicit credentials needed — the AWS SDK picks up permissions automatically.
+
+The IAM role needs the following permissions:
+
+- **Athena** — query execution (`athena:StartQueryExecution`, `athena:GetQueryExecution`, `athena:GetQueryResults`, etc.)
+- **S3** — read/write access to the `s3_output_location` bucket (Athena writes query results here)
+- **Glue** — read access to the data catalog (if using the default AWS Glue catalog)
+
+The managed policies `AmazonAthenaFullAccess` and `AmazonS3FullAccess` cover these requirements. For tighter scoping, create a custom policy limited to your specific S3 buckets and Glue catalogs.
+
+### Option 2: Explicit Credentials
+
+Set via CLI:
+
+```bash
+strata datasource auth athena_data
+```
+
+The IAM user behind these credentials needs the same permissions listed above.
+
+### Option 3: Environment Variables
+
+Set environment variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=AKIA...
+export AWS_SECRET_ACCESS_KEY=...
+```
+
+## S3 Output Location
+
+Required S3 bucket for query results:
+
+```yaml
+s3_output_location: s3://my-bucket/athena-results/
+```
+
+**Requirements:**
+- Bucket must exist
+- IAM role/user must have write permissions
+- Results stored temporarily
+
+## Best Practices
+
+1. **Use IAM roles** - Most secure for EC2/ECS/Lambda
+2. **Set cold tier** - Athena is slower than other adapters
+3. **Configure S3 bucket** - Ensure proper permissions
+4. **Use workgroups** - Organize and control costs
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

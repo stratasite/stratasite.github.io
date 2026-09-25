@@ -1,0 +1,716 @@
+openapi: 3.0.3
+info:
+  title: Strata API
+  version: "1.0.0"
+  description: |
+    REST API for Strata semantic layer metadata discovery and query execution.
+
+    ## Authentication
+    All endpoints require `Authorization: Bearer <api_key>`.
+
+    ## Branch scoping
+    Project-scoped endpoints accept optional `?branch=<uid>`. Omit to use the production branch.
+
+    ## Pagination
+    List endpoints return `{ results, page, total_pages, total_count, limit }`.
+  contact:
+    name: Strata Business Intelligence
+    url: https://strata.do
+
+servers:
+  - url: "{server}/api/v1"
+    variables:
+      server:
+        default: http://localhost:3000
+        description: Strata server base URL (no trailing slash)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Fields
+  - name: Tables
+  - name: Queries
+  - name: SQL
+  - name: Results
+
+paths:
+  /projects/{project_id}/fields:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/Branch"
+    get:
+      tags: [Fields]
+      summary: List or search fields
+      operationId: listFields
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 1000
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search term
+        - name: relevance
+          in: query
+          schema:
+            type: boolean
+          description: Hybrid semantic search (requires q)
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [dimension, measure]
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [smart, name, desc]
+            default: smart
+        - name: constraints
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Field names to constrain joinable results
+      responses:
+        "200":
+          description: Paginated fields
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginationEnvelope"
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Field"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /projects/{project_id}/fields/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/Branch"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Field uid
+    get:
+      tags: [Fields]
+      summary: Show field
+      operationId: showField
+      responses:
+        "200":
+          description: Field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Field"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /projects/{project_id}/tables:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/Branch"
+    get:
+      tags: [Tables]
+      summary: List or search tables
+      operationId: listTables
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 1000
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated tables
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginationEnvelope"
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TableSummary"
+
+  /projects/{project_id}/tables/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/Branch"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Tables]
+      summary: Show table
+      operationId: showTable
+      parameters:
+        - name: include_metadata
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Table with fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableDetail"
+
+  /projects/{project_id}/queries:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [Queries]
+      summary: List API queries
+      operationId: listQueries
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 50
+            default: 25
+      responses:
+        "200":
+          description: Paginated queries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginationEnvelope"
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/QuerySummary"
+    post:
+      tags: [Queries]
+      summary: Create or re-run query
+      operationId: createQuery
+      parameters:
+        - $ref: "#/components/parameters/Branch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQueryRequest"
+      responses:
+        "201":
+          description: Created or succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResponse"
+        "202":
+          description: Pending execution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResponse"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /queries/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - $ref: "#/components/parameters/Branch"
+    get:
+      tags: [Queries]
+      summary: Show query
+      operationId: showQuery
+      responses:
+        "200":
+          description: Query with spec and SQL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryDetail"
+    delete:
+      tags: [Queries]
+      summary: Delete query
+      operationId: deleteQuery
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not creator or admin
+
+  /projects/{project_id}/sql:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/Branch"
+    post:
+      tags: [SQL]
+      summary: Preview SQL
+      operationId: previewSql
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SqlPreviewRequest"
+      responses:
+        "200":
+          description: Generated SQL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SqlResponse"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /queries/{query_id}/sql:
+    parameters:
+      - name: query_id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - $ref: "#/components/parameters/Branch"
+    get:
+      tags: [SQL]
+      summary: SQL for saved query
+      operationId: querySql
+      responses:
+        "200":
+          description: Generated SQL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SqlResponse"
+
+  /queries/{query_id}/result:
+    parameters:
+      - name: query_id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - $ref: "#/components/parameters/Branch"
+      - $ref: "#/components/parameters/ResultLimit"
+      - $ref: "#/components/parameters/ResultOffset"
+    get:
+      tags: [Results]
+      summary: Poll result via query
+      operationId: pollQueryResult
+      responses:
+        "200":
+          description: Settled result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultSet"
+        "202":
+          description: Still pending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultSet"
+        "404":
+          description: No result for query
+
+  /projects/{project_id}/results/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - $ref: "#/components/parameters/ResultLimit"
+      - $ref: "#/components/parameters/ResultOffset"
+    get:
+      tags: [Results]
+      summary: Show result
+      operationId: showResult
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv]
+      responses:
+        "200":
+          description: Result JSON or CSV redirect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultSet"
+            text/csv:
+              schema:
+                type: string
+        "404":
+          description: CSV not available
+    delete:
+      tags: [Results]
+      summary: Cancel result
+      operationId: cancelResult
+      responses:
+        "200":
+          description: Result after cancel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultSet"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key from Settings → API Keys
+
+  parameters:
+    ProjectId:
+      name: project_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Project ID or uid
+    Branch:
+      name: branch
+      in: query
+      schema:
+        type: string
+      description: Branch uid (default production branch)
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    ResultLimit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        maximum: 100
+        default: 25
+    ResultOffset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+
+  responses:
+    Unauthorized:
+      description: Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            status: unauthorized
+            errors:
+              - code: unauthorized
+                message: Invalid or missing API key
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Invalid:
+      description: Invalid parameters or query spec
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        status:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            required: [code, message]
+
+    PaginationEnvelope:
+      type: object
+      properties:
+        page:
+          type: integer
+        total_pages:
+          type: integer
+        total_count:
+          type: integer
+        limit:
+          type: integer
+
+    Field:
+      type: object
+      properties:
+        uid:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        semantic_type:
+          type: string
+          enum: [dimension, measure]
+        data_type:
+          type: string
+        hidden:
+          type: boolean
+        rank:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+
+    TableSummary:
+      type: object
+      properties:
+        uid:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        physical_name:
+          type: string
+        cost:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+
+    TableDetail:
+      allOf:
+        - $ref: "#/components/schemas/TableSummary"
+        - type: object
+          properties:
+            fields:
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/Field"
+                  - type: object
+                    properties:
+                      sql:
+                        type: string
+                      primary_key:
+                        type: boolean
+                      lookup:
+                        type: boolean
+            metadata:
+              type: object
+
+    QuerySpec:
+      type: object
+      properties:
+        projections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Projection"
+        filters:
+          description: Array of filter leaves (AND) or logic tree with and/or keys
+          type: array
+          items:
+            $ref: "#/components/schemas/FilterLeaf"
+
+    Projection:
+      type: object
+      required: [field, axis]
+      properties:
+        field:
+          type: string
+          description: Semantic field name
+        axis:
+          type: string
+          enum: [x, y, series, row, tip]
+        field_type:
+          type: string
+          enum: ["Semantic::Dimension", "Semantic::Measure"]
+
+    FilterLeaf:
+      type: object
+      required: [field, predicate]
+      properties:
+        field:
+          type: string
+        predicate:
+          type: string
+        value:
+          type: string
+          description: Filter value (type depends on field and predicate)
+        value_end:
+          type: string
+          description: End value for between predicates
+
+    CreateQueryRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Re-run existing query by ID
+        name:
+          type: string
+        branch:
+          type: string
+        wait_timeout:
+          type: number
+          description: Seconds to wait for completion
+        use_cache:
+          type: boolean
+          default: true
+        limit:
+          type: integer
+          maximum: 100
+        offset:
+          type: integer
+        spec:
+          $ref: "#/components/schemas/QuerySpec"
+
+    QuerySummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        project_id:
+          type: integer
+        api:
+          type: boolean
+        created_by_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        spec:
+          $ref: "#/components/schemas/QuerySpec"
+
+    QueryDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        spec:
+          $ref: "#/components/schemas/QuerySpec"
+        sql:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+
+    QueryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+          enum: [created, pending, succeeded, failed]
+        poll_url:
+          type: string
+        spec:
+          $ref: "#/components/schemas/QuerySpec"
+        errors:
+          type: array
+          items:
+            type: object
+        result:
+          $ref: "#/components/schemas/ResultSet"
+
+    SqlPreviewRequest:
+      type: object
+      required: [spec]
+      properties:
+        branch:
+          type: string
+        spec:
+          $ref: "#/components/schemas/QuerySpec"
+
+    SqlResponse:
+      type: object
+      properties:
+        sql:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+
+    ResultSet:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed, cancelled]
+        query_id:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+        row_count:
+          type: integer
+        columns:
+          type: array
+          items:
+            type: string
+        error_message:
+          type: string
+        queue_started_at:
+          type: string
+          format: date-time
+        query_started_at:
+          type: string
+          format: date-time
+        query_ended_at:
+          type: string
+          format: date-time
+        rows:
+          type: array
+          items:
+            type: array

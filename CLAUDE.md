@@ -16,6 +16,18 @@ Core rule: **never hardcode hex values in components** — reference tokens
 (`var(--primary)`, `bg-primary`, `text-foreground`, `--chart-1`…). If a color is
 missing, add it to `brand/tokens.css` first.
 
+## Documentation (`/docs/`)
+- Pages are MDX in `src/content/docs/` (developer guide at the root,
+  `self-hosting/` for the server guide). The H1 is frontmatter `title`; the
+  body starts at the first paragraph. Sidebar order and grouping live in
+  `src/config/docs.ts`, not in frontmatter.
+- Callouts use `:::tip[Title]` … `:::` (note/tip/info/warning/caution/danger).
+  `<Tabs>`/`<TabItem>` need no import. Mermaid fences render client-side.
+- Machine exports: `/docs/llms.txt`, `/docs/api/docs.json`, `/docs/api/schema/*.json`
+  (`src/pages/docs/`, hand-written parts in `src/data/docs-ai/`). The REST API
+  reference at `/docs/api-reference/` is Redoc over `public/docs/openapi/`.
+- Search is Pagefind; the index is built by `npm run build`.
+
 ## Conventions
 - Theme is **ink-primary**: ink `--background`, cream `--foreground`, peach
   `--primary` for text-level accents, rust `--cta` for filled buttons and

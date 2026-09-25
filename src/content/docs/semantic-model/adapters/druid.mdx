@@ -1,0 +1,64 @@
+---
+title: "Druid Adapter"
+description: "Connect to Apache Druid clusters."
+---
+Connect to Apache Druid clusters.
+
+## Configuration
+
+```yaml
+druid_cluster:
+  adapter: druid
+  name: Druid Cluster
+  tier: warm
+  query_timeout: 3600
+  
+  # Required
+  protocol: http  # http or https
+  host: druid.example.com
+  port: 8082
+  
+  # Optional
+  # Additional Druid-specific configuration
+```
+
+## Required Fields
+
+- **protocol** - Protocol: `http` or `https`
+- **host** - Druid broker hostname or IP
+- **port** - Port number (typically `8082` for broker)
+
+## Optional Fields
+
+Additional Druid-specific configuration options may be available.
+
+## Example
+
+```yaml
+druid_cluster:
+  adapter: druid
+  name: Druid Cluster
+  tier: warm
+  query_timeout: 3600
+  protocol: http
+  host: druid.example.com
+  port: 8082
+```
+
+## Authentication
+
+Set credentials if required:
+
+```bash
+strata datasource auth druid_cluster
+```
+
+## Best Practices
+
+1. **Use HTTPS in production** - Encrypt connections
+2. **Set appropriate tier** - Match performance characteristics
+3. **Configure broker endpoint** - Use Druid broker host/port
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

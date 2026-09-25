@@ -1,0 +1,74 @@
+---
+/**
+ * One level of the docs sidebar tree. Recurses into categories; a category
+ * that contains the current page starts open. Labels for pages come from the
+ * collection (title or sidebarLabel), passed down as `titles`.
+ */
+import { containsPage, docHref, type SidebarItem } from '../../config/docs';
+
+interface Props {
+  items: SidebarItem[];
+  currentId: string;
+  titles: Record<string, string>;
+  depth?: number;
+}
+const { items, currentId, titles, depth = 0 } = Astro.props;
+
+const link =
+  'block rounded-md py-1.5 pr-2 text-[0.875rem] leading-snug text-muted-foreground transition-colors hover:text-foreground';
+const current = 'text-primary font-medium';
+const pad = depth === 0 ? 'pl-3' : depth === 1 ? 'pl-6' : 'pl-9';
+---
+
+<ul class={depth === 0 ? 'space-y-0.5' : 'space-y-0.5 border-l border-border'}>
+  {items.map((item) =>
+    typeof item === 'string' ? (
+      <li>
+        <a
+          href={docHref(item)}
+          class={`${link} ${pad} ${item === currentId ? current : ''}`}
+          aria-current={item === currentId ? 'page' : undefined}
+        >
+          {titles[item] ?? item}
+        </a>
+      </li>
+    ) : (
+      <li>
+        <details class="group" open={containsPage(item, currentId)}>
+          <summary
+            class={`flex cursor-pointer list-none items-center justify-between rounded-md py-1.5 pr-2 text-[0.875rem] font-semibold leading-snug text-foreground hover:text-primary ${pad} ${item.link === currentId ? current : ''}`}
+          >
+            {item.link ? (
+              <a href={docHref(item.link)} aria-current={item.link === currentId ? 'page' : undefined}>
+                {item.label}
+              </a>
+            ) : (
+              <span>{item.label}</span>
+            )}
+            <svg
+              class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M7.21 5.23a.75.75 0 011.06-.02l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08L11.17 10 7.23 6.29a.75.75 0 01-.02-1.06z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </summary>
+          <div class="mt-0.5">
+            <Astro.self items={item.items} currentId={currentId} titles={titles} depth={depth + 1} />
+          </div>
+        </details>
+      </li>
+    )
+  )}
+</ul>
+
+<style>
+  summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

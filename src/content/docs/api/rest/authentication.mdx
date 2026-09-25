@@ -1,0 +1,65 @@
+---
+title: "Authentication"
+description: "Every Strata API v1 request requires a valid API key."
+---
+Every Strata API v1 request requires a valid API key.
+
+## API keys
+
+Create an API key in the Strata web app:
+
+1. Open your project (or the server home page for server-wide access).
+2. Go to **Settings → API Keys**.
+3. Create a key and copy it immediately — it is shown only once.
+
+Store the key securely. Do not commit it to git or expose it in client-side code.
+
+:::tip[CLI users]
+The Strata CLI can obtain a key for you automatically — the first `strata deploy` offers a browser sign-in and saves the key to `.strata` (gitignored). See [Deployment](/docs/cli/deployment/) for setup.
+:::
+
+## Bearer token
+
+Send the API key on every request using HTTP Bearer authentication:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Accept: application/json" \
+     https://your-server.example.com/api/v1/projects/tpcds/fields
+```
+
+Replace `YOUR_API_KEY` with your key and `your-server.example.com` with your Strata server URL.
+
+## Unauthorized requests
+
+Missing or invalid keys return **401 Unauthorized**:
+
+```json
+{
+  "status": "unauthorized",
+  "errors": [
+    {
+      "code": "unauthorized",
+      "message": "Invalid or missing API key"
+    }
+  ]
+}
+```
+
+## Authorization
+
+Authentication identifies **who** you are. Authorization controls **what** you can do:
+
+| Action | Requirement |
+|--------|-------------|
+| Read project metadata (fields, tables, queries) | Project member |
+| Create/run API queries | Project member |
+| Delete API queries | Query creator or project admin |
+
+Forbidden requests return **403** with a structured error (newer endpoints) or `{ "errors": ["..."] }` (legacy endpoints). See [Errors](/docs/api/rest/errors/).
+
+## Next steps
+
+- [Quickstart](/docs/api/rest/quickstart/) — make your first authenticated request
+- [Conventions](/docs/api/rest/conventions/) — base URL and branch scoping
+- [API Reference](/docs/api-reference/) — interactive OpenAPI interface
