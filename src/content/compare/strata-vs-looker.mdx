@@ -2,20 +2,92 @@
 title: Strata vs Looker
 competitor: Looker
 category: bi-tool
-summary: The closest full-stack analogue. Strata trades LookML configuration fatigue for convention, and adds grain-safe blending and multi-engine federation.
+summary: The closest full stack analogue, a semantic layer plus BI. Strata trades LookML configuration for convention, blends across facts at the common grain instead of merging results, and federates across the engines you own.
 order: 10
-draft: true
 ---
 
-## Where Looker Is Strong
+import VersusSection from '../../components/VersusSection.astro';
 
-Looker is the closest full-stack analogue: a mature semantic layer plus BI, with strong security and a
-self-contained experience a team can standardize on.
+<VersusSection slug={props.slug} competitor={props.competitor} theme="modeling">
 
-## Where Strata Pulls Ahead
+Looker is the closest full stack analogue to Strata: a governed semantic layer
+with a BI tool on top. The cost is LookML. Every explore, join, and field is
+configured by a developer, and the model grows one explore at a time, each a
+hand built statement of what is legal to ask.
 
-Looker makes you configure every explore in LookML, handles multiple facts awkwardly through merged
-results, and has weak LOD and snapshot expressiveness, with no multi-engine hot-tier federation. Strata
-blends automatically by naming, stays grain-safe by construction, federates across engines for
-sub-second answers, ships five measure types, and is beautiful by default. You trade a
-configure-everything grind for convention.
+Strata derives what is legal from names. Give a concept the same name across
+facts and it is conformed; give distinct concepts distinct names and they stay
+apart. Compatibility is a property of the registry, not a list you maintain.
+Where Looker reaches a second fact through merged results, stitched in the
+browser and awkward beyond two, Strata aggregates each fact to the common grain
+and outer joins on conformed keys, and refuses anything the model cannot answer.
+There is no path to a wrong number.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="measures">
+
+Looker's measures and table calculations cover the standard cases, and
+symmetric aggregates protect against fan out inside an explore. Snapshot and
+level of detail measures are the weak spot, and a cohort beside the baseline is
+a filtered measure at best.
+
+Strata ships Standard, Complex, Snapshot, LOD, and ad hoc measures, one click
+year over year, moving average, and percent of total, and segments at the
+measure level. The domain expert builds these in the editor.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="operator">
+
+Looker's operator is the LookML developer. Business users explore within the
+guardrails a developer built, which is real self service up to the edge of the
+explore and a ticket beyond it.
+
+In Strata the primary operator is the non technical user. They build reports,
+dashboards, agents, and exports across the whole model, with per keystroke
+validation, and a layout engine arranges the result. Engineers keep the model
+current, and that upkeep is light because there is no explore to author per
+question.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="performance">
+
+Looker speeds things up with persistent derived tables and aggregate awareness,
+on one warehouse connection per model. The rollups live inside Looker and the
+queries land on that warehouse.
+
+Strata is aggregate aware too, and it federates: a ClickHouse or Druid hot tier
+takes the repetitive queries with partition aware routing, and the warehouse
+stays the system of record. One measure definition serves every engine, and the
+engines are yours to query from any tool.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="ai">
+
+Gemini in Looker is a conversational layer on top of the explores, so it is as
+good as the explore it lands in and as safe as the developer who built it.
+
+Strata's validation loop is the agent API. Agents propose partial queries, get
+compatible next steps and structured refusals, and cannot return a semantically
+invalid answer.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="better">
+
+Looker is mature, self contained, and strong on security, and if you have years
+of LookML and people who know it, that is a real asset. Moving to Strata is a
+re model: your coding agent writes the Strata YAML from the warehouse, but
+LookML does not import. If you are all in on Google Cloud, Looker is BigQuery
+native and Strata does not support BigQuery today. If you embed analytics into
+your own product with per customer theming, Looker's embed SDK is the more
+mature path.
+
+Strata earns its place when the explore backlog is the bottleneck, when
+cross fact questions are hitting merged results, and when you want the same
+governed model to serve agents and a hot tier you own.
+
+</VersusSection>

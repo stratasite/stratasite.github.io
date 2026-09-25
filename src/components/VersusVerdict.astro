@@ -1,0 +1,26 @@
+---
+// The three line verdict at the top of a comparison page, plus the date the
+// competitor cells were last checked. Replaces the old nine row table.
+import { competitors } from '../data/comparisons';
+
+interface Props {
+  slug: string;
+}
+const { slug } = Astro.props;
+const data = competitors[slug];
+---
+
+{data && (
+  <div class="not-prose rounded-xl border border-border bg-surface p-6 sm:p-8">
+    <p class="font-display text-xs font-semibold uppercase tracking-wider text-primary">The short version</p>
+    <ul class="mt-4 space-y-3">
+      {data.verdict.map((v) => (
+        <li class="flex gap-3 text-[1.05rem] leading-relaxed text-foreground">
+          <span class="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true"></span>
+          <span>{v}</span>
+        </li>
+      ))}
+    </ul>
+    <p class="mt-5 text-xs text-muted-foreground">Competitor capabilities last verified {data.verified}.</p>
+  </div>
+)}

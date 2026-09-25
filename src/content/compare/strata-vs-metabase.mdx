@@ -2,52 +2,89 @@
 title: Strata vs Metabase
 competitor: Metabase
 category: bi-tool
-summary: Metabase is a fast way to a first dashboard on a small warehouse. But non technical users can only passively consume the work of Engineers.
+summary: Metabase is a fast way to a first dashboard on a small warehouse. But non technical users can only passively consume the work of engineers.
 order: 50
 ---
 
-import Callout from '../../components/Callout.astro';
+import VersusSection from '../../components/VersusSection.astro';
 
-## Where Metabase Is Strong
+<VersusSection slug={props.slug} competitor={props.competitor} theme="modeling">
 
-Metabase nails speed to first chart. One `docker run` and a two-minute setup, and you are querying. For
-a small **technical** team on a small warehouse it is an excellent, low-cost way to get essential analytics off the
-ground, and for anyone comfortable in SQL it is genuinely productive. The primary operators here are meant to 
-be technical: understands the data model, SQL, and some data engineering principles.
+What Metabase calls modeling is a saved set of joins and filters, a database
+view by another name, with the same cost: no join pruning, so every join runs
+on every query. A question lives on one table or one joined query, so combining
+measures across fact domains at different grains means a fragile fact to fact
+join, and nothing stops it from double counting.
 
-<Callout type="tip" title="Who is the Primary Operator?">
-The primary operator is the person who can drive the full tool: build reports, dashboards, agents, and
-exports, not just view them. It is the first question to settle when choosing a BI platform.  
+Strata models by naming instead. Fields live in a governed registry, conformed
+by shared names and versioned in Git, with no per combination setup. Each fact
+is aggregated to the common grain before anything is joined, and an invalid
+combination is refused before it runs.
 
-**Who are you trying to enable?** 
-  1. Technical users who need a way to deliver dashboards, or
-  2. Non technical users who need to self serve analytics
+</VersusSection>
 
-In Strata, the primary operator is the non-technical user. Engineers set the project up and keep it
-current as KPIs change and new tables land, but that upkeep is light. The day to day building is done by
-non technical domain experts.
-</Callout>
+<VersusSection slug={props.slug} competitor={props.competitor} theme="measures">
 
+A Metabase measure is an aggregation on a fixed join. Snapshot, cross domain,
+and level of detail measures are out of reach without hand written window SQL,
+which puts them back on the engineer.
 
-## Where Strata Pulls Ahead
+Strata ships five measure types and one click transforms, and a segment on a
+single measure puts a cohort beside the baseline in one view instead of two
+saved questions.
 
-**No real semantic layer.** What Metabase calls "modeling" is a saved set of joins and filters, a
-database view by another name, with the same cost: no join pruning, so every join runs on every query.
-Strata models by naming instead. Fields live in a governed registry, conformed by shared names and
-versioned in Git, with no per-combination setup.
+</VersusSection>
 
-**Measures hit a wall.** A Metabase metric lives on one table or one joined query, so combining measures
-across fact domains at different grains means a fragile fact-to-fact join. Snapshot, cross-domain, and
-level-of-detail measures are out of reach without hand-written window SQL. Strata ships five measure
-types and aggregates each fact to a common grain, so blends stay grain-safe by construction.
+<VersusSection slug={props.slug} competitor={props.competitor} theme="operator">
 
-**Model selection is a challenging starting point.** Every visualization starts by picking a model and its
-joins, too hard for a non-technical analyst or an agent, so teams fall back to raw SQL, which frustrates
-the technical users it fit best. Strata starts from a question, validates per keystroke, and refuses
-invalid combinations with an explanation. Humans and agents self-serve safely.
+The primary operator is the person who can drive the full tool: build reports,
+dashboards, agents, and exports, not just view them. In Metabase that person is
+technical. Every visualization starts by picking a model and its joins, which is
+too hard for a non-technical analyst or an agent, so teams fall back to raw SQL,
+which frustrates the technical users it fit best.
 
-**The rest adds up.** Basic chart types only. Manual dashboard layout and heavy config for interactivity.
-Performance by simple caching. Sheets export gated behind Metabase Cloud.
+In Strata the primary operator is the non-technical user. A question starts
+from a measure or dimension, Strata derives the valid paths, validates per
+keystroke, and refuses invalid combinations with an explanation. Dashboards are
+beautiful by default and laid out by an engine, where Metabase asks for a manual
+grid and heavy configuration to make a dashboard interactive.
 
-Strata is beautiful by default, aggregate-aware with federated hot-tier routing for sub-second refreshes,
-and agent-safe out of the box.
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="performance">
+
+Metabase caches results and otherwise leans on the warehouse. That is fine at
+small scale and expensive at large scale, where every dashboard refresh is
+warehouse compute.
+
+Strata is aggregate aware and routes to OLAP hot tiers you own, with partition
+aware routing that falls back to the warehouse only when it has to. Sub second
+refreshes and lower warehouse spend at the same time.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="ai">
+
+Metabot has to start where a person starts, by choosing a table or model, so it
+inherits the same wall. It can write SQL, and SQL is exactly where a confident
+wrong answer comes from.
+
+Strata's validation loop is the agent API. Agents get the same refusals and
+correct answers a person does, on the governed model.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="better">
+
+Metabase nails speed to first chart. One docker run and a two minute setup, and
+you are querying. For a small technical team on a small warehouse it is an
+excellent, low cost way to get essential analytics off the ground, and for
+anyone comfortable in SQL it is genuinely productive.
+
+If that is your team, and the people asking questions can write the query
+themselves, Metabase is the simpler tool and Strata is more than you need.
+Strata earns its setup when the people who need answers cannot write the query,
+when the warehouse spans several fact domains, or when agents need to ask
+questions safely.
+
+</VersusSection>

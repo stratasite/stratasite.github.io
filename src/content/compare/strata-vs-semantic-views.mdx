@@ -2,21 +2,94 @@
 title: Strata vs Snowflake Semantic Views
 competitor: Snowflake Semantic Views
 category: semantic-layer
-summary: Opposite philosophies. In Snowflake two same-named dimensions break the view; in Strata that shared name is the signal they are conformed.
+summary: Opposite philosophies. In Snowflake two same named dimensions from different tables are an error you rename around; in Strata that shared name is the signal they are conformed. Strata fronts Snowflake with a hot tier and is the self service layer Snowflake does not have.
 order: 30
-draft: true
 ---
 
-## Where Snowflake Is Strong
+import VersusSection from '../../components/VersusSection.astro';
 
-Snowflake semantic views are native to where your data already lives, inherit strong RLS and masking,
-are agent-native through Cortex, and ship AI-assisted modeling.
+<VersusSection slug={props.slug} competitor={props.competitor} theme="modeling">
 
-## Where Strata Pulls Ahead
+A semantic view declares its tables, its relationships, and its dimensions and
+metrics explicitly. Two dimensions with the same name from different tables are
+a compile error you fix by renaming one of them. That is the opposite of
+Strata's rule, where the shared name is the signal that the two are conformed
+and safely blendable, and it matters on a messy warehouse: the naming discipline
+you would apply anyway becomes the model, instead of a list of relationships to
+keep correct by hand.
 
-> In Snowflake, two dimensions with the same name from different tables break the semantic view. In
-> Strata, that same shared name is the signal that they are conformed and safely blendable.
+Snowflake's blending is join based, so correctness depends on the declared
+relationships being right. Strata aggregates each fact to the common grain and
+outer joins on conformed keys, never row to row across facts, and refuses any
+combination the model cannot answer before it runs. There is no path to a wrong
+number.
 
-Snowflake is Snowflake-only, with no hot-tier federation and no built-in self-service or dashboards.
-Strata fronts your warehouse with a fast OLAP hot tier and aggregate awareness, blends across domains by
-convention, and is itself the consumption layer for humans and agents.
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="measures">
+
+Semi additive measures are native, through NON ADDITIVE BY, and that is a real
+strength. Level of detail is narrower: a window function exclusion covers some
+cases, and share of total or a fixed denominator is a second metric.
+
+Strata ships Standard, Complex, Snapshot, LOD, and ad hoc measures, one click
+year over year, moving average, and percent of total, and segments at the
+measure level so a cohort sits beside the baseline in one view.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="operator">
+
+A semantic view is authored by a data engineer and consumed through Cortex or a
+BI tool. Snowsight is not a self service product, so the experience your
+operators get is whichever tool you put on top, and the guarantees flatten at
+that boundary.
+
+Strata is the consumption layer. Non technical domain experts build reports,
+dashboards, agents, and exports against the governed model, with per keystroke
+validation and a layout engine, and the correctness guarantee travels with that
+interface into every surface Strata owns, including the Google Sheets add on.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="performance">
+
+Every query against a semantic view is Snowflake compute. That is simple, and it
+is the reason dashboards and agents get slower and more expensive as adoption
+deepens.
+
+Strata keeps Snowflake as the system of record and fronts it with a ClickHouse
+or Druid hot tier plus aggregate awareness. Partition aware routing sends a
+query to the hot tier when the filters fit and to Snowflake when they do not.
+One measure definition serves both. Sub second answers and lower Snowflake
+spend at the same time.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="ai">
+
+Cortex Analyst and Cortex Agents make semantic views genuinely agent native,
+inside Snowflake. The model gives the agent governed definitions; the answers
+still run at warehouse latency, and the retrieval is Snowflake's.
+
+Strata's validation loop is the agent API. Agents get compatible next steps and
+structured refusals on every turn, at hot tier latency, and the same absolute
+guarantee a person gets: it cannot return a semantically invalid answer.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="better">
+
+If everything already lives in Snowflake and you want zero new infrastructure,
+semantic views are native: governance, row level security, and masking are
+inherited from the account, Cortex is in the platform, and the reach into Power
+BI and Excel through XMLA is growing. Strata is a server to run, with RLS
+declared in the model, and it never feeds a foreign BI tool headlessly.
+
+Strata earns its place when the warehouse is messy and multi domain, when
+dashboard and agent latency has become an adoption problem, when Snowflake spend
+on repetitive queries needs to come down, and when the people asking questions
+need a self service surface rather than a semantic view behind someone else's
+tool.
+
+</VersusSection>

@@ -6,40 +6,91 @@ summary: Power BI gives technical authors enormous end-to-end power, but its pri
 order: 30
 ---
 
-## Who Is the Primary Operator?
+import VersusSection from '../../components/VersusSection.astro';
 
-The primary operator is the person who can drive the full tool, not just consume it. In Power BI that
-person is deeply technical: they master a complex UI, understand the data model, know some SQL, and
-usually learn DAX. Non-technical users stay passive, limited to the slicers a report author enabled. In
-Strata the primary operator is the non-technical user. They build reports, dashboards, agents, and
-exports themselves; engineers set up and lightly maintain.
+<VersusSection slug={props.slug} competitor={props.competitor} theme="modeling">
 
-## Where Power BI Is Strong
+Every source in Power BI, even a CSV, becomes its own semantic model, and every
+use case tends to spawn another one. Git is possible, through Fabric workspace
+integration and PBIP project files, but it is opt in and per model, and most
+teams still pass .pbix files around. Dozens of models accumulate with no shared
+source of truth.
 
-Power BI is genuinely powerful. Signup is frictionless, the connector list is vast,
-and data prep, semantic modeling, and report building all live in one desktop flow. Every source, even a
-CSV, becomes a semantic model, and DAX can express almost any measure. For a Microsoft shop with
-technical authors, it is a strong end-to-end tool.
+Inside a model, Power BI trusts you. Put Store Sales and Web Sales together and
+it will let you slice Web Sales by a Store dimension. The result is the grand
+total repeated on every row, with a warning at most. Correctness rests on the
+author knowing every legal combination. Strata models a whole domain in a single
+semantic layer that lives in Git from the first commit, derives what is legal
+from the model, and refuses invalid combinations before they run. There is no
+path to a wrong number.
 
-## Where Strata Pulls Ahead
+</VersusSection>
 
-**DAX is the tax.** Power BI's expressiveness runs through DAX, which does not map cleanly to SQL and
-takes real time to master. Even a semi-additive closing balance needs a CALCULATE and ENDOFMONTH
-formula. Strata ships five measure types plus one-click YoY, moving average, and percent of total, with
-no new language to learn.
+<VersusSection slug={props.slug} competitor={props.competitor} theme="measures">
 
-**The model trusts you.** Put Store Sales and Web Sales in one model and Power BI will happily let you
-slice Web Sales by a Store dimension via **cross join**. Correctness rests on the author knowing every
-legal combination. Strata derives what is legal and refuses invalid combinations before they run, so
-blends stay grain-safe.
+Power BI's expressiveness runs through DAX, which does not map cleanly to SQL
+and takes real time to master. Even a semi-additive closing balance needs a
+CALCULATE and ENDOFMONTH formula, and the people who can write it are the same
+people who are already the bottleneck.
 
-**Models proliferate.** Every use case tends to spawn another semantic model. Git is possible, through
-Fabric workspace integration and PBIP project files, but it is opt in and per model, and most teams
-still pass .pbix files around. Dozens accumulate with no shared source of truth. Strata models a whole
-domain comprehensively in a single semantic layer that lives in Git from the first commit.
+Strata ships five measure types, Standard, Complex, Snapshot, LOD, and ad hoc,
+plus one click year over year, moving average, and percent of total, with no new
+language to learn. A segment on one measure puts a cohort beside the baseline in
+the same view, which in DAX is a filter context exercise per measure.
 
-**The rest adds up.** Import, DirectQuery, and Composite are all fast, but lock you further into the
-Microsoft ecosystem. Strata federates with aggregate-aware, partition-aware hot-tier routing across
-popular OLAP and warehouse engines. Dashboard layout is pixel-perfect and manual, as pretty or as ugly
-as the author makes it. Strata is beautiful by default and agent-safe out of the box. It augments or
-replaces Power BI for generalized self-service needs.
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="operator">
+
+The primary operator is the person who can drive the full tool, not just consume
+it. In Power BI that person is deeply technical: they master a complex UI,
+understand the data model, know some SQL, and usually learn DAX. Non-technical
+users stay passive, limited to the slicers a report author enabled.
+
+In Strata the primary operator is the non-technical user. They build reports,
+dashboards, agents, and exports themselves; engineers set up and lightly
+maintain. Dashboard layout in Power BI is pixel perfect and manual, as pretty or
+as ugly as the author makes it. Strata is beautiful by default, with a layout
+engine that arranges views and validation on every keystroke.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="performance">
+
+Import, DirectQuery, and Composite are all fast, and all tie you further into
+the Microsoft ecosystem. Speed is a property of the Power BI service and the
+Vertipaq engine, not of infrastructure you control.
+
+Strata is aggregate aware and federates across OLAP engines you own, with
+partition aware routing to the fastest source that can answer. Snowflake stays
+the system of record; a ClickHouse or Druid hot tier takes the repetitive
+queries. One measure definition serves every engine.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="ai">
+
+Copilot sits on top of the model and inherits its trust problem: it can write a
+DAX measure, but nothing stops it from slicing by an unrelated dimension and
+returning a confident wrong total.
+
+Strata's validation loop is the agent API. An agent builds queries through the
+same validated interface a person does and gets the same refusals, so it cannot
+return a semantically invalid answer.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="better">
+
+Power BI is genuinely powerful. Signup is frictionless, the connector list is
+vast, and data prep, semantic modeling, and report building all live in one
+desktop flow. For a Microsoft shop with technical authors, it is a strong end
+to end tool, and it is already licensed.
+
+If your consumers live in Teams and Excel, if you need paginated reports for
+print or regulators, or if the sources you care about are SaaS apps and files
+rather than a warehouse, Power BI does those things and Strata does not. Strata
+does not feed Power BI over XMLA either, on purpose. It augments or replaces it
+for governed self service on the warehouse.
+
+</VersusSection>

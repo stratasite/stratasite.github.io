@@ -2,19 +2,97 @@
 title: Strata vs dbt Semantic Layer (MetricFlow)
 competitor: dbt Semantic Layer
 category: semantic-layer
-summary: The closest peer on the semantic side. Strata adds automatic blending, five measure types, federation, and a beautiful consumption layer MetricFlow does not have.
+summary: The closest peer on the semantic side. MetricFlow links entities by name inside a dbt project and serves metrics to other tools. Strata conforms by name across the whole warehouse, adds five measure types and federation, and is the self service layer itself.
 order: 10
-draft: true
 ---
 
-## Where MetricFlow Is Strong
+import VersusSection from '../../components/VersusSection.astro';
 
-MetricFlow is the closest peer on the semantic side. It links entities by name, aggregates then joins
-across models, lives in version control, and fits a dbt centric stack naturally.
+<VersusSection slug={props.slug} competitor={props.competitor} theme="modeling">
 
-## Where Strata Pulls Ahead
+MetricFlow is the closest thing to Strata's modeling idea. Semantic models
+declare entities, dimensions, and measures as YAML in the dbt project, entities
+with the same name link models together, and a metric across models is
+aggregated per model and then joined. That is the right shape.
 
-MetricFlow asks for per-model YAML, is headless with no dashboards, and is bound to a single warehouse.
-Strata blends automatically and grain-safely by naming, ships five measure types, routes across
-federated hot tiers for sub-second answers, and is a beautiful self-service layer in its own right. The
-edge is the whole package working together, not any single feature.
+The difference is how much of it you author and how far it reaches. In
+MetricFlow every model carries its own entity declarations, join rules, and
+metric specs, and correctness across models depends on those being right. Strata
+derives compatibility from the registry: give a concept the same name across
+facts and it is conformed, give distinct concepts distinct names and they stay
+apart, and blending groups handle the cases where names genuinely differ. Any
+combination the model cannot answer is refused before execution. There is no
+path to a wrong number, and no combination you forgot to declare.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="measures">
+
+MetricFlow's metric types, simple, ratio, cumulative, derived, and conversion,
+plus non additive dimensions for semi additive measures, cover a lot. What they
+do not cover is level of detail: a share of total, a fixed denominator, or a
+hierarchy excluded from the group by has to be built as a second metric and a
+ratio.
+
+Strata ships Standard, Complex, Snapshot, LOD, and ad hoc measures, with one
+click year over year, moving average, and percent of total, and segments at the
+measure level so a cohort sits beside the baseline in one view. The domain
+expert builds these in the editor; nobody opens a YAML file.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="operator">
+
+MetricFlow's operator is the analytics engineer. Consumers reach the metrics
+through a BI tool, a notebook, or an API, and the experience they get is
+whichever tool sits on top. There is no self service surface of its own.
+
+Strata is the consumption layer. Non technical domain experts build reports,
+dashboards, agents, and exports against the governed model, with per keystroke
+validation and a layout engine, and engineers keep the model current. The
+guarantees travel with the retrieval interface, which is why Strata never
+exposes the model to a foreign query builder.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="performance">
+
+MetricFlow compiles to SQL and runs it on the warehouse. Every dashboard
+refresh and every agent turn is warehouse compute, and latency is whatever the
+warehouse gives you.
+
+Strata is aggregate aware and federates across OLAP engines you own, with
+partition aware routing to a ClickHouse or Druid hot tier when the filters fit
+and a fallback to the warehouse when they do not. One measure definition serves
+every engine.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="ai">
+
+dbt is building agent access through an MCP server and its APIs, and the
+governed metric definitions help. But the retrieval experience is yours to
+build, and an agent that composes a bad request gets an error rather than a
+guided alternative.
+
+Strata's validation loop is the agent API. An agent proposes a partial query,
+gets the compatible next steps and structured refusals, and lands on a correct
+answer the same way a person does.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="better">
+
+If your metrics belong next to the models that build them, in the same repo,
+the same pull requests, and the same CI, MetricFlow is the natural fit, and
+Strata is a separate project that sits on your dbt built marts. If your
+consumers are already in Tableau, Hex, or Mode and you want a headless layer
+feeding them over JDBC or GraphQL, MetricFlow does that and Strata does not, on
+purpose.
+
+Strata earns its place when the people asking questions cannot write the query,
+when the warehouse spans many fact domains with partial conformance, and when
+agents need correct answers at sub second latency without burning warehouse
+credits.
+
+</VersusSection>

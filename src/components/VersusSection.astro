@@ -1,0 +1,84 @@
+---
+// One theme of a comparison page: a heading, a mini table that shows the
+// difference at a glance, then the prose (slot) that explains it. Rows come
+// from src/data/comparisons.ts so every competitor page shares the same axes;
+// `theme="better"` renders the competitor's honest "where they win" rows.
+import { themes, competitors } from '../data/comparisons';
+
+interface Props {
+  slug: string;
+  competitor: string;
+  /** Theme key from comparisons.ts, or `better`. */
+  theme: string;
+  /** Heading override. */
+  title?: string;
+}
+const { slug, competitor, theme, title } = Astro.props;
+
+const data = competitors[slug];
+const def = themes.find((t) => t.key === theme);
+
+type Cell = { label: string; them: string; strata: string };
+let rows: Cell[] = [];
+let heading = title ?? '';
+if (theme === 'better') {
+  rows = data?.better ?? [];
+  heading = title ?? `Where ${competitor} is the better choice`;
+} else if (def) {
+  rows = [
+    ...def.rows.map((r) => ({
+      label: r.label,
+      them: data?.cells[r.key] ?? '—',
+      strata: data?.strata?.[r.key] ?? r.strata,
+    })),
+    ...(data?.extra?.[theme] ?? []),
+  ];
+  heading = title ?? def.title;
+}
+const id = `vs-${theme}`;
+---
+
+<section id={id} class="vs-section not-prose scroll-mt-24">
+  <h2 class="font-display text-2xl font-bold tracking-tight sm:text-3xl">{heading}</h2>
+
+  <div class="vs-table mt-6 overflow-hidden rounded-xl border border-border">
+    <div class="hidden grid-cols-[9rem_1fr_1fr] bg-surface-2 text-xs font-semibold uppercase tracking-wider sm:grid">
+      <div class="px-4 py-2.5 text-muted-foreground"></div>
+      <div class="px-4 py-2.5 text-muted-foreground">{competitor}</div>
+      <div class="px-4 py-2.5 text-primary">Strata</div>
+    </div>
+    {rows.map((r) => (
+      <div class="grid grid-cols-1 border-t border-border sm:grid-cols-[9rem_1fr_1fr]">
+        <div class="px-4 pt-4 font-display text-sm font-semibold text-foreground sm:py-4">{r.label}</div>
+        <div class="px-4 pb-3 pt-2 text-[0.98rem] leading-relaxed text-muted-foreground sm:py-4">
+          <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 sm:hidden">{competitor}</span>
+          {r.them}
+        </div>
+        <div class="strata-cell px-4 pb-4 pt-2 text-[0.98rem] font-medium leading-relaxed text-foreground sm:py-4">
+          <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-primary sm:hidden">Strata</span>
+          {r.strata}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <div class="prose-strata vs-prose mt-8">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .vs-section {
+    margin-top: 4.5rem;
+  }
+  .vs-section:first-of-type {
+    margin-top: 0;
+  }
+  .strata-cell {
+    background: color-mix(in srgb, var(--strata-peach) 10%, transparent);
+  }
+  /* Prose inside the section: paragraphs only, headings belong to the section. */
+  .vs-prose :global(p:first-child) {
+    margin-top: 0;
+  }
+</style>
