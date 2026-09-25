@@ -85,10 +85,13 @@ answer the same way a person does.
 
 If your metrics belong next to the models that build them, in the same repo,
 the same pull requests, and the same CI, MetricFlow is the natural fit, and
-Strata is a separate project that sits on your dbt built marts. If your
-consumers are already in Tableau, Hex, or Mode and you want a headless layer
-feeding them over JDBC or GraphQL, MetricFlow does that and Strata does not, on
-purpose.
+Strata is a separate project that sits on your dbt built marts. Migration is
+not the obstacle it looks like: both models are YAML, and a coding agent
+transpiles MetricFlow semantic models and metrics to Strata, or Strata back to
+MetricFlow, in minutes. You can evaluate Strata on your existing definitions
+without rewriting anything by hand. If your consumers are already in Tableau,
+Hex, or Mode and you want a headless layer feeding them over JDBC or GraphQL,
+MetricFlow does that and Strata does not, on purpose.
 
 Strata earns its place when the people asking questions cannot write the query,
 when the warehouse spans many fact domains with partial conformance, and when

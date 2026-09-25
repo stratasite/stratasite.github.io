@@ -282,7 +282,7 @@ export const competitors: Record<string, Competitor> = {
       {
         label: 'Metrics inside the dbt project',
         them: 'Metrics live next to the models that build them, in the same repo and CI.',
-        strata: 'A separate project that sits on your dbt built marts. Metric definitions are not shared between the two.',
+        strata: 'A separate project on your dbt built marts. Both are YAML, so an LLM transpiles MetricFlow to Strata, or back, in minutes. Migration is a non issue.',
       },
       {
         label: 'Feeding existing BI tools',
