@@ -1,0 +1,12 @@
+---
+// One line under a trial CTA that says what the trial actually is. Data
+// engineers do not click "Try it free"; they click "runs on my machine".
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+---
+
+<p class={`text-sm text-muted-foreground ${className}`}>
+  Runs on your machine in about 15 minutes. Docker, your warehouse, your coding agent. No credit card.
+</p>

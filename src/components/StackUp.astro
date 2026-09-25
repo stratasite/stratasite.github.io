@@ -6,6 +6,7 @@
 // detail pages, not here.
 import type { CollectionEntry } from 'astro:content';
 import CtaButton from './CtaButton.astro';
+import TrialNote from './TrialNote.astro';
 
 interface Props {
   comparisons: CollectionEntry<'compare'>[];
@@ -133,6 +134,7 @@ const slugSet = new Set(comparisons.map((c) => c.slug));
       <CtaButton location="stackup" />
       <CtaButton action="demo" location="stackup" />
     </div>
+    <TrialNote class="mt-4" />
   </div>
 </div>
 

@@ -21,11 +21,15 @@ interface Step {
   codeLang?: string;
   codeFile?: string;
   alt?: string;
+  /** "Run this yourself in the free trial" link. `href` defaults to /try/. */
+  tryIt?: { label: string; href?: string };
 }
 interface Props {
   steps: Step[];
+  /** Page prefix for the trial link's analytics location, e.g. `sl`. */
+  ctaLocation?: string;
 }
-const { steps } = Astro.props;
+const { steps, ctaLocation = 'product' } = Astro.props;
 ---
 
 <div class="mx-auto max-w-6xl space-y-20 lg:space-y-28">
@@ -87,6 +91,20 @@ const { steps } = Astro.props;
                   {s.underHood.label ?? 'Learn more'}
                 </a>
               )}
+            </p>
+          )}
+
+          {s.tryIt && (
+            <p class="mt-4">
+              <a
+                href={s.tryIt.href ?? '/try/'}
+                class="group/try inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all hover:gap-2.5"
+                data-track="trial_cta_click"
+                data-track-cta-location={`${ctaLocation}-step-${i + 1}`}
+              >
+                {s.tryIt.label}
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+              </a>
             </p>
           )}
         </div>

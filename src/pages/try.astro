@@ -57,7 +57,7 @@ const faq = [
   {
     id: 'manage-server',
     q: 'How do I stop, upgrade, or remove the server?',
-    a: 'It is one container named <code>strata</code>. <code>docker stop strata</code> and <code>docker start strata</code> pause and resume it, re-running the installer upgrades it in place, and <code>docker rm -f strata</code> removes it. Your data lives in the <code>strata_data</code> volume and survives all of that until you run <code>docker volume rm strata_data</code>.',
+    a: 'It is one container named <code>strata</code>. <code>docker stop strata</code> and <code>docker start strata</code> pause and resume it, re-running the installer upgrades it in place, and <code>docker rm -f strata</code> removes it. Your data lives in the <code>strata_data</code> volume and survives all of that until you run <code>docker volume rm strata_data</code>. To remove the CLI as well: <code>gem uninstall strata-cli</code>, then delete the project folder, which is where its <code>.strata</code> credentials file lives.',
   },
   {
     id: 'command-not-found',
@@ -102,6 +102,10 @@ const faq = [
       </h1>
       <p class="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
         Free plan, no credit card, everything runs locally. About 15 minutes.
+      </p>
+      <p class="mt-5 text-sm text-muted-foreground">
+        You need Docker, Ruby 3.4.4 or newer, Git, and read access to a warehouse. A coding agent such as
+        Claude Code or Codex does the modeling for you.
       </p>
     </div>
   </section>
@@ -169,6 +173,9 @@ const faq = [
               verifies it works:
             </p>
             <CommandBlock id="cli-install" step="2" code="curl -fsSL https://strata.do/cli/install.sh | bash" class="mt-4" />
+            <p class="text-sm text-muted-foreground">
+              Prefer not to pipe into bash? <code>gem install strata-cli</code> does the same thing on any OS.
+            </p>
             <p>Confirm it is on your path:</p>
             <CommandBlock id="cli-version" step="2" code="strata version" class="mt-4" />
 
@@ -286,7 +293,7 @@ const faq = [
                 </ul>
                 <p>
                   Say yes and it writes <code>models/**/*.yml</code>, running <code>strata audit</code> after every
-                  change. Twenty tables or two hundred, this is a few minutes.
+                  change. For a few dozen tables this is a few minutes.
                 </p>
               </div>
               <div data-panel="manual" hidden>
@@ -333,7 +340,7 @@ const faq = [
               <li>Type a question in plain language and let Strata resolve it to the right fields.</li>
               <li>Drag a measure from one fact next to a dimension from another and watch it blend, or refuse with a reason.</li>
               <li>Build a report from a few views and let the layout engine arrange it.</li>
-              <li>Push a view into Google Sheets with the add on, or schedule it to land in an inbox.</li>
+              <li>Add a segment to one measure and see a cohort beside the baseline in a single view.</li>
             </ul>
             <p>
               Every change to the model is the same loop: edit YAML (or ask the agent), <code>strata audit
@@ -462,6 +469,9 @@ const faq = [
         <CtaButton action="demo" variant="primary" location="try-closing" label="Book a setup call" />
         <a href="/pricing/" class="font-semibold text-primary transition-all hover:underline">See plans</a>
       </div>
+      <p class="mt-6 text-sm text-muted-foreground">
+        The free plan includes one developer, 25 users, and two data sources per project.
+      </p>
     </div>
   </section>
 </Base>

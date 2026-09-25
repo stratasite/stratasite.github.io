@@ -52,7 +52,7 @@ production. No snapshots to export, no "who changed this measure last week" myst
 answer is in the log.
 
 And because every change is a commit, you can gate it like one. Wire `strata audit` into CI
-and every pull request is grain-checked against your warehouse before it can merge — the same
+and every pull request is validated against your warehouse before it can merge, so a wrong number cannot ship. The same
 validation that guards production runs on the proposed model first, so a broken measure never
 reaches a dashboard.
 
@@ -65,10 +65,13 @@ fields, validate the model against your warehouse, and deploy a branch — all f
 terminal, all scriptable in CI.
 
 ```bash
-strata init [PROJECT_NAME]  # Initializes a new Strata project
-strata audit                # Audit project configuration and models
-strata deploy               # Deploys the current branch to the server 
+strata init acme-analytics       # scaffold a project, AGENTS.md included
+strata datasource add snowflake  # connect the warehouse
+strata audit all                 # validate the model against the warehouse
+strata deploy                    # deploy the current git branch
 ```
+
+<a href="/try/#step-2" data-track="trial_cta_click" data-track-cta-location="feature-as-code">Run these yourself in the free trial. Docker, your warehouse, about 15 minutes.</a>
 
 Because the model is just well-structured code, it's the perfect surface for a coding
 assistant. Point Claude or your editor's assistant at the model repo and it can draft new

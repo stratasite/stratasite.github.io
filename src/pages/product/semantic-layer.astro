@@ -46,6 +46,7 @@ const steps = [
       href: '/features/semantic-layer-as-code/',
       label: 'Semantic layer as code',
     },
+    tryIt: { label: 'Model your own warehouse this way in the free trial', href: '/try/#step-3' },
     codeLang: 'yaml',
     codeFile: 'models/sales/tbl.orders.yml',
     code: `name: Orders
@@ -79,6 +80,7 @@ fields:
       href: '/features/grain-safe-blending/',
       label: 'Cross domain blending',
     },
+    tryIt: { label: 'Try a cross domain blend on your own data', href: '/try/#step-5' },
     diagram: 'blending',
     alt: 'Two facts at different grains aggregated independently and joined on a shared conformed key',
   },
@@ -137,11 +139,13 @@ fields:
       href: '/features/semantic-layer-as-code/',
       label: 'Semantic layer as code',
     },
+    tryIt: { label: 'Run these commands yourself in the free trial', href: '/try/#step-2' },
     codeLang: 'bash',
     codeFile: 'terminal',
-    code: `strata init acme-analytics   # scaffold a project
-strata audit                 # grain check the model
-strata deploy                # deploy the git branch`,
+    code: `strata init acme-analytics       # scaffold a project, AGENTS.md included
+strata datasource add snowflake  # connect the warehouse
+strata audit all                 # validate the model
+strata deploy                    # deploy the git branch`,
   },
 ];
 
@@ -333,7 +337,7 @@ const gained = [
         </p>
       </div>
       <div class="mt-20">
-        <DayInLife steps={steps} />
+        <DayInLife steps={steps} ctaLocation="sl" />
       </div>
     </div>
   </section>

@@ -32,6 +32,30 @@ const studyHref = featuredStudy ? `/case-studies/${featuredStudy.slug}/` : undef
 
 const steps = [
   {
+    time: 'Model',
+    title: 'Your coding agent builds the semantic model',
+    body: [
+      'Every Strata project ships with an <code>AGENTS.md</code>: the YAML schema, the naming and join rules, the deploy contracts, and the read only discovery commands to run instead of guessing at your schema. Claude Code, Codex, and Cursor read it the moment they open the project. No custom prompt, no per agent setup.',
+      'Ask for the model and the agent inspects your tables, proposes facts, dimensions, fields, and joins, and waits for your approval before writing a file. Then it writes the YAML and runs <code>strata audit</code> after every change. Deploys and credentials stay with you.',
+    ],
+    underHood: {
+      text: 'The CLI exposes JSON discovery commands (<code>strata datasource tables --agent</code>, <code>strata datasource meta --agent</code>) so the agent works from real metadata, and the audit refuses anything outside the rules.',
+      href: 'https://strata.do/developer-docs/developer-guide/cli/building-your-model',
+      label: 'Building your model',
+    },
+    tryIt: { label: 'Point your agent at your warehouse in the free trial', href: '/try/#step-4' },
+    codeLang: 'text',
+    codeFile: 'claude code, from the project root',
+    code: `> Build the semantic model for the tables in my warehouse
+  datasource. Follow AGENTS.md. Show me your proposal
+  before writing any files.
+
+  # The agent lists your tables with the read only
+  # discovery commands, proposes facts, dimensions,
+  # and joins, and waits for your approval before it
+  # writes a single YAML file.`,
+  },
+  {
     time: 'Build',
     title: 'Build an agent the way you build a report',
     body: [
@@ -195,12 +219,13 @@ const gained = [
           An agent is a first class object, just like a report
         </h2>
         <p class="mt-5 text-lg leading-relaxed text-muted-foreground">
-          Build it, open up any query it runs, and share it with your team, the same way you already work
-          with reports. No black box, no separate tool to learn.
+          Your coding agent models the warehouse. Then build an agent, open up any query it runs, and share
+          it with your team, the same way you already work with reports. No black box, no separate tool to
+          learn.
         </p>
       </div>
       <div class="mt-20">
-        <DayInLife steps={steps} />
+        <DayInLife steps={steps} ctaLocation="aa" />
       </div>
     </div>
   </section>
