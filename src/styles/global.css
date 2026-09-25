@@ -50,7 +50,7 @@
     @apply mt-4 list-decimal space-y-2 pl-6;
   }
   .prose-strata a:not(.cta) {
-    @apply font-medium text-primary underline underline-offset-2 hover:text-strata-rust-deep;
+    @apply font-medium text-primary underline underline-offset-2 hover:text-foreground;
   }
   .prose-strata img,
   .prose-strata video {
@@ -68,8 +68,8 @@
      text, a subtle hairline. No inner box, no per-token recoloring. */
   .prose-strata pre {
     @apply mt-6 overflow-x-auto rounded-xl p-5 font-mono text-[0.9em] leading-relaxed;
-    background-color: var(--strata-ink);
-    color: var(--primary);
+    background-color: var(--code-surface);
+    color: var(--strata-peach);
     border: 1px solid color-mix(in srgb, var(--strata-cream) 12%, transparent);
   }
   .prose-strata pre code {

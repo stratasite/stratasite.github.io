@@ -17,7 +17,7 @@ const { id, step, code, class: className = '' } = Astro.props;
 
 <div class={`cmd relative ${className}`}>
   <pre
-    class="whitespace-pre-wrap [overflow-wrap:anywhere] rounded-xl border border-strata-cream/20 bg-strata-ink-night py-4 pl-5 pr-24 font-mono text-[0.95rem] leading-relaxed text-strata-peach"
+    class="whitespace-pre-wrap [overflow-wrap:anywhere] rounded-xl border border-strata-cream/20 bg-code-surface py-4 pl-5 pr-24 font-mono text-[0.95rem] leading-relaxed text-strata-peach"
   ><code data-cmd-text>{code}</code></pre>
   <button
     type="button"

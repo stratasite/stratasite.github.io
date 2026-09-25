@@ -26,6 +26,11 @@ module.exports = {
       foreground: 'var(--accent-foreground)',
     },
     ring: 'var(--ring)',
+    cta: {
+      DEFAULT: 'var(--cta)',
+      foreground: 'var(--cta-foreground)',
+    },
+    'code-surface': 'var(--code-surface)',
 
     // menus & overlays (ink family) — nav dropdowns, popovers
     menu: {

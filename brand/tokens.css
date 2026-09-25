@@ -17,19 +17,31 @@
   --strata-ink-line:    #2A3A57;  /* ink hairline / divider */
   --strata-ink-night:   #0A1123;  /* near-black ink: terminal / code surfaces on ink pages */
 
-  /* --- Semantic tokens (rust theme — rust is the primary background) --- */
-  --background:          #BC3908;  /* rust */
-  --surface:            #AF3306;  /* card surface: a touch deeper than bg */
-  --surface-2:          #9C2A04;  /* deepest panel = rust-deep */
-  --foreground:         #FFF6EA;  /* headings / strong text = cream */
-  --muted-foreground:   #F7E8D6;  /* body/paragraph: solid warm off-white, AA-readable on rust */
-  --border:             rgba(255, 246, 234, 0.16);  /* subtle warm hairline */
+  /* --- Semantic tokens (ink theme — ink is the primary background) ---
+     Rust is the FILL color (buttons, bands, chart primary), never a text or
+     hairline color on ink: rust on ink is under 3:1 contrast. Text-level
+     accents (links, eyebrows, checks) are peach. --- */
+  --background:          #14203A;  /* deep ink */
+  --surface:            #1C2B45;  /* ink: cards / panels */
+  --surface-2:          #243450;  /* ink-soft: recessed panels, table heads */
+  --foreground:         #FFF6EA;  /* cream: headings / strong text */
+  --muted-foreground:   #C9D0DE;  /* cool off-white body copy, AA on deep ink */
+  --border:             #2A3A57;  /* ink hairline */
 
-  --primary:            #FFC26E;  /* peach: the accent that pops on rust */
-  --primary-foreground: #9C2A04;  /* deep rust text on peach */
-  --accent:             #FFF6EA;
-  --accent-foreground:  #9C2A04;
+  --primary:            #FFC26E;  /* peach: text-level accent on ink */
+  --primary-foreground: #14203A;  /* deep ink text on peach */
+  --accent:             #E0641F;
+  --accent-foreground:  #FFF6EA;
   --ring:               #FFC26E;
+
+  /* Filled call to action: rust with cream text on ink pages; flips to peach
+     with deep-rust text inside a rust band (see .band-rust). */
+  --cta:                #BC3908;
+  --cta-foreground:     #FFF6EA;
+  /* Diagram shape fill. Rust reads as a shape on ink; deep rust does not. */
+  --diagram-fill:       #BC3908;
+  /* Terminal / code surface: a step deeper than the page. */
+  --code-surface:       #0A1123;
 
   /* --- Menus & overlays (ink family) ---
      Overlay chrome that floats above the rust field — nav dropdowns, popovers.
@@ -74,17 +86,25 @@
   --radius-lg: 16px;
 }
 
+/* Rust band: the accent surface. One large rust surface per page keeps the
+   brand loud (hero band, products band, closing CTA). `.dark` is kept as an
+   alias for older markup; it now means "rust band", not "ink". */
+.band-rust,
 .dark {
-  --background:          #14203A;
-  --surface:            #1C2B45;
-  --surface-2:          #243450;
+  --background:          #BC3908;  /* rust */
+  --surface:            #AF3306;
+  --surface-2:          #9C2A04;
   --foreground:         #FFF6EA;
-  --muted-foreground:   #9AA6BF;
-  --border:             #2A3A57;
+  --muted-foreground:   #F7E8D6;
+  --border:             rgba(255, 246, 234, 0.16);
 
-  --primary:            #E0641F;  /* orange reads better on dark than rust */
-  --primary-foreground: #14203A;
-  --accent:             #FFC26E;
-  --accent-foreground:  #14203A;
-  --ring:               #E0641F;
+  --primary:            #FFC26E;
+  --primary-foreground: #9C2A04;
+  --accent:             #FFF6EA;
+  --accent-foreground:  #9C2A04;
+  --ring:               #FFC26E;
+
+  --cta:                #FFC26E;  /* rust button on rust vanishes: use peach here */
+  --cta-foreground:     #9C2A04;
+  --diagram-fill:       #9C2A04;
 }

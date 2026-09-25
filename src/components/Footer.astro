@@ -16,7 +16,7 @@ const legalDocs = (await getCollection('legal', ({ data }) => !data.draft)).sort
 const year = new Date().getFullYear();
 ---
 
-<footer class="bg-strata-ink text-strata-cream">
+<footer class="border-t border-border bg-surface text-foreground">
   <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8">
     <div class="md:col-span-1">
       <div class="flex items-center gap-2.5">
