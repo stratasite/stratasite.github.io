@@ -1,0 +1,135 @@
+---
+/**
+ * Results for the docs search, dropped down under the pill bar while the
+ * field has a query. Pagefind builds a static index of every page marked
+ * `data-pagefind-body` at build time (see astro-pagefind in astro.config);
+ * this queries it as you type. Styled with brand tokens, not Pagefind's UI.
+ *
+ * In `astro dev` the index comes from the last `astro build`, so run a build
+ * once before expecting results locally.
+ */
+---
+
+<div
+  class="absolute left-1/2 top-full z-40 hidden w-[40rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden rounded-lg border border-border bg-menu text-menu-foreground shadow-2xl"
+  data-docs-search-panel
+  hidden
+>
+  <div class="max-h-[70vh] overflow-y-auto p-2" data-docs-search-results></div>
+</div>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-docs-search-input]');
+  const panel = document.querySelector<HTMLElement>('[data-docs-search-panel]');
+  const results = panel?.querySelector<HTMLElement>('[data-docs-search-results]');
+
+  if (input && panel && results) {
+    type Pagefind = {
+      init: () => Promise<void>;
+      search: (q: string) => Promise<{ results: { data: () => Promise<Result> }[] }>;
+    };
+    type Result = { url: string; excerpt: string; meta: { title?: string } };
+
+    let pagefind: Pagefind | null = null;
+    let loadFailed = false;
+    async function load() {
+      if (pagefind || loadFailed) return pagefind;
+      try {
+        // Emitted by Pagefind at build time, not a bundled module, so the
+        // path goes through a variable to keep Vite from trying to resolve it.
+        const bundle = '/pagefind/pagefind.js';
+        pagefind = (await import(/* @vite-ignore */ bundle)) as Pagefind;
+        await pagefind.init();
+      } catch {
+        loadFailed = true;
+      }
+      return pagefind;
+    }
+
+    const show = () => {
+      panel.hidden = false;
+      panel.classList.remove('hidden');
+    };
+    const hide = () => {
+      panel.hidden = true;
+      panel.classList.add('hidden');
+    };
+    const empty = (msg: string) => `<p class="px-3 py-6 text-center text-sm text-menu-muted">${msg}</p>`;
+
+    let seq = 0;
+    async function run() {
+      const q = input.value.trim();
+      const mine = ++seq;
+      if (!q) return hide();
+      show();
+      const pf = await load();
+      if (mine !== seq) return;
+      if (!pf) {
+        results.innerHTML = empty('Search index not available. Run a build to generate it.');
+        return;
+      }
+      const res = await pf.search(q);
+      if (mine !== seq) return;
+      const hits = await Promise.all(res.results.slice(0, 10).map((r) => r.data()));
+      if (mine !== seq) return;
+      if (!hits.length) {
+        results.innerHTML = empty(`No results for “${q}”.`);
+        return;
+      }
+      results.innerHTML = hits
+        .map(
+          (h) => `
+          <a href="${h.url}" class="block rounded-md px-3 py-2.5 hover:bg-menu-raised focus:bg-menu-raised focus:outline-none">
+            <span class="block font-display text-sm font-semibold text-menu-primary">${h.meta.title ?? h.url}</span>
+            <span class="docs-search-excerpt mt-0.5 block text-[0.8125rem] leading-snug text-menu-muted">${h.excerpt}</span>
+          </a>`
+        )
+        .join('');
+    }
+
+    input.addEventListener('input', run);
+    input.addEventListener('focus', () => {
+      load();
+      if (input.value.trim()) show();
+    });
+
+    // ⌘K / Ctrl+K focuses the field; Escape clears and closes.
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        input.focus();
+        input.select();
+      } else if (e.key === 'Escape' && !panel.hidden) {
+        hide();
+        input.blur();
+      }
+    });
+
+    // Click anywhere else closes the panel; the field keeps its text.
+    document.addEventListener('pointerdown', (e) => {
+      const t = e.target as Node;
+      if (!panel.contains(t) && !input.closest('label')?.contains(t)) hide();
+    });
+
+    // Arrow keys move between the field and the results; Enter follows a result.
+    const keyNav = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      const links = Array.from(results.querySelectorAll<HTMLAnchorElement>('a'));
+      if (!links.length || panel.hidden) return;
+      e.preventDefault();
+      const i = links.indexOf(document.activeElement as HTMLAnchorElement);
+      const next = e.key === 'ArrowDown' ? Math.min(i + 1, links.length - 1) : i <= 0 ? -1 : i - 1;
+      (next < 0 ? input : links[next]).focus();
+    };
+    input.addEventListener('keydown', keyNav);
+    panel.addEventListener('keydown', keyNav);
+  }
+</script>
+
+<style is:global>
+  .docs-search-excerpt mark {
+    background: transparent;
+    color: var(--menu-primary);
+    font-weight: 600;
+  }
+</style>

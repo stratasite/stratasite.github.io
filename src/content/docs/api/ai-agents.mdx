@@ -171,9 +171,29 @@ If AI suggests something that conflicts with Strata's rules, the rules win. Ask 
 
 ---
 
+## Strata as an MCP server
+
+Modeling is half of the story. For **answering questions** on a deployed model, a Strata server is itself a [Model Context Protocol](https://modelcontextprotocol.io) server, so Claude, Cursor, and any other MCP client can explore the semantic layer, build and run queries, and (when asked) build reports, without writing SQL.
+
+- **Endpoint:** `POST {server}/api/mcp` (Streamable HTTP, stateless; each request is a self-contained JSON-RPC call).
+- **Auth:** an API key as a Bearer token, or OAuth 2.1. The server publishes `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource`, supports dynamic client registration, and reuses the normal browser sign-in, so an MCP client can connect with nothing but the server URL.
+- **Scope:** the tools act as the signed-in user, in the projects they belong to, with their row-level security.
+
+The tools mirror what a person can do in the UI:
+
+| Area | Tools |
+|---|---|
+| Discovery | `list_projects`, `explore_semantics`, `get_skill` |
+| Queries | `build_query`, `get_query`, `query_result` |
+| Analysis-time layers | `add_calculation`, `remove_calculation`, `add_segment`, `remove_segment` |
+| Reports | `create_report`, `add_view`, `update_view`, `remove_view`, `reorder_views`, `copy_report`, `list_reports`, `get_report` |
+| Delivery | `export_report` (Google Sheets), `subscribe_report`, `list_scheduled` |
+
+`build_query` takes the same [query spec](/docs/api/rest/query-spec/) as the REST API, including `calculations` and `segments`, and every query goes through the same validation and refuse-before-execution rules as the UI. The server's built-in instructions tell the agent to answer in business terms, to persist nothing unless the user asks, and never to send natural language or SQL to Strata: the agent composes the spec.
+
 ## REST API
 
-For programmatic access to deployed semantic layers — metadata discovery and query execution — see the [REST API v1](/docs/api/rest/) documentation.
+For programmatic access from your own code, without an MCP client, see the [REST API v1](/docs/api/rest/) documentation.
 
 Use the API to:
 

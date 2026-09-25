@@ -25,7 +25,7 @@ export PROJECT_ID="tpcds"
 
 Replace values for your environment.
 
-To set `PROJECT_ID`, use your project uid from the Strata web app URL or from the CLI via `strata project link`.
+`PROJECT_ID` is the project's uid (the slug in the web app URL, `tpcds` here) or its numeric id, which is the `project_id` in a CLI project's `project.yml`.
 
 ## Step 1: Discover fields
 
@@ -46,7 +46,9 @@ Example response envelope:
       "uid": "web_net_paid",
       "name": "Web Net Paid",
       "semantic_type": "measure",
-      "data_type": "decimal"
+      "data_type": "decimal",
+      "rank": 92,
+      "updated_at": "2026-06-01T12:00:00Z"
     }
   ],
   "page": 1,
@@ -94,7 +96,7 @@ This does **not** create a query record.
 
 ## Step 3: Create and execute a query
 
-Create a query and ask the server to wait up to 3 seconds for results:
+Create a query and ask the server to wait for results before responding. `wait_timeout` is capped at 3 seconds; omit it and the response comes back as soon as the query is queued:
 
 ```bash
 curl -s -X POST \

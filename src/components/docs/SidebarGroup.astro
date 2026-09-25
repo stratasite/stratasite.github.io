@@ -1,8 +1,10 @@
 ---
 /**
  * One level of the docs sidebar tree. Recurses into categories; a category
- * that contains the current page starts open. Labels for pages come from the
- * collection (title or sidebarLabel), passed down as `titles`.
+ * that contains the current page starts open. Nesting is shown by a guide
+ * line down the left of each nested list rather than by growing indentation,
+ * so deep pages stay readable in a narrow column. Labels for pages come from
+ * the collection (title or sidebarLabel), passed down as `titles`.
  */
 import { containsPage, docHref, type SidebarItem } from '../../config/docs';
 
@@ -14,19 +16,20 @@ interface Props {
 }
 const { items, currentId, titles, depth = 0 } = Astro.props;
 
-const link =
-  'block rounded-md py-1.5 pr-2 text-[0.875rem] leading-snug text-muted-foreground transition-colors hover:text-foreground';
-const current = 'text-primary font-medium';
-const pad = depth === 0 ? 'pl-3' : depth === 1 ? 'pl-6' : 'pl-9';
+const row =
+  'flex items-center rounded-md py-[0.3rem] pl-2.5 pr-1.5 text-[0.875rem] leading-snug transition-colors';
+const page = `${row} text-muted-foreground hover:bg-surface hover:text-foreground`;
+const active = 'bg-surface text-primary font-medium';
+const group = `${row} cursor-pointer list-none justify-between font-semibold text-foreground hover:bg-surface`;
 ---
 
-<ul class={depth === 0 ? 'space-y-0.5' : 'space-y-0.5 border-l border-border'}>
+<ul class={depth === 0 ? 'space-y-px' : 'ml-3 mt-px space-y-px border-l border-border pl-1.5'}>
   {items.map((item) =>
     typeof item === 'string' ? (
       <li>
         <a
           href={docHref(item)}
-          class={`${link} ${pad} ${item === currentId ? current : ''}`}
+          class={`${page} ${item === currentId ? active : ''}`}
           aria-current={item === currentId ? 'page' : undefined}
         >
           {titles[item] ?? item}
@@ -35,18 +38,16 @@ const pad = depth === 0 ? 'pl-3' : depth === 1 ? 'pl-6' : 'pl-9';
     ) : (
       <li>
         <details class="group" open={containsPage(item, currentId)}>
-          <summary
-            class={`flex cursor-pointer list-none items-center justify-between rounded-md py-1.5 pr-2 text-[0.875rem] font-semibold leading-snug text-foreground hover:text-primary ${pad} ${item.link === currentId ? current : ''}`}
-          >
+          <summary class={`${group} ${item.link === currentId ? active : ''} ${depth > 0 ? 'font-medium' : ''}`}>
             {item.link ? (
-              <a href={docHref(item.link)} aria-current={item.link === currentId ? 'page' : undefined}>
+              <a href={docHref(item.link)} class="min-w-0 flex-1" aria-current={item.link === currentId ? 'page' : undefined}>
                 {item.label}
               </a>
             ) : (
-              <span>{item.label}</span>
+              <span class="min-w-0 flex-1">{item.label}</span>
             )}
             <svg
-              class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
+              class="ml-2 h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
               viewBox="0 0 20 20"
               fill="currentColor"
               aria-hidden="true"
@@ -58,9 +59,7 @@ const pad = depth === 0 ? 'pl-3' : depth === 1 ? 'pl-6' : 'pl-9';
               />
             </svg>
           </summary>
-          <div class="mt-0.5">
-            <Astro.self items={item.items} currentId={currentId} titles={titles} depth={depth + 1} />
-          </div>
+          <Astro.self items={item.items} currentId={currentId} titles={titles} depth={depth + 1} />
         </details>
       </li>
     )

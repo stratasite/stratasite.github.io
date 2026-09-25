@@ -12,7 +12,7 @@ GET /api/v1/queries/{query_id}/result
 
 **Auth:** Project member
 
-Returns the latest result for a query. Use the `poll_url` from a `pending` create response.
+Returns the **most recent** result for the query. Use the `poll_url` from a `pending` create response. A query re-run with `use_cache: false` creates a new result, and this endpoint follows it.
 
 **Query parameters:**
 
@@ -67,7 +67,7 @@ Fetch a specific result by ID.
 }
 ```
 
-`rows` is included only when `status` is `succeeded`.
+`rows` is included only when `status` is `succeeded`, windowed by `limit` and `offset`; `row_count` is the full count. `status` is one of `queued`, `running`, `succeeded`, `failed`, `cancelled`.
 
 ## Download CSV
 

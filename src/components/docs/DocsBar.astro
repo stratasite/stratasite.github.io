@@ -1,0 +1,84 @@
+---
+/**
+ * The docs sub-navigation: sticks under the site header on every docs page.
+ * One centered pill bar: a segmented control for the three guides with the
+ * search field as its last segment; results drop down beneath. No hairlines: the bar
+ * shares the page background and fades into the content below it. The active
+ * pill is a single indicator element that slides to the guide you click
+ * before the page changes, so the switch reads as movement, not a reload.
+ * Shared by the Docs layout and the API reference page so the two stay identical.
+ */
+import SearchInput from './SearchInput.astro';
+import SearchPanel from './SearchPanel.astro';
+import { guides } from '../../config/docs';
+
+interface Props {
+  /** Guide id to mark active. */
+  active: string;
+}
+const { active } = Astro.props;
+---
+
+<div class="docs-bar sticky top-16 z-40 bg-background after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-5 after:bg-gradient-to-b after:from-background after:to-transparent">
+  <div class="mx-auto flex max-w-[90rem] items-center justify-center px-4 pb-3 pt-5 sm:px-6 lg:px-8">
+    <nav
+      class="relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-border bg-surface p-1"
+      aria-label="Guides"
+      data-guide-tabs
+    >
+      <span
+        class="guide-indicator pointer-events-none absolute bottom-1 top-1 rounded-md bg-surface-2 opacity-0 shadow-sm transition-[left,width,opacity] duration-200 ease-out"
+        aria-hidden="true"
+      ></span>
+      {guides.map((g) => (
+        <a
+          href={g.href}
+          class={`relative z-10 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors duration-200 ${
+            g.id === active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+          aria-current={g.id === active ? 'true' : undefined}
+        >
+          {g.label}
+        </a>
+      ))}
+      <span class="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true"></span>
+      <SearchInput />
+    </nav>
+  </div>
+  <SearchPanel />
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-guide-tabs]').forEach((nav) => {
+    const indicator = nav.querySelector<HTMLElement>('.guide-indicator');
+    const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>('a[href]'));
+    if (!indicator || !links.length) return;
+
+    const place = (el: HTMLElement) => {
+      indicator.style.left = `${el.offsetLeft}px`;
+      indicator.style.width = `${el.offsetWidth}px`;
+      indicator.style.opacity = '1';
+    };
+    const current = () => links.find((l) => l.hasAttribute('aria-current')) ?? links[0];
+
+    // First paint: land the indicator without animating it into place.
+    indicator.style.transition = 'none';
+    place(current());
+    requestAnimationFrame(() => (indicator.style.transition = ''));
+    window.addEventListener('resize', () => place(current()));
+
+    // Slide to the clicked guide, then follow the link. Modified clicks
+    // (new tab, etc.) are left to the browser.
+    links.forEach((link) => {
+      link.addEventListener('click', (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        if (link.hasAttribute('aria-current')) return;
+        e.preventDefault();
+        links.forEach((l) => l.classList.replace('text-foreground', 'text-muted-foreground'));
+        link.classList.replace('text-muted-foreground', 'text-foreground');
+        place(link);
+        setTimeout(() => window.location.assign(link.href), 200);
+      });
+    });
+  });
+</script>

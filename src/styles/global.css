@@ -199,7 +199,7 @@
   .prose-docs h2,
   .prose-docs h3,
   .prose-docs h4 {
-    @apply scroll-mt-36;
+    @apply scroll-mt-40;
   }
 
   /* ---- Legal documents -------------------------------------------------
@@ -255,4 +255,10 @@
 .callout-danger {
   border-color: var(--strata-rust);
   background-color: color-mix(in srgb, var(--strata-rust) 18%, var(--surface-2));
+}
+
+/* Docs pages: the sub-nav sits directly under the site header with no
+   hairline between them, so the header's bottom border is dropped there. */
+.docs-page > header.sticky {
+  border-bottom-color: transparent;
 }

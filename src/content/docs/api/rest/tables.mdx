@@ -64,7 +64,7 @@ GET /api/v1/projects/{project_id}/tables/{id}
 | Parameter | Description |
 |-----------|-------------|
 | `branch` | Branch uid |
-| `include_metadata` | When `true`, include warehouse metadata |
+| `include_metadata` | When `true`, add a `metadata` key with the warehouse column metadata Strata has cached for the table |
 
 **Example:**
 
@@ -81,21 +81,28 @@ curl -H "Authorization: Bearer $API_KEY" \
   "name": "Web Sales",
   "physical_name": "web_sales",
   "cost": 10,
+  "updated_at": "2026-06-01T12:00:00Z",
   "fields": [
     {
       "uid": "web_net_paid",
       "name": "Web Net Paid",
       "semantic_type": "measure",
       "data_type": "decimal",
-      "sql": "sum(ws_net_paid)",
-      "lookup": false
+      "sql": "sum(ws_net_paid)"
+    },
+    {
+      "uid": "web_sales_sk",
+      "name": "Web Sales Key",
+      "semantic_type": "dimension",
+      "data_type": "integer",
+      "sql": "ws_item_sk",
+      "primary_key": true
     }
-  ],
-  "metadata": { }
+  ]
 }
 ```
 
-The `fields` array includes per-table SQL expressions — useful for understanding how measures and dimensions map to the warehouse.
+`fields` lists every field defined on this table with its SQL expression for this table. The expression flags `primary_key`, `array`, and `lookup` appear only when true. Because a field can be defined on several tables (one name, one concept), the same field uid can appear under more than one table with a different `sql` on each. `id` accepts the table uid or numeric id.
 
 ## Related
 

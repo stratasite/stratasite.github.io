@@ -27,12 +27,14 @@ Most semantic, query, and result endpoints return:
 
 Some responses include extra fields (e.g. `poll_url`, `id`, `sql`) alongside `status` and `errors`.
 
+The project, branch, deployment, and cache endpoints that the CLI uses predate this format and return `{ "errors": ["message"] }` with plain strings, or `{ "message": "…" }` on a project delete.
+
 ## HTTP status codes
 
 | Code | Meaning | Common codes |
 |------|---------|--------------|
 | 400 | Bad request | `missing_param` |
-| 401 | Missing or invalid API key | `unauthorized` |
+| 401 | Missing or invalid API key; a `WWW-Authenticate` header points OAuth clients at the resource metadata | `unauthorized` |
 | 403 | Authenticated but not permitted | `forbidden` |
 | 404 | Resource not found | `resource_not_found`, `branch_not_found` |
 | 422 | Invalid parameters or query spec | `invalid_param`, `invalid_query_construction`, `no_production_branch` |
@@ -62,7 +64,7 @@ Pending responses include `poll_url` pointing to `GET /api/v1/queries/{id}/resul
 | `branch_not_found` | Unknown `?branch=` uid |
 | `no_production_branch` | No production branch configured |
 | `invalid_param` | Bad query parameter (e.g. `type=foo`) |
-| `invalid_query_construction` | Unknown or ambiguous field name, bad spec |
+| `invalid_query_construction` | Unknown or ambiguous field name, unknown spec key, or a combination the planner refuses (a dimension the measure's fact can't reach, measures from two datasources) |
 | `invalid_params` | Validation failure |
 | `sql_generation_error` | SQL could not be generated |
 | `execution_failed` | Query ran but warehouse execution failed |

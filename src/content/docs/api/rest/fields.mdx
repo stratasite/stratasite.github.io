@@ -22,7 +22,7 @@ GET /api/v1/projects/{project_id}/fields
 | `q` | Search term (name/description) | — |
 | `relevance` | Hybrid semantic search when `true` (requires `q`) | `false` |
 | `type` | Filter: `dimension` or `measure` | all |
-| `sort` | Sort: `smart`, `name`, `desc` | `smart` |
+| `sort` | Sort: `smart` (by rank, highest first), `name` (A to Z), `desc` (name, Z to A). Ignored when `q` is given: search results come back in match order | `smart` |
 | `constraints` | Field name(s) — return fields joinable with these | — |
 
 ### Keyword search
@@ -75,9 +75,7 @@ Pass multiple constraints as repeated parameters or an array.
       "description": "Customer state",
       "semantic_type": "dimension",
       "data_type": "string",
-      "hidden": false,
       "display_type": "default",
-      "synonyms": [],
       "rank": 85,
       "updated_at": "2026-06-01T12:00:00Z"
     }
@@ -89,12 +87,14 @@ Pass multiple constraints as repeated parameters or an array.
 }
 ```
 
+Blank and false attributes are omitted, so a field that isn't hidden has no `hidden` key and a field without synonyms has no `synonyms` key. Keys that appear when set: `hidden`, `synonyms`, `snapshot` (`beginning`/`ending` on snapshot measures), `extended_blend_group`.
+
 **Errors:**
 
 | HTTP | Code | When |
 |------|------|------|
-| 422 | `invalid_param` | Invalid `type` or `sort` |
-| 422 | `invalid_query_construction` | Unknown constraint field |
+| 422 | `invalid_param` | Invalid `type` or `sort` (`sort=rank` is refused; use `smart`) |
+| 422 | `invalid_query_construction` | Unknown or ambiguous constraint field |
 
 ## Show field
 

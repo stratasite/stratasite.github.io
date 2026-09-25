@@ -7,11 +7,11 @@
  * footer, and deliberately no demo CTA: someone reading docs is already in.
  */
 import Base from './Base.astro';
-import Search from '../components/docs/Search.astro';
+import DocsBar from '../components/docs/DocsBar.astro';
 import SidebarGroup from '../components/docs/SidebarGroup.astro';
 import Toc from '../components/docs/Toc.astro';
 import Pager from '../components/docs/Pager.astro';
-import { guides, type Guide } from '../config/docs';
+import type { Guide } from '../config/docs';
 
 interface Props {
   title: string;
@@ -30,31 +30,11 @@ interface Props {
 const { title, description, guide, id, titles, headings, trail, prev, next, editUrl } = Astro.props;
 ---
 
-<Base title={`${title} — Strata Docs`} description={description}>
+<Base title={`${title} — Strata Docs`} description={description} bodyClass="docs-page">
   <div class="docs">
-    <!-- Guide switcher + search. Sticks under the site nav. -->
-    <div class="sticky top-16 z-40 border-b border-border bg-background">
-      <div class="mx-auto flex h-12 max-w-[90rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <nav class="-mb-px flex h-full items-stretch gap-1 overflow-x-auto" aria-label="Guides">
-          {guides.map((g) => (
-            <a
-              href={g.href}
-              class={`flex items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors ${
-                g.id === guide.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-              aria-current={g.id === guide.id ? 'true' : undefined}
-            >
-              {g.label}
-            </a>
-          ))}
-        </nav>
-        <Search />
-      </div>
-    </div>
+    <DocsBar active={guide.id} />
 
-    <div class="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-10 lg:px-8 xl:grid-cols-[17rem_minmax(0,1fr)_14rem]">
+    <div class="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[16rem_minmax(0,1fr)_14rem]">
       <!-- Page tree: a sticky column on desktop, a disclosure on mobile. -->
       <aside data-pagefind-ignore>
         <details class="mb-8 rounded-lg border border-border bg-surface p-3 lg:hidden">
@@ -66,7 +46,7 @@ const { title, description, guide, id, titles, headings, trail, prev, next, edit
           </div>
         </details>
         <nav
-          class="docs-sidebar sticky top-32 hidden max-h-[calc(100vh-9rem)] overflow-y-auto pb-6 pr-3 lg:block"
+          class="docs-sidebar sticky top-[9rem] hidden max-h-[calc(100vh-10rem)] overflow-y-auto border-r border-border pb-6 pr-4 lg:block"
           aria-label={`${guide.label} pages`}
         >
           <SidebarGroup items={guide.sidebar} currentId={id} titles={titles} />

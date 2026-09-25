@@ -24,8 +24,8 @@ All endpoints return JSON unless noted otherwise. Base path:
 ## Prerequisites
 
 - A running Strata server with at least one deployed project
-- An API key from **Settings → API Keys** in the Strata web app
-- Project membership
+- An API key from your user profile in the Strata web app
+- Membership in the project
 
 See [Authentication](/docs/api/rest/authentication/) and the [Quickstart](/docs/api/rest/quickstart/) to make your first request.
 
@@ -53,6 +53,23 @@ See [Authentication](/docs/api/rest/authentication/) and the [Quickstart](/docs/
 | `GET` | `/queries/{query_id}/result` | [Poll result](/docs/api/rest/results/#poll-result-via-query) |
 | `GET` | `/projects/{project_id}/results/{id}` | [Show result](/docs/api/rest/results/#show-result) |
 | `DELETE` | `/projects/{project_id}/results/{id}` | [Cancel result](/docs/api/rest/results/#cancel-result) |
+
+### Projects, branches, deployments, cache
+
+These are the endpoints the `strata` CLI drives. They are stable to call directly but return the older `{ "errors": ["…"] }` error shape rather than the structured one.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/projects` | Projects the caller can access |
+| `GET` | `/projects/{project_id}` | Show a project |
+| `POST` | `/projects` | Create a project (`project[name]`, `project[uid]`, …); needs develop rights |
+| `DELETE` | `/projects/{project_id}` | Delete a project; body `delete_confirmation` must equal its name; admin only |
+| `GET` | `/projects/{project_id}/branches` | Branches with `uid`, `production`, `last_deployed_at` |
+| `DELETE` | `/projects/{project_id}/b/{branch_uid}` | Delete a non-production branch; admin only |
+| `GET` | `/projects/{project_id}/b/{branch_uid}/deploys` | Deployments on a branch, newest first |
+| `GET` | `/projects/{project_id}/b/{branch_uid}/deploys/{id}` | One deployment; add `?log=1` for per-entity versions |
+| `POST` | `/projects/{project_id}/b/{branch_uid}/deploys` | Upload an archive and start a deployment (what `strata deploy` does); developer or admin |
+| `DELETE` | `/projects/{project_id}/cache` | Purge every cached result in the project; developer or admin |
 
 ## Guides
 

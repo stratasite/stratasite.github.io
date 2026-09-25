@@ -6,8 +6,7 @@
  * file is the source of truth and is linked for download.
  */
 import Base from '../../layouts/Base.astro';
-import Search from '../../components/docs/Search.astro';
-import { guides } from '../../config/docs';
+import DocsBar from '../../components/docs/DocsBar.astro';
 
 const spec = '/docs/openapi/strata-api-v1.yaml';
 ---
@@ -15,30 +14,10 @@ const spec = '/docs/openapi/strata-api-v1.yaml';
 <Base
   title="REST API Reference — Strata Docs"
   description="Every Strata REST API endpoint, request, and response schema, generated from the OpenAPI specification."
+  bodyClass="docs-page"
 >
-  <div class="sticky top-16 z-40 border-b border-border bg-background">
-    <div class="mx-auto flex h-12 max-w-[90rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-      <nav class="-mb-px flex h-full items-stretch gap-1 overflow-x-auto" aria-label="Guides">
-        {guides.map((g) => (
-          <a
-            href={g.href}
-            class={`flex items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors ${
-              g.id === 'api-reference'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-            aria-current={g.id === 'api-reference' ? 'true' : undefined}
-          >
-            {g.label}
-          </a>
-        ))}
-      </nav>
-      <div class="flex items-center gap-3">
-        <a class="hidden text-sm text-muted-foreground hover:text-foreground sm:inline" href={spec} download>Download spec</a>
-        <Search />
-      </div>
-    </div>
-  </div>
+  <DocsBar active="api-reference" />
+  <p class="sr-only"><a href={spec} download>Download the OpenAPI spec</a></p>
 
   <div id="redoc" class="redoc-host" data-spec={spec}>
     <p class="px-6 py-16 text-center text-muted-foreground">Loading the API reference…</p>
