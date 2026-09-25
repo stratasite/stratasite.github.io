@@ -17,8 +17,10 @@ Core rule: **never hardcode hex values in components** — reference tokens
 missing, add it to `brand/tokens.css` first.
 
 ## Conventions
-- Theme is **rust-primary**: rust `--background`, cream `--foreground`, peach
-  `--primary` accent, ink footer. Body copy uses `--muted-foreground` (warm
+- Theme is **ink-primary**: ink `--background`, cream `--foreground`, peach
+  `--primary` for text-level accents, rust `--cta` for filled buttons and
+  `.band-rust` sections (products band, proof strips, closing CTAs). Rust is a
+  fill color, never text on ink. Body copy uses `--muted-foreground` (cool
   off-white). Use semantic tokens, not raw swatches.
 - Headings/wordmark use Space Grotesk (`font-display`); UI/body uses Inter (`font-sans`).
 - Product name is "Strata" (capitalized) in UI copy and prose. The one exception is the **wordmark/logo**, which is always lowercase "strata" (a styled design element), and the `strata` CLI binary/commands in code.
