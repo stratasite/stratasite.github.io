@@ -1,10 +1,14 @@
 ---
 /**
  * One level of the docs sidebar tree. Recurses into categories; a category
- * that contains the current page starts open. Nesting is shown by a guide
- * line down the left of each nested list rather than by growing indentation,
- * so deep pages stay readable in a narrow column. Labels for pages come from
+ * that contains the current page starts open, as does one marked `open`
+ * (single-page references open their first group). Nesting is shown by a guide line
+ * down the left of each nested list rather than by growing indentation, so
+ * deep pages stay readable in a narrow column. Labels for pages come from
  * the collection (title or sidebarLabel), passed down as `titles`.
+ *
+ * Items are page ids (strings), plain links (`{ label, href }`), or
+ * categories (`{ label, link?, href?, items }`).
  */
 import { containsPage, docHref, type SidebarItem } from '../../config/docs';
 
@@ -21,6 +25,9 @@ const row =
 const page = `${row} text-muted-foreground hover:bg-surface hover:text-foreground`;
 const active = 'bg-surface text-primary font-medium';
 const group = `${row} cursor-pointer list-none justify-between font-semibold text-foreground hover:bg-surface`;
+
+const isCategory = (i: SidebarItem): i is Extract<SidebarItem, { items: SidebarItem[] }> =>
+  typeof i !== 'string' && 'items' in i;
 ---
 
 <ul class={depth === 0 ? 'space-y-px' : 'ml-3 mt-px space-y-px border-l border-border pl-1.5'}>
@@ -35,12 +42,22 @@ const group = `${row} cursor-pointer list-none justify-between font-semibold tex
           {titles[item] ?? item}
         </a>
       </li>
+    ) : !isCategory(item) ? (
+      <li>
+        <a href={item.href} class={page}>
+          {item.label}
+        </a>
+      </li>
     ) : (
       <li>
-        <details class="group" open={containsPage(item, currentId)}>
+        <details class="group" open={Boolean(item.open) || containsPage(item, currentId)}>
           <summary class={`${group} ${item.link === currentId ? active : ''} ${depth > 0 ? 'font-medium' : ''}`}>
-            {item.link ? (
-              <a href={docHref(item.link)} class="min-w-0 flex-1" aria-current={item.link === currentId ? 'page' : undefined}>
+            {item.link || item.href ? (
+              <a
+                href={item.link ? docHref(item.link) : item.href}
+                class="min-w-0 flex-1"
+                aria-current={item.link === currentId ? 'page' : undefined}
+              >
                 {item.label}
               </a>
             ) : (

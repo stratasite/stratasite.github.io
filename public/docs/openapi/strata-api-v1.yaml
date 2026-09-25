@@ -6,7 +6,7 @@ info:
     REST API for Strata semantic layer metadata discovery and query execution.
 
     ## Authentication
-    All endpoints require `Authorization: Bearer <api_key>`.
+    All endpoints require `Authorization: Bearer <api_key>`. API keys belong to a user and are created on the user's profile page.
 
     ## Branch scoping
     Project-scoped endpoints accept optional `?branch=<uid>`. Omit to use the production branch.
@@ -21,7 +21,7 @@ servers:
   - url: "{server}/api/v1"
     variables:
       server:
-        default: http://localhost:3000
+        default: http://localhost:8080
         description: Strata server base URL (no trailing slash)
 
 security:
@@ -71,6 +71,7 @@ paths:
             type: string
             enum: [smart, name, desc]
             default: smart
+          description: smart is by rank; desc is by name, descending. Ignored when q is given
         - name: constraints
           in: query
           schema:
@@ -162,6 +163,7 @@ paths:
         required: true
         schema:
           type: string
+        description: Table uid or numeric id
     get:
       tags: [Tables]
       summary: Show table
@@ -388,7 +390,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: API key from Settings → API Keys
+      description: A user's API key, created on their profile page in the Strata web app
 
   parameters:
     ProjectId:
@@ -465,7 +467,11 @@ components:
               message:
                 type: string
             required: [code, message]
-
+      example:
+        status: invalid
+        errors:
+          - code: invalid_query_construction
+            message: "No field named 'Not A Real Field'"
     PaginationEnvelope:
       type: object
       properties:
@@ -477,7 +483,11 @@ components:
           type: integer
         limit:
           type: integer
-
+      example:
+        page: 1
+        total_pages: 5
+        total_count: 412
+        limit: 100
     Field:
       type: object
       properties:
@@ -492,14 +502,38 @@ components:
           enum: [dimension, measure]
         data_type:
           type: string
+        display_type:
+          type: string
         hidden:
           type: boolean
+          description: Present only when true
+        synonyms:
+          type: array
+          items:
+            type: string
+          description: Present only when set
+        snapshot:
+          type: string
+          enum: [beginning, ending]
+          description: Snapshot measures only
+        extended_blend_group:
+          type: string
+          description: Present only when set
         rank:
           type: integer
         updated_at:
           type: string
           format: date-time
-
+      example:
+        uid: web_net_paid
+        name: Web Net Paid
+        description: Net amount paid on web orders
+        semantic_type: measure
+        data_type: decimal
+        display_type: default
+        synonyms: [web revenue, online net paid]
+        rank: 92
+        updated_at: "2026-06-01T12:00:00Z"
     TableSummary:
       type: object
       properties:
@@ -516,7 +550,13 @@ components:
         updated_at:
           type: string
           format: date-time
-
+      example:
+        uid: web_sales
+        name: Web Sales
+        description: Web channel sales fact
+        physical_name: web_sales
+        cost: 10
+        updated_at: "2026-06-01T12:00:00Z"
     TableDetail:
       allOf:
         - $ref: "#/components/schemas/TableSummary"
@@ -533,38 +573,265 @@ components:
                         type: string
                       primary_key:
                         type: boolean
+                        description: Present only when true
+                      array:
+                        type: boolean
+                        description: Present only when true
                       lookup:
                         type: boolean
+                        description: Present only when true
             metadata:
               type: object
-
+              description: Only with `include_metadata=true`
+      example:
+        uid: web_sales
+        name: Web Sales
+        physical_name: web_sales
+        cost: 10
+        updated_at: "2026-06-01T12:00:00Z"
+        fields:
+          - uid: web_net_paid
+            name: Web Net Paid
+            semantic_type: measure
+            data_type: decimal
+            sql: sum(ws_net_paid)
+          - uid: web_sales_key
+            name: Web Sales Key
+            semantic_type: dimension
+            data_type: integer
+            sql: ws_item_sk
+            primary_key: true
     QuerySpec:
       type: object
       properties:
+        name:
+          type: string
+        description:
+          type: string
+        limit:
+          type: integer
+          default: 5000
+          description: Row limit for the query
         projections:
           type: array
           items:
             $ref: "#/components/schemas/Projection"
+          description: Listed order is column order
         filters:
-          description: Array of filter leaves (AND) or logic tree with and/or keys
+          description: 'Array of filter leaves (AND), or a logic tree `{ "and": [...] }` / `{ "or": [...] }` whose nodes are leaves or further trees'
           type: array
           items:
             $ref: "#/components/schemas/FilterLeaf"
-
+        calculations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Calculation"
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Segment"
+        view:
+          type: object
+          description: Visualization settings (mode, legend, axis titles and ranges)
+      example:
+        projections:
+          - { field: State, axis: x }
+          - { field: Order Date, axis: x, decorators: [{ type: truncate, grain: month }] }
+          - { field: Web Net Paid, axis: y, format: { type: currency, unit: "$" } }
+        filters:
+          - { field: Order Date, predicate: between, value: 28d, value_end: 0d }
+          - { field: State, predicate: in_list, value: "CA,NY" }
+        calculations:
+          - alias: Net Paid per Order
+            sql: "[Web Net Paid] / nullif([Order Count]@m, 0)"
+            format: { type: currency, unit: "$" }
+        segments:
+          - name: Repeat customers
+            keys: [Customer]
+            filters: [{ field: Order Count, predicate: greater_than, value: "1" }]
+            apply_to: [Web Net Paid]
     Projection:
       type: object
       required: [field, axis]
       properties:
         field:
           type: string
-          description: Semantic field name
+          description: Semantic field name, or uid. Suffix `@d` / `@m` disambiguates a name shared by a dimension and a measure
         axis:
           type: string
-          enum: [x, y, series, row, tip]
+          enum: [x, y, series, row, tip, pivot]
         field_type:
           type: string
           enum: ["Semantic::Dimension", "Semantic::Measure"]
-
+          description: Alternative to the `@d` / `@m` suffix
+        order_by:
+          type: string
+          enum: [asc, desc]
+        alias:
+          type: string
+          description: Column alias; calculations and segments may reference the projection by it
+        format:
+          $ref: "#/components/schemas/Format"
+        decorators:
+          type: array
+          items:
+            $ref: "#/components/schemas/Decorator"
+      example:
+        field: Web Net Paid
+        axis: y
+        order_by: desc
+        format: { type: currency, unit: "$", precision: 0 }
+    Format:
+      type: object
+      description: Display format. Omitted, the field's default applies
+      properties:
+        type:
+          type: string
+          enum: [number, currency, percent, date, datetime, raw]
+        precision:
+          type: integer
+        unit:
+          type: string
+          description: Currency symbol
+        abbreviate:
+          type: boolean
+        pattern:
+          type: string
+          description: strftime pattern for date and datetime
+      example:
+        type: percent
+        precision: 1
+    Decorator:
+      type: object
+      required: [type]
+      description: A transform applied to the projection. Attributes depend on `type`
+      properties:
+        type:
+          type: string
+          enum: [truncate, extract, window, contribute, temporalize]
+        grain:
+          type: string
+          enum: [raw, millisecond, second, minute, hour, day, week, month, quarter, year]
+          description: truncate
+        extract:
+          type: string
+          enum: [minute, hour, day_of_month, day_of_week, day_of_year, week_of_year, month, quarter, year, day_name, month_name, year_month]
+          description: extract
+        transform:
+          type: string
+          enum: [year_over_year, quarter_over_quarter, month_over_month, week_over_week, day_over_day]
+          description: temporalize
+        percent_change:
+          type: boolean
+          description: temporalize
+        mode:
+          type: string
+          enum: [moving, running]
+          description: window
+        function:
+          type: string
+          enum: [avg, sum, min, max, count, row_number, rank, dense_rank, percent_rank, cume_dist, ntile, lag, lead, first_value, last_value]
+          description: window
+        size:
+          type: integer
+          description: window (moving)
+        offset:
+          type: integer
+          description: window (lag, lead)
+        buckets:
+          type: integer
+          description: window (ntile)
+        partition_refs:
+          type: array
+          items:
+            type: string
+          description: window, contribute. Dimensions to partition by; omit for automatic
+        ignore_partition_filters:
+          type: boolean
+          description: contribute
+      example:
+        type: temporalize
+        transform: year_over_year
+        percent_change: true
+    Calculation:
+      type: object
+      required: [alias, sql]
+      properties:
+        alias:
+          type: string
+        sql:
+          type: string
+          description: Formula over the query's fields, referencing `[Name]@m`, `[Name]@d`, or `[Alias]`
+        data_type:
+          type: string
+          enum: [decimal, integer, string, date, date_time, boolean]
+          default: decimal
+        axis:
+          type: string
+          enum: [x, y, series, row, tip, pivot]
+        order_by:
+          type: string
+          enum: [asc, desc]
+        format:
+          $ref: "#/components/schemas/Format"
+      example:
+        alias: Sell Through Rate
+        sql: sum([Store Quantity]@m) / nullif(sum([Store Quantity]@m) + sum([Inventory Quantity On Hand]@m), 0)
+        data_type: decimal
+        axis: y
+        format: { type: percent, precision: 1 }
+    Segment:
+      type: object
+      required: [name, keys]
+      properties:
+        name:
+          type: string
+        keys:
+          type: array
+          items:
+            type: string
+          description: Dimensions identifying a member; the join grain
+        measures:
+          type: array
+          items:
+            type: string
+          description: Measures that define membership through their fact or that the criteria use
+        filters:
+          type: array
+          items:
+            $ref: "#/components/schemas/FilterLeaf"
+          description: Membership criteria; the same forms as query filters
+        mode:
+          type: string
+          enum: [include, exclude]
+          default: include
+        apply_to:
+          type: array
+          items:
+            type: string
+          description: Measure projections (name, uid, or alias) the segment constrains. Omitted, it constrains the whole query
+        expanding:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              as:
+                type: string
+          description: Companion dimensions carried into the query (an expanding segment)
+        join:
+          type: string
+          enum: [inner, left]
+          description: Expanding segments only
+      example:
+        name: High spenders
+        keys: [Customer]
+        measures: [Total Revenue]
+        filters:
+          - { field: Total Revenue, predicate: greater_than, value: "10000" }
+        mode: include
+        apply_to: [Total Revenue]
     FilterLeaf:
       type: object
       required: [field, predicate]
@@ -573,13 +840,29 @@ components:
           type: string
         predicate:
           type: string
+          enum: [equals, does_not_equal, greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, between, in_list, exclude_list, starts_with, contains, ends_with, does_not_start_with, does_not_contain, does_not_end_with, keyword, is_null, is_not_null, top_n]
         value:
           type: string
-          description: Filter value (type depends on field and predicate)
+          description: Filter value. Comma-separated for in_list / exclude_list; a date or a dynamic date such as `28d` for date fields; omitted for is_null / is_not_null
         value_end:
           type: string
-          description: End value for between predicates
-
+          description: End value for between
+        field_type:
+          type: string
+          enum: ["Semantic::Dimension", "Semantic::Measure"]
+        top_n_measure:
+          type: string
+          description: top_n only. The measure to rank by
+        interactive:
+          type: boolean
+          description: Expose the filter as a viewer control on a report; `value` is its default
+        interactive_required:
+          type: boolean
+          default: true
+      example:
+        field: State
+        predicate: equals
+        value: CA
     CreateQueryRequest:
       type: object
       properties:
@@ -592,18 +875,33 @@ components:
           type: string
         wait_timeout:
           type: number
-          description: Seconds to wait for completion
+          maximum: 3
+          description: Seconds to wait for completion before responding, capped at 3. Omitted, the response returns as soon as the query is queued
         use_cache:
           type: boolean
           default: true
+          description: Reuse a cached result for an identical query
         limit:
           type: integer
           maximum: 100
+          default: 25
+          description: Rows to include inline in `result`
         offset:
           type: integer
+          default: 0
         spec:
           $ref: "#/components/schemas/QuerySpec"
-
+      example:
+        name: Revenue by State
+        wait_timeout: 3
+        use_cache: true
+        limit: 25
+        spec:
+          projections:
+            - { field: State, axis: x }
+            - { field: Web Net Paid, axis: y }
+          filters:
+            - { field: State, predicate: equals, value: CA }
     QuerySummary:
       type: object
       properties:
@@ -617,12 +915,31 @@ components:
           type: boolean
         created_by_id:
           type: integer
+        limit:
+          type: integer
         created_at:
+          type: string
+          format: date-time
+        updated_at:
           type: string
           format: date-time
         spec:
           $ref: "#/components/schemas/QuerySpec"
-
+      example:
+        id: 42
+        name: Revenue by State
+        project_id: 1
+        api: true
+        created_by_id: 5
+        limit: 5000
+        created_at: "2026-06-15T14:30:00Z"
+        updated_at: "2026-06-15T14:30:00Z"
+        spec:
+          projections:
+            - { field: state, axis: x }
+            - { field: web_net_paid, axis: y }
+          filters:
+            - { field: state, predicate: equals, value: CA }
     QueryDetail:
       type: object
       properties:
@@ -638,7 +955,17 @@ components:
           type: array
           items:
             type: object
-
+      example:
+        id: 42
+        name: Revenue by State
+        spec:
+          projections:
+            - { field: state, axis: x }
+            - { field: web_net_paid, axis: y }
+          filters:
+            - { field: state, predicate: equals, value: CA }
+        sql: SELECT "State", SUM(ws_net_paid) AS "Web Net Paid" FROM …
+        errors: []
     QueryResponse:
       type: object
       properties:
@@ -646,20 +973,55 @@ components:
           type: integer
         name:
           type: string
+        api:
+          type: boolean
+        created_by_id:
+          type: integer
         status:
           type: string
           enum: [created, pending, succeeded, failed]
         poll_url:
           type: string
+          description: Pending only
         spec:
           $ref: "#/components/schemas/QuerySpec"
         errors:
           type: array
           items:
             type: object
+            properties:
+              code:
+                type: string
+                enum: [sql_generation_error, execution_failed]
+              message:
+                type: string
+          description: Failed only
         result:
           $ref: "#/components/schemas/ResultSet"
-
+      example:
+        id: 42
+        name: Revenue by State
+        api: true
+        created_by_id: 5
+        status: succeeded
+        spec:
+          projections:
+            - { field: state, axis: x }
+            - { field: web_net_paid, axis: y }
+        errors: []
+        result:
+          id: 108
+          status: succeeded
+          query_id: 42
+          errors: []
+          row_count: 1
+          columns: [State, Web Net Paid]
+          error_message: null
+          queue_started_at: "2026-06-15T14:30:01Z"
+          query_started_at: "2026-06-15T14:30:02Z"
+          query_ended_at: "2026-06-15T14:30:05Z"
+          rows:
+            - [CA, 12345.67]
     SqlPreviewRequest:
       type: object
       required: [spec]
@@ -668,7 +1030,13 @@ components:
           type: string
         spec:
           $ref: "#/components/schemas/QuerySpec"
-
+      example:
+        spec:
+          projections:
+            - { field: State, axis: x }
+            - { field: Web Net Paid, axis: y }
+          filters:
+            - { field: State, predicate: equals, value: CA }
     SqlResponse:
       type: object
       properties:
@@ -678,7 +1046,9 @@ components:
           type: array
           items:
             type: object
-
+      example:
+        sql: SELECT "State", SUM(ws_net_paid) AS "Web Net Paid" FROM web_sales … GROUP BY 1
+        errors: []
     ResultSet:
       type: object
       properties:
@@ -714,3 +1084,16 @@ components:
           type: array
           items:
             type: array
+      example:
+        id: 108
+        status: succeeded
+        query_id: 42
+        errors: []
+        row_count: 1
+        columns: [State, Web Net Paid]
+        error_message: null
+        queue_started_at: "2026-06-15T14:30:01Z"
+        query_started_at: "2026-06-15T14:30:02Z"
+        query_ended_at: "2026-06-15T14:30:05Z"
+        rows:
+          - [CA, 12345.67]

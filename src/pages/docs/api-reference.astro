@@ -1,102 +1,97 @@
 ---
 /**
- * Interactive REST API reference, rendered from public/docs/openapi/ by Redoc.
- * Redoc brings its own three-column layout, so this page only supplies the
- * guide switcher and a theme built from the brand tokens at runtime; the spec
- * file is the source of truth and is linked for download.
+ * REST API reference, rendered at build time from public/docs/openapi/
+ * strata-api-v1.yaml on the same Docs shell as every other page. The sidebar
+ * lists endpoints by tag and the component schemas; the right-hand nav
+ * follows the headings. The YAML stays the source of truth and is linked for
+ * download.
  */
-import Base from '../../layouts/Base.astro';
-import DocsBar from '../../components/docs/DocsBar.astro';
+import Docs from '../../layouts/Docs.astro';
+import Operation from '../../components/docs/api/Operation.astro';
+import SchemaTable from '../../components/docs/api/SchemaTable.astro';
+import { guides, type SidebarItem } from '../../config/docs';
+import { exampleFor, info, renderDescription, schemas, serverUrl, tags } from '../../data/openapi';
 
 const spec = '/docs/openapi/strata-api-v1.yaml';
+const guide = guides.find((g) => g.id === 'api-reference')!;
+
+const sidebar: SidebarItem[] = [
+  { label: 'Overview', href: '#overview' },
+  ...tags.map((t, i) => ({
+    label: t.name,
+    href: `#${t.id}`,
+    open: i === 0,
+    items: t.operations.map((o) => ({ label: o.summary, href: `#${o.id}` })),
+  })),
+  {
+    label: 'Schemas',
+    href: '#schemas',
+    items: schemas.map((s) => ({ label: s.name, href: `#${s.id}` })),
+  },
+];
+
+const headings = [
+  ...tags.flatMap((t) => [
+    { depth: 2, slug: t.id, text: t.name },
+    ...t.operations.map((o) => ({ depth: 3, slug: o.id, text: o.summary })),
+  ]),
+  { depth: 2, slug: 'schemas', text: 'Schemas' },
+];
+
+const json = (v: unknown) => JSON.stringify(v, null, 2);
 ---
 
-<Base
-  title="REST API Reference — Strata Docs"
-  description="Every Strata REST API endpoint, request, and response schema, generated from the OpenAPI specification."
-  bodyClass="docs-page"
+<Docs
+  title="REST API Reference"
+  description="Every Strata REST API v1 endpoint, parameter, request, and response schema."
+  guide={guide}
+  id="api-reference"
+  titles={{}}
+  headings={headings}
+  trail={[]}
+  sidebar={sidebar}
 >
-  <DocsBar active="api-reference" />
-  <p class="sr-only"><a href={spec} download>Download the OpenAPI spec</a></p>
-
-  <div id="redoc" class="redoc-host" data-spec={spec}>
-    <p class="px-6 py-16 text-center text-muted-foreground">Loading the API reference…</p>
+  <div id="overview">
+    <Fragment set:html={renderDescription(info.description)} />
+    <p>
+      Base URL <code>{serverUrl}</code>. Version {info.version}. This page is generated from the
+      <a href={spec} download>OpenAPI specification</a>, which you can load into any client. The
+      <a href="/docs/api/rest/">REST API guide</a> covers the concepts behind these endpoints; the
+      <a href="/docs/api/rest/query-spec/">query spec</a> page explains projections, filters, calculations, and segments in prose.
+    </p>
   </div>
-</Base>
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js"></script>
-<script is:inline>
-  (function () {
-    var host = document.getElementById('redoc');
-    if (!host || !window.Redoc) return;
-    var css = getComputedStyle(document.documentElement);
-    var v = function (name) {
-      return css.getPropertyValue(name).trim();
-    };
-    Redoc.init(
-      host.dataset.spec,
-      {
-        hideDownloadButton: true,
-        scrollYOffset: 112,
-        expandResponses: '200',
-        theme: {
-          colors: {
-            primary: { main: v('--primary') },
-            text: { primary: v('--foreground'), secondary: v('--muted-foreground') },
-            border: { dark: v('--border'), light: v('--border') },
-            http: {
-              get: v('--chart-5'),
-              post: v('--strata-orange'),
-              put: v('--chart-6'),
-              delete: v('--strata-rust'),
-            },
-          },
-          typography: {
-            fontSize: '15px',
-            fontFamily: v('--font-sans'),
-            headings: { fontFamily: v('--font-display'), fontWeight: '700' },
-            code: { fontFamily: v('--font-mono'), backgroundColor: v('--surface-2'), color: v('--strata-peach') },
-            links: { color: v('--primary'), hover: v('--foreground') },
-          },
-          sidebar: {
-            backgroundColor: v('--background'),
-            textColor: v('--muted-foreground'),
-            activeTextColor: v('--primary'),
-            groupItems: { textTransform: 'uppercase' },
-          },
-          rightPanel: { backgroundColor: v('--code-surface'), textColor: v('--foreground') },
-          codeBlock: { backgroundColor: v('--strata-ink-night') },
-          schema: {
-            nestedBackground: v('--surface'),
-            linesColor: v('--border'),
-            typeNameColor: v('--muted-foreground'),
-            typeTitleColor: v('--strata-peach'),
-            requireLabelColor: v('--strata-orange'),
-          },
-        },
-      },
-      host
-    );
-  })();
-</script>
+  {tags.map((t) => (
+    <section class="api-tag" id={t.id}>
+      <h2 id={`${t.id}-title`}>{t.name}</h2>
+      {t.description && <Fragment set:html={renderDescription(t.description)} />}
+      <ul class="api-index not-prose">
+        {t.operations.map((o) => (
+          <li>
+            <a href={`#${o.id}`}>
+              <span class={`api-method api-method-${o.method}`}>{o.method}</span>
+              <code>{o.path}</code>
+              <span class="api-index-summary">{o.summary}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      {t.operations.map((o) => (
+        <Operation op={o} />
+      ))}
+    </section>
+  ))}
 
-<style is:global>
-  /* Redoc paints a few surfaces from its own defaults; pin them to the page. */
-  .redoc-host .redoc-wrap,
-  .redoc-host .api-content {
-    background: var(--background);
-  }
-  .redoc-host .menu-content {
-    border-right: 1px solid var(--border);
-  }
-  .redoc-host h1,
-  .redoc-host h2,
-  .redoc-host h3,
-  .redoc-host h5 {
-    color: var(--foreground) !important;
-  }
-  .redoc-host table th,
-  .redoc-host table td {
-    font-feature-settings: 'tnum' 1;
-  }
-</style>
+  <section class="api-tag" id="schemas">
+    <h2 id="schemas-title">Schemas</h2>
+    <p>The objects the endpoints above accept and return.</p>
+    {schemas.map((s) => (
+      <section class="api-schema" id={s.id}>
+        <h3 id={`${s.id}-title`}>{s.name}</h3>
+        {s.schema.description && <Fragment set:html={renderDescription(s.schema.description)} />}
+        <SchemaTable schema={s.schema} />
+        <pre class="api-example"><code>{json(exampleFor(s.schema))}</code></pre>
+      </section>
+    ))}
+  </section>
+</Docs>

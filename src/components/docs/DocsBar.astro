@@ -4,8 +4,9 @@
  * One centered pill bar: a segmented control for the three guides with the
  * search field as its last segment; results drop down beneath. No hairlines: the bar
  * shares the page background and fades into the content below it. The active
- * pill is a single indicator element that slides to the guide you click
+ * pill is a single rust indicator element that slides to the guide you click
  * before the page changes, so the switch reads as movement, not a reload.
+ * Rust is the fill and peach the hover accent, per the brand rules.
  * Shared by the Docs layout and the API reference page so the two stay identical.
  */
 import SearchInput from './SearchInput.astro';
@@ -27,14 +28,14 @@ const { active } = Astro.props;
       data-guide-tabs
     >
       <span
-        class="guide-indicator pointer-events-none absolute bottom-1 top-1 rounded-md bg-surface-2 opacity-0 shadow-sm transition-[left,width,opacity] duration-200 ease-out"
+        class="guide-indicator pointer-events-none absolute bottom-1 top-1 rounded-md bg-cta opacity-0 shadow-sm transition-[left,width,opacity] duration-200 ease-out"
         aria-hidden="true"
       ></span>
       {guides.map((g) => (
         <a
           href={g.href}
           class={`relative z-10 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors duration-200 ${
-            g.id === active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            g.id === active ? 'text-cta-foreground' : 'text-muted-foreground hover:text-primary'
           }`}
           aria-current={g.id === active ? 'true' : undefined}
         >
@@ -74,8 +75,12 @@ const { active } = Astro.props;
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         if (link.hasAttribute('aria-current')) return;
         e.preventDefault();
-        links.forEach((l) => l.classList.replace('text-foreground', 'text-muted-foreground'));
-        link.classList.replace('text-muted-foreground', 'text-foreground');
+        links.forEach((l) => {
+          l.classList.replace('text-cta-foreground', 'text-muted-foreground');
+          l.classList.add('hover:text-primary');
+        });
+        link.classList.replace('text-muted-foreground', 'text-cta-foreground');
+        link.classList.remove('hover:text-primary');
         place(link);
         setTimeout(() => window.location.assign(link.href), 200);
       });

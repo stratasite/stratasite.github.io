@@ -1,0 +1,129 @@
+---
+/**
+ * One endpoint: method and path, description, parameters, request body,
+ * and responses, each with a property table and a generated example.
+ */
+import SchemaTable from './SchemaTable.astro';
+import { exampleFor, expand, renderDescription, schemaAnchor, typeLabel, type Operation } from '../../../data/openapi';
+
+interface Props {
+  op: Operation;
+}
+const { op } = Astro.props;
+
+const json = (v: unknown) => JSON.stringify(v, null, 2);
+const pathHtml = op.path.replace(/\{([^}]+)\}/g, '<span class="api-path-param">{$1}</span>');
+const statusKind = (s: string) => (s.startsWith('2') ? 'ok' : s.startsWith('4') ? 'client' : 'other');
+---
+
+<section class="api-op" id={op.id}>
+  <h2 id={`${op.id}-title`}>{op.summary}</h2>
+  <p class="api-endpoint not-prose">
+    <span class={`api-method api-method-${op.method}`}>{op.method}</span>
+    <code set:html={pathHtml} />
+  </p>
+  {op.description && <Fragment set:html={renderDescription(op.description)} />}
+
+  {op.parameters.length > 0 && (
+    <>
+      <h3 id={`${op.id}-parameters`}>Parameters</h3>
+      <div class="table-wrap api-props">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>In</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {op.parameters.map((p) => {
+              const s = expand(p.schema);
+              return (
+                <tr>
+                  <td class="whitespace-nowrap font-mono text-[0.85em] text-foreground">
+                    {p.name}
+                    {p.required && <span class="ml-1.5 text-[0.7rem] font-sans font-semibold uppercase tracking-wider text-primary">required</span>}
+                  </td>
+                  <td class="text-muted-foreground">{p.in}</td>
+                  <td class="whitespace-nowrap font-mono text-[0.8em] text-muted-foreground">{typeLabel(p.schema ?? {}).label}</td>
+                  <td>
+                    <Fragment set:html={renderDescription(p.description)} />
+                    {s.enum && (
+                      <p class="api-enum">
+                        One of{' '}
+                        {s.enum.map((v, i) => (
+                          <>
+                            <code>{String(v)}</code>
+                            {i < s.enum!.length - 1 ? ', ' : ''}
+                          </>
+                        ))}
+                      </p>
+                    )}
+                    {s.default !== undefined && (
+                      <p class="api-enum">
+                        Default <code>{String(s.default)}</code>
+                      </p>
+                    )}
+                    {s.maximum !== undefined && (
+                      <p class="api-enum">
+                        Max <code>{String(s.maximum)}</code>
+                      </p>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+
+  {op.requestBody && (
+    <>
+      <h3 id={`${op.id}-body`}>Request body</h3>
+      {(() => {
+        const e = expand(op.requestBody!.schema);
+        return (
+          <>
+            {e.ref && (
+              <p>
+                A <a href={`#${schemaAnchor(e.ref)}`}>{e.ref}</a>
+                {op.requestBody!.required ? ', required.' : '.'}
+              </p>
+            )}
+            <SchemaTable schema={op.requestBody!.schema} inlineRefs />
+            <pre class="api-example"><code>{json(exampleFor(op.requestBody!.schema))}</code></pre>
+          </>
+        );
+      })()}
+    </>
+  )}
+
+  <h3 id={`${op.id}-responses`}>Responses</h3>
+  {op.responses.map((r) => {
+    const e = r.schema ? expand(r.schema) : undefined;
+    const named = e?.ref;
+    const isJson = r.contentTypes.includes('application/json');
+    return (
+      <div class="api-response">
+        <p class="api-response-head not-prose">
+          <span class={`api-status api-status-${statusKind(r.status)}`}>{r.status}</span>
+          <span class="text-foreground">{r.description}</span>
+          {r.contentTypes.filter((c) => c !== 'application/json').map((c) => (
+            <code class="ml-2 text-[0.8em]">{c}</code>
+          ))}
+        </p>
+        {e && named && (
+          <p>
+            Returns a <a href={`#${schemaAnchor(named)}`}>{named}</a>.
+          </p>
+        )}
+        {e && !named && <SchemaTable schema={r.schema!} />}
+        {isJson && e && <pre class="api-example"><code>{json(r.example ?? exampleFor(r.schema))}</code></pre>}
+      </div>
+    );
+  })}
+</section>

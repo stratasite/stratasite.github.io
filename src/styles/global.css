@@ -174,7 +174,7 @@
   .prose-docs h2 {
     @apply mt-12 border-t border-border pt-8 text-2xl;
   }
-  .prose-docs h2:first-child {
+  .prose-docs > h2:first-child {
     @apply mt-0 border-t-0 pt-0;
   }
   .prose-docs h3 {
@@ -261,4 +261,169 @@
    hairline between them, so the header's bottom border is dropped there. */
 .docs-page > header.sticky {
   border-bottom-color: transparent;
+}
+
+/* ---- API reference ---------------------------------------------------------
+   Generated from the OpenAPI spec (src/data/openapi.ts). Method and status
+   badges are the only colour: rust, orange and teal are fills, never text. */
+.api-endpoint {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.api-endpoint code,
+.api-index code {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--foreground);
+}
+.api-path-param {
+  color: var(--primary);
+}
+.api-method {
+  display: inline-block;
+  min-width: 3.6rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--strata-cream);
+  background: var(--strata-ink-soft);
+}
+.api-method-get    { background: var(--chart-5); }
+.api-method-post   { background: var(--strata-orange); }
+.api-method-put,
+.api-method-patch  { background: var(--chart-6); color: var(--strata-ink-deep); }
+.api-method-delete { background: var(--strata-rust); }
+
+.prose-strata .api-index {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 0;
+  list-style: none;
+}
+.prose-strata .api-index a:not(.cta) {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-weight: 400;
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+.prose-strata .api-index a:not(.cta):hover {
+  background: var(--surface);
+  color: var(--foreground);
+}
+.api-index-summary {
+  margin-left: auto;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.api-op {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.prose-docs .api-op > h2 {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+  font-size: 1.375rem;
+}
+.prose-docs .api-tag > h2 {
+  margin-top: 4.5rem;
+}
+.prose-docs .api-op h3 {
+  margin-top: 2rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.api-response {
+  margin-top: 1.25rem;
+}
+.api-response-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+.api-status {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-feature-settings: 'tnum' 1;
+  color: var(--strata-ink-deep);
+  background: var(--strata-peach);
+}
+.api-status-client { background: var(--strata-orange); color: var(--strata-cream); }
+.api-status-other  { background: var(--strata-ink-soft); color: var(--strata-cream); }
+
+.prose-strata .api-props table {
+  font-size: 0.875rem;
+}
+.prose-strata .api-props td p {
+  margin-top: 0;
+}
+.prose-strata .api-props td p + p {
+  margin-top: 0.25rem;
+}
+.api-enum {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.api-enum code {
+  font-size: 0.85em;
+}
+.prose-strata .api-example {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--strata-cream);
+}
+.api-schema {
+  margin-top: 2.5rem;
+}
+.prose-docs .api-schema h3 {
+  margin-top: 0;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+}
+
+/* Scrollable docs columns (sidebar, on-page nav, search results): a thin,
+   ink-toned scrollbar that only shows its thumb while the column is hovered,
+   instead of the browser's default grey bar. */
+.docs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.docs-scroll:hover {
+  scrollbar-color: var(--strata-ink-line) transparent;
+}
+.docs-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.docs-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.docs-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.docs-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--strata-ink-line);
 }

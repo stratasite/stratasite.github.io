@@ -11,7 +11,7 @@ import DocsBar from '../components/docs/DocsBar.astro';
 import SidebarGroup from '../components/docs/SidebarGroup.astro';
 import Toc from '../components/docs/Toc.astro';
 import Pager from '../components/docs/Pager.astro';
-import type { Guide } from '../config/docs';
+import type { Guide, SidebarItem } from '../config/docs';
 
 interface Props {
   title: string;
@@ -25,9 +25,12 @@ interface Props {
   prev?: { href: string; label: string };
   next?: { href: string; label: string };
   editUrl?: string;
+  /** Page-specific tree in place of the guide's (the generated API reference). */
+  sidebar?: SidebarItem[];
 }
 
-const { title, description, guide, id, titles, headings, trail, prev, next, editUrl } = Astro.props;
+const { title, description, guide, id, titles, headings, trail, prev, next, editUrl, sidebar } = Astro.props;
+const tree = sidebar ?? guide.sidebar;
 ---
 
 <Base title={`${title} — Strata Docs`} description={description} bodyClass="docs-page">
@@ -42,14 +45,14 @@ const { title, description, guide, id, titles, headings, trail, prev, next, edit
             {guide.label} contents
           </summary>
           <div class="mt-3">
-            <SidebarGroup items={guide.sidebar} currentId={id} titles={titles} />
+            <SidebarGroup items={tree} currentId={id} titles={titles} />
           </div>
         </details>
         <nav
-          class="docs-sidebar sticky top-[9rem] hidden max-h-[calc(100vh-10rem)] overflow-y-auto border-r border-border pb-6 pr-4 lg:block"
+          class="docs-sidebar docs-scroll sticky top-[9rem] hidden max-h-[calc(100vh-10rem)] overflow-y-auto border-r border-border pb-6 pr-4 lg:block"
           aria-label={`${guide.label} pages`}
         >
-          <SidebarGroup items={guide.sidebar} currentId={id} titles={titles} />
+          <SidebarGroup items={tree} currentId={id} titles={titles} />
         </nav>
       </aside>
 
