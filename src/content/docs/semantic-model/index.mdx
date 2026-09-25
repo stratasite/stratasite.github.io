@@ -12,29 +12,31 @@ The semantic model is the core of Strata. It transforms raw database tables into
 
 Before diving into components, understand these non-negotiable design principles:
 
-:::tip[Unique Naming Principle — Strata's Approach]
-**Every field name must be unique across your entire semantic layer.**
+:::tip[One Name, One Concept — Strata's Approach]
+**A field name identifies a single concept across your entire semantic layer.** There are no table-qualified names like `table.field_name`.
 
-This is a fundamental design principle (unlike tools that use namespaced fields like `table.field_name`).
+Define the same name on more than one table and Strata treats every definition as that one concept. "Total Revenue" on `store_sales` and "Total Revenue" on `catalog_sales` are both valid ways to answer a query for Total Revenue. At query time the planner picks the table whose reachable dimensions cover what the query asks for, and breaks ties by table `cost` (lower wins), so you can steer the choice.
+
+The rule therefore cuts the other way: **distinct concepts need distinct names.** If "Country" means the caller's country on one table and the ship-to country on another, name them "Caller Country" and "Ship Country", or Strata will merge them.
 
 **Benefits:**
-- **Unambiguous references**: "Total Revenue" means exactly one thing
+- **Unambiguous references**: "Total Revenue" means exactly one thing, however many tables can produce it
 - **Compound measures**: `[Total Revenue] - [Total Cost]` works without table prefixes
+- **Conformed dimensions by naming**: a shared "Date" or "Customer" name is what lets tables blend
 - **AI integration**: LLMs can reference fields without disambiguation
-- **Consistent metrics**: Organization-wide definitions
 
 **Considerations:**
-- Requires thoughtful naming conventions from the start
-- Use prefixes or suffixes to avoid conflicts (e.g., `order_revenue`, `subscription_revenue`)
+- Names are scoped per type: "Days To Recontact" can be both a dimension (the bucket) and a measure (the average), since a query asks for one or the other
+- Naming is where you apply domain knowledge: same thing, same name; different thing, different name
 
 ```yaml
-# These cannot coexist in the same project:
 # In tbl.store_sales.yml
-- name: Total Revenue  # ✓ First definition
+- name: Total Revenue    # one concept...
 
-# In tbl.catalog_sales.yml  
-- name: Total Revenue  # ✗ ERROR: Name already used
-- name: Catalog Revenue  # ✓ Use a unique name instead
+# In tbl.catalog_sales.yml
+- name: Total Revenue    # ...defined on a second table: either can serve it,
+                         #    chosen by the dimensions requested, then by cost
+- name: Catalog Revenue  # a different concept gets a different name
 ```
 :::
 

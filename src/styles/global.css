@@ -85,14 +85,19 @@
   /* Fenced code blocks: a clean terminal — ink surface, peach (primary) default
      text, a subtle hairline. No inner box, no per-token recoloring. */
   .prose-strata pre {
-    @apply mt-6 overflow-x-auto rounded-xl p-5 font-mono text-[0.9em] leading-relaxed;
+    @apply mt-6 rounded-xl p-5 font-mono text-[0.9em] leading-relaxed;
     background-color: var(--code-surface);
     color: var(--strata-peach);
     border: 1px solid color-mix(in srgb, var(--strata-cream) 12%, transparent);
+    /* Long commands wrap rather than scroll sideways: a hidden tail of a
+       `docker run` line is worse than a wrapped one. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
   .prose-strata pre code {
     @apply bg-transparent p-0 text-[1em] font-normal;
     color: inherit;
+    white-space: inherit;
   }
   .prose-strata .not-prose {
     @apply text-foreground;

@@ -1,0 +1,66 @@
+---
+title: "Databricks Adapter"
+description: "Connect to a Databricks SQL warehouse with a service principal."
+---
+Connect to a Databricks SQL warehouse with a service principal.
+
+## Configuration
+
+```yaml
+databricks_lakehouse:
+  adapter: databricks
+  name: Databricks Lakehouse
+  tier: warm
+  query_timeout: 3600
+
+  # Required
+  host: workspace-id.cloud.databricks.com   # workspace host, no scheme
+  warehouse: 1234abcd5678ef90              # SQL warehouse ID
+  auth_mode: oauth_m2m
+
+  # Optional
+  catalog: main      # Unity Catalog default catalog
+  schema: default    # default schema within that catalog
+
+  # Credentials (set via strata datasource auth)
+  # oauth_client_id:
+  # oauth_client_secret:
+```
+
+## Required Fields
+
+- **host** - Workspace host without a scheme, e.g. `adb-1234567890123456.7.azuredatabricks.net` or `your-workspace.cloud.databricks.com`
+- **warehouse** - The SQL warehouse ID, from SQL Warehouses in the workspace UI or the API
+- **auth_mode** - `oauth_m2m` (service principal)
+
+## Optional Fields
+
+- **catalog** - Default Unity Catalog catalog, used for query context and table discovery (often `main`)
+- **schema** - Default schema within the catalog (often `default`)
+
+## Authentication
+
+Databricks uses OAuth machine-to-machine with a **service principal**. Create one in the workspace, generate an OAuth secret for it, and grant it access to the SQL warehouse and the catalogs your model reads. Then set the credentials:
+
+```bash
+strata datasource auth databricks_lakehouse
+# Prompts for OAuth Client ID (the service principal's application ID) and OAuth Client Secret
+```
+
+Credentials are stored in `.strata`, never in `datasources.yml`. When the project is deployed, set the same two values on the datasource in the Strata server rather than committing them.
+
+## Notes
+
+- **SQL warehouse, not a cluster** - Queries run through the Statement Execution API against a SQL warehouse; all-purpose clusters are not used.
+- **Unity Catalog** - Tables are discovered through `information_schema` in the configured catalog. Set `catalog` if your model does not live in `main`.
+- **Serverless friendly** - A serverless SQL warehouse starts quickly and suits interactive dashboards.
+
+## Best Practices
+
+1. **One service principal per Strata environment** - Scope its grants to the catalogs the model needs
+2. **Match the tier to the warehouse** - A serverless or pro warehouse can be `hot`; a classic warehouse with auto-stop is better as `warm`
+3. **Set catalog and schema** - So `physical_name` values in the model can stay unqualified
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

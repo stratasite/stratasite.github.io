@@ -61,7 +61,7 @@ Edit the generated YAML directly for anything the prompts didn't cover — expre
 
 `strata init` writes an **`AGENTS.md`** into your project root, and it is committed to git. Claude Code, Codex, and Cursor read it automatically when they open the project.
 
-It is the contract the agent works to: Strata's YAML schema, naming and uniqueness rules, join and cardinality constraints, the deploy contracts every field and relationship must satisfy, the read-only discovery commands to use instead of guessing at schemas, and the things Strata does not support (so the agent stops and asks rather than inventing a workaround).
+It is the contract the agent works to: Strata's YAML schema, naming rules (one name, one concept), join and cardinality constraints, the deploy contracts every field and relationship must satisfy, the read-only discovery commands to use instead of guessing at schemas, and the things Strata does not support (so the agent stops and asks rather than inventing a workaround).
 
 Because that file ships with the project, you do not need a custom prompt or any per-agent setup.
 

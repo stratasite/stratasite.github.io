@@ -3,7 +3,7 @@
 These rules are mandatory. AI agents generating Strata YAML must follow them exactly.
 
 ### Naming Rules
-1. Every field name MUST be unique across the entire semantic layer
+1. A field name identifies ONE concept across the entire semantic layer. The same name on several tables is merged into that one field (the planner picks the table by requested dimensions, then lowest cost). Never reuse a name for a different concept. Names are scoped per type: the same name may exist as both a dimension and a measure (e.g. "Days To Recontact")
 2. Field names MUST be stable - once published, do not rename without migration
 3. Table names MUST be unique within a datasource
 4. Use descriptive, business-friendly names (not database column names)

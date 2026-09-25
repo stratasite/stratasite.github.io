@@ -26,6 +26,14 @@ These terms are used throughout the docs. If you are new to Strata (or to semant
 
 **Exclusion** — Advanced control that **removes** dimensions from a measure's grouping or filtering behavior (each can be set independently). Used for "% of total" measures and other cases where you want a measure to ignore certain dimensions' grouping or filters. *Industry analogs:* Tableau's **EXCLUDE Level of Detail** , Power BI DAX filter-context functions (e.g. REMOVEFILTERS, ALLEXCEPT). See: [Exclusions](/docs/advanced/exclusions/)
 
+**Segment** — A named, reusable **population**: key dimensions that identify its members plus the criteria (dimension filters, measure conditions, top-n) that decide membership. Defined at analysis time in a report, query, or API spec, never in YAML. Applied to a whole view or query, or to a **single measure** so a cohort can sit beside its baseline in one view. Include keeps members; exclude drops them. Planned once as a CTE and joined on the keys, so grain safety and row-level security carry through. See: [Segments](/docs/getting-started/concepts/#segments)
+
+**Expanding segment** — A segment that, besides its keys, carries companion dimensions into the query, so each row multiplies into one row per companion value sharing the key ("Sub Commodity (same Basket ID)"). Used for "same basket / same session" analysis. Applies to the whole query; pair it with distinct counts, since sums would overcount the fan-out.
+
+**Calculation** — A derived column added to a view or query at analysis time, by a business user or an agent, as a SQL expression over semantic fields (`[Name]@m`, `[Name]@d`, `[Alias]`). With an aggregate it is a measure calculation; without one, a dimension calculation. Never modeled in YAML, never a raw column, validated on save, and planned with the same guarantees as a modeled field. Contrast with a **compound measure**, which is modeled and deployed. See: [Calculations](/docs/getting-started/concepts/#calculations)
+
+**Decorated runtime measure** — A measure with a one-click transform applied at analysis time: a time comparison (year-over-year, month-over-month, as value or percent change), percent of total, or a windowed calculation (moving average, running total, rank, lag/lead). Stored on the view's projection, never in the model; planned as a final pass over the aggregated result, so the measure's definition and security are unchanged. See: [Decorated Runtime Measures](/docs/getting-started/concepts/#decorated-runtime-measures)
+
 
 ---
 

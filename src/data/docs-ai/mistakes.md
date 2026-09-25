@@ -1,12 +1,16 @@
 ## Common Mistakes to Avoid
 
-### Wrong: Duplicate Field Names
+### Wrong: One Name for Two Different Concepts
 ```yaml
-# In tbl.orders.yml
-- type: measure
-  name: Total Revenue  # ERROR: "Total Revenue" already exists in another table
+# In tbl.calls.yml
+- type: dimension
+  name: Country  # the caller's country
+
+# In tbl.shipments.yml
+- type: dimension
+  name: Country  # the ship-to country: WRONG, Strata merges both into one "Country"
 ```
-**Fix:** Use unique names like "Order Revenue" or "Store Revenue"
+**Fix:** Different concepts get different names: "Caller Country" and "Ship Country". The same name on two tables is only correct when it is the same concept (e.g. "Total Revenue" on store and catalog sales), in which case the planner picks the table by dimensions and cost.
 
 ### Wrong: Many-to-Many Relationship
 ```yaml

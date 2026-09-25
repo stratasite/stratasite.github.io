@@ -55,7 +55,7 @@ name: Store Sales Daily
 cost: 20
 ```
 
-When two tables expose the same measure (e.g. "Store Sales Price") via the [unique naming principle](/docs/getting-started/concepts/#core-design-principles), the planner prefers the lower-cost table when both can satisfy the query.
+When two tables define the same measure (e.g. "Store Sales Price"), the [one-name-one-concept rule](/docs/getting-started/concepts/#core-design-principles) makes them one measure with two sources. The planner first keeps the tables whose dimensions cover the query, then prefers the lower-cost one, so `cost` is how you break ties.
 
 ### Partition Constraints
 

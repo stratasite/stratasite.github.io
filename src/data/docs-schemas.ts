@@ -167,7 +167,7 @@ export function docsSchemas(schemaBaseUrl: string): Record<SchemaName, object> {
       required: ['adapter'],
       properties: {
         adapter: {
-          enum: ['postgres', 'snowflake', 'mysql', 'sqlserver', 'athena', 'trino', 'duckdb', 'druid'],
+          enum: ['postgres', 'snowflake', 'mysql', 'sqlserver', 'athena', 'trino', 'duckdb', 'druid', 'clickhouse', 'databricks', 'sqlite', 'redshift'],
         },
         host: {type: 'string'},
         port: {type: 'integer'},

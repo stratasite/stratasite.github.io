@@ -83,7 +83,7 @@ export const GET: APIRoute = async () => {
     },
 
     critical_constraints: [
-      'Field names must be globally unique across entire semantic layer',
+      'A field name is one concept across the entire semantic layer: the same name on several tables is merged (table chosen by requested dimensions, then lowest cost); never reuse a name for a different concept; names are scoped per type, so a dimension and a measure may share one',
       'No many_to_many relationships - use junction tables instead',
       'Measures must include aggregation function (sum, count, avg, min, max)',
       'Dimensions must NOT include aggregation functions',

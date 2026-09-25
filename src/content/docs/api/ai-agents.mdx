@@ -88,7 +88,7 @@ We are using Strata.
 Here is an existing semantic model. Please review it and:
 - Verify the relationship cardinalities are correct
 - Optimize the cost configuration
-- Ensure field names are unique and descriptive
+- Ensure field names are descriptive, and that a shared name is only used for the same concept
 
 [paste your YAML here]
 ```
@@ -163,8 +163,8 @@ Strata does not support `many_to_many` cardinality. Use junction tables with two
 ### Do NOT skip validation
 Always run `strata audit` before deploying. AI-generated YAML should pass validation.
 
-### Do NOT duplicate field names
-Field names must be unique across your entire semantic layer. If AI creates duplicate names, ask it to make them unique.
+### Do NOT reuse a name for a different concept
+A name identifies one concept across the whole semantic layer: the same name on two tables is merged, and the planner picks the table by dimensions and cost. If AI gives two different things the same name (a caller's country and a ship-to country, say), ask it to name them distinctly. Reusing a name for the *same* measure on another table is fine and expected.
 
 ### Do NOT bypass the rules
 If AI suggests something that conflicts with Strata's rules, the rules win. Ask AI to find a compliant approach.

@@ -41,7 +41,7 @@ Solutions for common issues when working with Strata.
    Error: Field 'Total Revenue' already exists
    ```
    
-   **Fix:** Field names must be unique across entire project. Rename one of the duplicates.
+   **Fix:** Within one table a name can only be used once per type. Defining the same field on a *different* table is not an error: Strata merges the definitions into one concept and picks the table per query. Rename only if the two fields mean different things.
 
 3. **Missing Required Field**
    ```
@@ -373,9 +373,9 @@ strata deploy
 
 **Full Error:** `Validation failed: Name 'X' must be unique`
 
-**Meaning:** Another field already uses this name
+**Meaning:** The name is already used by a field of the same type within this table. The same name on another table is allowed (that merges both into one concept), and a dimension and a measure may share a name.
 
-**Fix:** Choose a different, unique name for the field
+**Fix:** If the two fields mean different things, give this one a distinct name. If they are the same concept, keep the name and remove the in-table duplicate.
 
 ### "Table not found in datasource"
 

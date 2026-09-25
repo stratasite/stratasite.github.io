@@ -1,0 +1,64 @@
+---
+title: "SQLite Adapter"
+description: "Connect to a SQLite database file for local development and small embedded datasets."
+---
+Connect to a SQLite database file for local development and small embedded datasets.
+
+## Configuration
+
+```yaml
+sqlite_local:
+  adapter: sqlite
+  name: Local SQLite
+  tier: hot
+  query_timeout: 600
+
+  # Required
+  file: ./data/warehouse.db
+
+  # Optional
+  readonly: false     # open read-only (default: false)
+  enable_wal: true    # WAL journal mode for concurrent reads (default: true)
+  timeout: 5000       # busy timeout in milliseconds (default: 5000)
+  pragmas:            # override the analytics-tuned defaults
+    cache_size: -128000
+    mmap_size: 268435456
+```
+
+## Required Fields
+
+- **file** - Path to the SQLite database file (relative to the project or absolute)
+
+## Optional Fields
+
+- **readonly** - Open the file read-only (default: `false`)
+- **enable_wal** - Enable write-ahead logging so reads don't block (default: `true`; ignored when `readonly`)
+- **timeout** - Busy timeout in milliseconds (default: `5000`)
+- **pragmas** - A map of `PRAGMA` settings applied after Strata's defaults (a 64 MB cache, in-memory temp tables, 128 MB memory-mapped I/O)
+
+## Example
+
+```yaml
+sqlite_local:
+  adapter: sqlite
+  name: Local SQLite
+  tier: hot
+  file: /srv/data/sales.db
+  readonly: true
+```
+
+## Notes
+
+- **No credentials** - There is nothing to set with `strata datasource auth`
+- **In-process and file-based** - Like DuckDB, no host or port; the file must be readable by the Strata server that runs the queries
+- **Analytics defaults** - Strata applies pragmas tuned for read-heavy analytical scans; use `pragmas` to override them
+
+## Best Practices
+
+1. **Use for development and demos** - For analytical workloads on larger files, prefer [DuckDB](/docs/semantic-model/adapters/duckdb/)
+2. **Open read-only when the data is static** - Safer, and lets several processes read at once
+3. **Use absolute paths in deployed projects** - The server resolves the path, not your laptop
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test

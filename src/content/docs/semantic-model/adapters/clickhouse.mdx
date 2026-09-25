@@ -1,0 +1,71 @@
+---
+title: "ClickHouse Adapter"
+description: "Connect to ClickHouse over its HTTP interface, typically as a hot tier in front of the warehouse."
+---
+Connect to ClickHouse over its HTTP interface, typically as a hot tier in front of the warehouse.
+
+## Configuration
+
+```yaml
+clickhouse_hot:
+  adapter: clickhouse
+  name: ClickHouse Hot Tier
+  tier: hot
+  query_timeout: 300
+
+  # Required
+  host: clickhouse.internal
+
+  # Optional
+  protocol: http      # http or https (default: http)
+  port: 8123          # HTTP interface port (default: 8123)
+  database: analytics # default: default
+  username: default   # default: default
+
+  # Credentials (set via strata datasource auth)
+  # password:
+```
+
+## Required Fields
+
+- **host** - Server hostname or IP address
+
+## Optional Fields
+
+- **protocol** - `http` or `https` (default: `http`)
+- **port** - HTTP interface port (default: `8123`; use `8443` for HTTPS on ClickHouse Cloud)
+- **database** - Database to query (default: `default`)
+- **username** - User to connect as (default: `default`)
+- **password** - Set with `strata datasource auth`; leave blank for an unauthenticated local instance
+
+## Example
+
+```yaml
+clickhouse_hot:
+  adapter: clickhouse
+  name: ClickHouse Hot Tier
+  tier: hot
+  query_timeout: 300
+  protocol: https
+  host: abc123.us-east-1.aws.clickhouse.cloud
+  port: 8443
+  database: analytics
+  username: analyst
+```
+
+## Notes
+
+- **HTTP interface** - Strata talks to ClickHouse over HTTP, not the native TCP port (9000). Make sure port 8123 (or 8443) is reachable.
+- **Views are skipped** - Table discovery lists base tables only; views and materialized views are not listed, though they can still be referenced by `physical_name`.
+- **Built for the hot tier** - ClickHouse is the typical fast OLAP tier in front of a warehouse of record. Give it a low table `cost` and a partition so the planner routes recent-data queries to it and falls back to the warehouse otherwise. See [Partitions](/docs/advanced/partitions/) and [Semantic Routing](/docs/advanced/semantic-routing/).
+
+## Best Practices
+
+1. **Set hot tier** - This is what ClickHouse is for
+2. **Use HTTPS in production** - `protocol: https` with port `8443`
+3. **Declare partitions** - Tell the planner which date range the hot tier holds
+
+## Next Steps
+
+- [Managing Datasources](/docs/cli/datasources/) - add and test
+- [Multi-Datasource](/docs/advanced/multi-datasource/) - one model across a warehouse and a hot tier
