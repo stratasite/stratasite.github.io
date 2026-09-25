@@ -57,7 +57,7 @@ clickhouse_hot:
 
 - **HTTP interface** - Strata talks to ClickHouse over HTTP, not the native TCP port (9000). Make sure port 8123 (or 8443) is reachable.
 - **Views are skipped** - Table discovery lists base tables only; views and materialized views are not listed, though they can still be referenced by `physical_name`.
-- **Built for the hot tier** - ClickHouse is the typical fast OLAP tier in front of a warehouse of record. Give it a low table `cost` and a partition so the planner routes recent-data queries to it and falls back to the warehouse otherwise. See [Partitions](/docs/advanced/partitions/) and [Semantic Routing](/docs/advanced/semantic-routing/).
+- **Built for the hot tier** - ClickHouse is the typical fast OLAP tier in front of a warehouse of record. Give it a low table `cost` and a partition so the planner routes recent-data queries to it and falls back to the warehouse otherwise. See [Partitions](/docs/semantic-model/partitions/) and [Semantic Routing](/docs/advanced/semantic-routing/).
 
 ## Best Practices
 
@@ -68,4 +68,4 @@ clickhouse_hot:
 ## Next Steps
 
 - [Managing Datasources](/docs/cli/datasources/) - add and test
-- [Multi-Datasource](/docs/advanced/multi-datasource/) - one model across a warehouse and a hot tier
+- [Semantic Routing](/docs/advanced/semantic-routing/) - one model across a warehouse and a hot tier

@@ -1,33 +1,29 @@
 ---
 title: "Advanced Features"
-description: "In-depth and extra semantic-model features. This section lives under Semantic Model: the top-level docs cover core basics (tables, fields, expressions, relationships); Advanced covers more in-depth an"
+description: "In-depth and optional semantic-model features: universes, routing, cost, exclusions, inclusions, and decorators."
 ---
-In-depth and extra semantic-model features. This section lives **under Semantic Model**: the top-level docs cover core basics (tables, fields, expressions, relationships); Advanced covers more in-depth and optional topics.
+In-depth and optional semantic-model features. The pages above this section cover the core: tables, fields, expressions, relationships, imports, extended blending groups, and partitions.
 
 ## Features
 
-- **[Extended Blending Groups](/docs/advanced/extended-blending-groups/)** - Blend dimensions across tables
-- **[Exclusions](/docs/advanced/exclusions/)** - Filter-based measure exclusions
+- **[Universe Formation](/docs/advanced/universe-formation/)** - How join trees are built from a root fact
+- **[Semantic Routing](/docs/advanced/semantic-routing/)** - How the planner picks a table and datasource
+- **[Cost Optimization](/docs/advanced/cost-optimization/)** - Steering routing with cost
+- **[Exclusions](/docs/advanced/exclusions/)** - Measures that ignore chosen dimensions
 - **[Inclusions](/docs/advanced/inclusions/)** - Multi-level calculations
-- **[Partitions](/docs/advanced/partitions/)** - Data availability constraints
-- **[Cost Optimization](/docs/advanced/cost-optimization/)** - Query routing and performance
 - **[Decorators](/docs/advanced/decorators/temporal/)** - Transformations (temporal, window, contribution)
-- **[Multi-Datasource](/docs/advanced/multi-datasource/)** - Cross-datasource queries
 
 ## When to Use
 
 Use advanced features when you need:
-- **Cross-table dimension blending** - Extended blending groups
 - **Point-in-time analysis** - [Snapshot measures](/docs/semantic-model/fields/measures/snapshot/)
 - **Complex filtering** - Exclusions
 - **Multi-level calculations** - Inclusions
-- **Data constraints** - Partitions
-- **Performance tuning** - Cost optimization
+- **Hot tiers and aggregate tables** - Semantic routing and cost optimization
 - **Time-based analysis** - Temporal decorators
-- **Cross-database queries** - Multi-datasource
 
 ## Next Steps
 
 - Explore specific advanced features
 - Read about [decorators](/docs/advanced/decorators/temporal/)
-- Learn about [multi-datasource queries](/docs/advanced/multi-datasource/)
+- Learn how [semantic routing](/docs/advanced/semantic-routing/) picks a datasource

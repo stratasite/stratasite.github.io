@@ -130,13 +130,10 @@ Verifies connection parameters, authentication, and database accessibility.
 Each table in your semantic model belongs to **exactly one datasource**:
 
 - Relationships are defined **within** a datasource; cross-datasource joins are not supported.
-- Universes and query plans are built per datasource, then optionally merged at the result level (see [Multi-Datasource](/docs/advanced/multi-datasource/)).
-- Complex/compound measures and automatic data blending operate **inside a single datasource** – you cannot build one measure that mixes fields from Snowflake and Postgres, for example.
+- Universes and query plans are built per datasource, and **every query runs in exactly one datasource**. Strata does not merge results across datasources.
+- Compound measures and automatic data blending operate **inside a single datasource**: you cannot build one measure that mixes fields from Snowflake and Postgres, for example.
 
-In a single Strata project you can still:
-
-- Model different domains in different warehouses (for example, marketing in BigQuery via Trino and finance in Snowflake).
-- Run **multi-datasource queries** where compatible measures are computed in each datasource and merged, as long as each individual measure respects the single-datasource rule.
+What multiple datasources are for is **routing**, not blending. Define the same tables and measures in more than one datasource (a Snowflake warehouse of record and a ClickHouse hot tier, say), and the planner picks the datasource that can satisfy the whole query, preferring by partition, tier, and cost. See [Semantic Routing](/docs/advanced/semantic-routing/). A project can also model unrelated domains in different warehouses, as long as no single query needs both.
 
 ## Runtime engines and SQLite
 
@@ -193,5 +190,5 @@ Exact configuration options for per-user auth and advanced security vary by adap
 
 - [Managing Datasources](/docs/cli/datasources/) — CLI commands
 - [Adapters](/docs/semantic-model/adapters/) — Adapter-specific configuration
-- [multi-datasource](/docs/advanced/multi-datasource/) — Cross-datasource queries
+- [Semantic Routing](/docs/advanced/semantic-routing/) — how the planner chooses a datasource
 - [cost-optimization](/docs/advanced/cost-optimization/)

@@ -20,7 +20,7 @@ export function docsSchemas(schemaBaseUrl: string): Record<SchemaName, object> {
       name: {type: 'string'},
       physical_name: {type: 'string'},
       cost: {type: 'integer', minimum: 1},
-      snapshot_date: {type: 'string'},
+      snapshot: {type: 'string', description: 'Date dimension the table is snapped by; enables snapshot measures'},
       tags: {type: 'array', items: {type: 'string'}},
       partitions: {
         type: 'array',

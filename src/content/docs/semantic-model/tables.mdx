@@ -80,15 +80,15 @@ cost: 100
 
 ## Optional Fields
 
-### snapshot_date
+### snapshot
 
-For snapshot tables (e.g., inventory), specify the date dimension.
+For snapshot tables (e.g., inventory), name the date dimension the table is snapped by. The dimension must be a date type, on this table or unambiguous in its universe.
 
 ```yaml
-snapshot_date: Date
+snapshot: Date
 ```
 
-Enables snapshot measures (beginning/ending snapshots).
+Enables snapshot measures on the table (`snapshot: beginning` / `snapshot: ending` on a measure). The two keys share a name on purpose: the table's `snapshot` says *which date*, the measure's says *which end of the period*.
 
 ### tags
 

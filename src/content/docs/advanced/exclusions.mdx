@@ -10,10 +10,10 @@ Exclusions let you control **how a measure groups and responds to filters** on s
 
 There are two independent knobs:
 
-- **Exclusion type (`exclusion_type`)**: controls **grouping** – which dimensions are allowed to affect the grain of the measure.
-- **Filter behavior (`filter`)**: controls **filters** – whether filters on those entities are applied, ignored, or treated as the only filters that matter for this measure.
+- **Exclusion type (`exclusion_type`)** controls **grouping**: which dimensions are allowed to affect the grain of the measure.
+- **Filter behavior (`filter`)** controls **filters**: whether filters on those entities are applied, ignored, or treated as the only filters that matter for this measure.
 
-Understanding that grouping and filtering are **orthogonal** is key to modeling advanced measures correctly.
+Grouping and filtering are independent of each other. Keeping that in mind is the key to modeling these measures correctly.
 
 ## Exclusion Types (grouping behavior)
 
@@ -35,11 +35,11 @@ Exclude specific entities from grouping while leaving all other dimensions avail
     sql: sum(amount)
 ```
 
-In this example, `Return Status` will not appear in the grouping set for this measure (even if the user adds it to the query), but other dimensions like `Date` or `Customer` can still group the measure.
+In this example, `Return Status` is left out of the grouping for this measure even if the user adds it to the query, while other dimensions such as `Date` or `Customer` still group it.
 
 ### `exclude_all_except`
 
-Allow **only** the listed entities to affect grouping for this measure. All other dimensions are effectively treated as excluded for grouping.
+Allow **only** the listed entities to affect grouping for this measure. Every other dimension is excluded from grouping.
 
 ```yaml
 - type: measure
@@ -55,11 +55,11 @@ Allow **only** the listed entities to affect grouping for this measure. All othe
     sql: sum(amount)
 ```
 
-Here the measure always behaves as if it were aggregated only by `Product Category` (plus any time grain), even if more dimensions are present in the query.
+Here the measure always behaves as if it were aggregated by `Product Category` alone, even when more dimensions are present in the query.
 
 ### `exclude_all`
 
-Exclude all dimensions from grouping for this measure. The measure is computed at a global level (or global-per-time-period when paired with time dimensions).
+Exclude every dimension from grouping for this measure. The measure is computed as one global value, regardless of what the query groups by.
 
 ```yaml
 - type: measure
@@ -70,7 +70,7 @@ Exclude all dimensions from grouping for this measure. The measure is computed a
     sql: sum(amount)
 ```
 
-This is useful for “overall total” or “grand total” style measures.
+This is useful for overall-total or grand-total style measures.
 
 ## Exclusion Structure
 
@@ -86,14 +86,14 @@ exclusions:
 ### Entity types (`type`)
 
 - **`dimension`**: Match dimensions by name. Only the listed dimensions are affected.
-- **`table`**: Apply the rule to **all dimensions that come from the given table**. This is useful for turning off an entire hierarchy such as product attributes.
-- **`universe`**: Apply the rule to **all dimensions connected to a particular universe root**. This is powerful and should be used carefully, since it can affect many dimensions at once.
+- **`table`**: Apply the rule to **all dimensions that come from the given table**. Useful for switching off an entire hierarchy, such as every product attribute at once.
+- **`universe`**: Apply the rule to **all dimensions reachable from a given universe root**. Powerful, so use it deliberately: it can affect many dimensions at once.
 
 Use `dimension` by default, and only escalate to `table` or `universe` when you have a clear, intentional modeling need.
 
 ## Filter Options (filter behavior)
 
-Filter behavior controls how **filters on the target entities** are treated for this measure. It does **not** change which dimensions can group the measure (that is controlled by `exclusion_type`).
+Filter behavior controls how **filters on the target entities** are treated for this measure. It does **not** change which dimensions can group the measure; that is controlled by `exclusion_type`.
 
 ### `ignore`
 
@@ -103,19 +103,19 @@ Ignore filters on the target entities for this measure. Grouping still follows `
 filter: ignore
 ```
 
-Example: A “% of total revenue” measure might **Important**: This controls **filters**, not visibility. The target dimension can still appear in the report as a row (depending on `exclusion_type`), but any filters applied to it are **ignored** when computing this measure.
+**Important**: This controls **filters**, not visibility. The target dimension can still appear in the report as a row (depending on `exclusion_type`), but any filter applied to it is **ignored** when this measure is computed.
 
-Example: A "% of total revenue" measure might ignore category filters so that each row shows revenue as a share of the **unfiltered** total, even when the user applies a category filter.
+Example: a "% of total revenue" measure can ignore category filters, so that each row shows revenue as a share of the **unfiltered** total even when the user has filtered to one category.
 
 ### `only`
 
-Apply **only** filters on the target entities for this measure. Filters on other dimensions are ignored for this measure, even though they can still affect grouping.
+Apply **only** the filters on the target entities to this measure. Filters on every other dimension are ignored for this measure, even though those dimensions can still group it.
 
 ```yaml
 filter: only
 ```
 
-Example: A measure that should always respect `Product Category` filters but ignore any ad‑hoc filters on `Customer Segment` or `Region`.
+Example: a measure that should always respect `Product Category` filters but ignore any ad hoc filters on `Customer Segment` or `Region`.
 
 ### `apply`
 
@@ -125,13 +125,13 @@ Apply filters on the target entities normally. This is the default behavior.
 filter: apply
 ```
 
-**Important**: Filters are applied, but the dimension may still be **excluded from grouping** (depending on `exclusion_type`). This means the dimension can appear in the report (as rows), but the measure is computed at a different grain and the filtered value is repeated across those rows.
+**Important**: The filters are applied, but the dimension may still be **excluded from grouping**, depending on `exclusion_type`. The dimension can then appear in the report as rows while the measure is computed at a coarser grain, so the filtered value repeats across those rows.
 
 ## Examples
 
 ### Example 1: % of Total Revenue by Category
 
-**Goal:** Show each product category’s revenue and its share of **overall** revenue, even when filters are applied.
+**Goal:** Show each product category's revenue and its share of **overall** revenue, even when filters are applied.
 
 ```yaml
 - type: measure
@@ -157,15 +157,15 @@ filter: apply
   data_type: decimal
   format: percent:2
   expression:
-    sql: [Revenue] / NULLIF([Revenue (All Categories)], 0)
+    sql: "[Revenue] / nullif([Revenue (All Categories)], 0)"
 ```
 
-- Grouping: `Product Category` groups both `Revenue` and `Revenue (All Categories)` rows.
-- Filters: Filters on `Product Category` are **ignored** for `Revenue (All Categories)` because of `filter: ignore`, so the denominator always represents the unfiltered total.
+- Grouping: `Product Category` groups `Revenue`, but it is excluded from `Revenue (All Categories)`, so that measure is the total across all categories, repeated on every category row.
+- Filters: filters on `Product Category` are **ignored** for `Revenue (All Categories)` because of `filter: ignore`, so the denominator is always the unfiltered total.
 
 ### Example 2: Measure that Ignores a Whole Table
 
-**Goal:** Compute revenue that is insensitive to any product‑level filters, regardless of which specific product dimensions are used.
+**Goal:** Compute revenue that is unaffected by any product-level filter, whichever product dimensions are used.
 
 ```yaml
 - type: measure
@@ -181,12 +181,12 @@ filter: apply
     sql: sum(amount)
 ```
 
-- Grouping: Product dimensions still show up in the result set, but they do not change this measure’s grain.
-- Filters: Any filters on dimensions that come from the `Product` table are ignored for this measure.
+- Grouping: product dimensions still appear in the result set, but they do not change this measure's grain.
+- Filters: any filter on a dimension from the `Product` table is ignored for this measure.
 
 ### Example 3: Dimension Present vs Absent in Report
 
-**Goal:** Show how exclusion behavior changes depending on whether the excluded dimension is included in the report.
+**Goal:** Show how an exclusion behaves depending on whether the excluded dimension is in the report.
 
 **Setup:**
 
@@ -207,8 +207,8 @@ filter: apply
 **Case A: Category IS in the report**
 
 - **Query**: Revenue (Excluding Category) grouped by Date, Product Category
-- **Behavior**: `Product Category` appears as rows in the result, but the measure is computed **ignoring category splits** — it is aggregated at Date level only, then the same Date total is repeated for each category row
-- **Result**: Each category row for a given date shows the **same value** (the Date-level aggregate)
+- **Behavior**: `Product Category` appears as rows in the result, but the measure is computed **without the category split**. It is aggregated at the Date level, and that Date total is repeated on each category row.
+- **Result**: every category row for a given date shows the **same value**, the Date-level aggregate.
 
 | Date | Product Category | Revenue (Excluding Category) |
 |------|-----------------|------------------------------|
@@ -219,22 +219,22 @@ filter: apply
 **Case B: Category IS NOT in the report**
 
 - **Query**: Revenue (Excluding Category) grouped by Date only
-- **Behavior**: Measure is computed at Date level naturally (no category grouping)
-- **Result**: One value per Date (same as Case A's repeated total)
+- **Behavior**: the measure is computed at the Date level, since nothing else groups it.
+- **Result**: one value per Date, the same total Case A repeats.
 
 | Date | Revenue (Excluding Category) |
 |------|------------------------------|
 | 2024-01-01 | $10,000 |
 
-**Key insight**: The exclusion changes the **aggregation level**, not just whether the dimension appears visually. When the excluded dimension is present in the report, you see it as rows, but the measure **ignores it for grouping** — this is how "% of total" measures work: each row shows the same denominator (the grand total), allowing you to compute `[Category Revenue] / [Revenue (Excluding Category)]` to get each category's percentage contribution.
+**Key insight**: an exclusion changes the **aggregation level**, not whether the dimension is displayed. When the excluded dimension is in the report you still see it as rows, but the measure **ignores it for grouping**. This is how "% of total" measures work: every row carries the same denominator, the grand total, so `[Category Revenue] / [Revenue (Excluding Category)]` gives each category's share.
 
 ## Best Practices
 
-1. **Use descriptive names** - “Revenue (Excluding Returns)” not just “Revenue”.
-2. **Document exclusions** - Add descriptions explaining what is being excluded and why.
-3. **Start with `dimension` type** - Only use `table` or `universe` when you truly need broad behavior.
-4. **Test carefully** - Compare results with and without exclusions; verify behavior in edge cases (no filters, multiple filters, added/removed dimensions).
-5. **Use sparingly** - Exclusions can be powerful but confusing; prefer simpler measures when possible.
+1. **Use descriptive names**: "Revenue (Excluding Returns)", not just "Revenue".
+2. **Document exclusions**: add a description saying what is excluded and why.
+3. **Start with the `dimension` type**: use `table` or `universe` only when you need that breadth.
+4. **Test carefully**: compare results with and without the exclusion, and check the edge cases (no filters, several filters, dimensions added and removed).
+5. **Use sparingly**: exclusions are powerful but easy to misread; prefer a simpler measure when one will do.
 
 ## Next Steps
 

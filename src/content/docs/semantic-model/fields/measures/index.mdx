@@ -1,211 +1,136 @@
 ---
 title: "Measures"
-description: "Measure fields represent aggregatable metrics."
+description: "Measures are the aggregated quantities of the model: what gets summed, counted, or averaged when a user groups by dimensions."
 ---
-Measure fields represent aggregatable metrics.
+Measures are the aggregated quantities of the model: what gets summed, counted, or averaged when a user groups by dimensions.
 
 ## Overview
 
-Measures are the quantitative fields in your semantic model. They represent metrics that can be aggregated (summed, averaged, counted, etc.).
+A measure is a field whose expression aggregates rows. The user picks dimensions, Strata groups by them, and every measure on the query is computed over each group. Measures never appear in a `GROUP BY`; that is what separates them from [dimensions](/docs/semantic-model/fields/dimensions/).
+
+Every measure resolves to a source table, that table's grain, and the dimensions reachable from it. That is what lets Strata decide, per query, which dimensions a measure can be grouped by, which table should serve it, and how to blend it with measures from other facts without double counting. A measure carries this by construction; nothing about it is configured per combination.
 
 ## Measure Types
 
-- **Simple measures** — Single SQL aggregation (e.g. `sum(amount)`, `count(*)`)
-- **[Compound measures](/docs/semantic-model/fields/measures/compound/)** — Expressions that reference other measures (e.g. `[Total Revenue] - [Total Cost]`)
-- **[Snapshot measures](/docs/semantic-model/fields/measures/snapshot/)** — Point-in-time values (`beginning` or `ending` of a period)
+Five kinds of measure are modeled in YAML. They share every property below and differ in how the expression is written and how the planner evaluates it.
 
-## Characteristics
+| Type | What it is | Declared by | Reference |
+|---|---|---|---|
+| **Standard** | One aggregate over the table's columns: `sum(amount)`, `count(distinct customer_id)` | `expression.sql` with an aggregate | this page |
+| **Compound** | A formula over other measures and dimensions by name: `[Total Revenue] - [Total Cost]`. Measures may come from different fact domains in the same datasource; components that can't reach a query dimension are auto-leveled | `expression.sql` with `[Name]` references | [Compound measures](/docs/semantic-model/fields/measures/compound/) |
+| **Snapshot** | The value at the start or end of each period, for balances and inventory that must not be summed across time | `snapshot: beginning` or `ending`, on a table with `snapshot: <Date dimension>` | [Snapshot measures](/docs/semantic-model/fields/measures/snapshot/) |
+| **Exclusion** (LOD) | Ignores chosen dimensions in its grouping or filtering, for percent of total, fixed denominators, hierarchy-wide totals | `exclusion_type` and `exclusions` | [Exclusions](/docs/advanced/exclusions/) |
+| **Inclusion** (LOD) | Aggregates at a finer level first, then re-aggregates at the query grain, for medians and averages of per-entity values | `inclusions` | [Inclusions](/docs/advanced/inclusions/) |
 
-- **Aggregatable** - Must include aggregation functions (SUM, AVG, COUNT, etc.)
-- **Cannot be grouped** - Measures are not used in GROUP BY
-- **Examples**: Total Revenue, Order Count, Average Order Value, Profit Margin
+Three more things can change what a measure returns, none of them modeled in YAML. They are applied at analysis time on a view or query and are covered under Core Concepts:
 
-## Basic Definition
+- **[Calculations](/docs/getting-started/concepts/#calculations)**: a formula a business user or agent writes over the query's measures, such as a rate or a share.
+- **[Decorated runtime measures](/docs/getting-started/concepts/#decorated-runtime-measures)**: one-click year-over-year, moving average, percent of total, and other transforms.
+- **[Segments](/docs/getting-started/concepts/#segments)**: restrict a single measure to a cohort so it sits beside its unrestricted baseline.
+
+## Definition
 
 ```yaml
 - type: measure
   name: Total Revenue
   description: Sum of all order amounts
   data_type: decimal
-  expression:
-    sql: sum(amount)
-```
-
-## Measure Properties
-
-### name
-
-Display name shown to users.
-
-### description
-
-Optional description.
-
-### data_type
-
-Typically `decimal` or `integer`. See [data types](/docs/semantic-model/fields/data-types/).
-
-### expression
-
-SQL expression with aggregation. **Required:** must include aggregation (sum, avg, count, min, max, etc.).
-
-```yaml
-expression:
-  sql: sum(amount)
-```
-
-## Optional Properties
-
-### hidden
-
-Hide from UI while keeping available for calculations.
-
-### format
-
-Apply formatting (shortcut string or hash). [Field format →](/docs/semantic-model/fields/formatters/)
-
-### synonyms
-
-Alternative names for this measure. Helps AI-powered search and natural language queries match fields when users use different terminology.
-
-```yaml
-synonyms:
-  - total sales
-  - gross revenue
-  - sales amount
-```
-
-### snapshot
-
-For point-in-time measures: `ending` or `beginning`. Table must have `snapshot_date`. [Snapshot measures →](/docs/semantic-model/fields/measures/snapshot/)
-
-### exclusion_type / exclusions
-
-Exclude certain dimensions. [Exclusions →](/docs/advanced/exclusions/)
-
-### inclusions
-
-Force calculation at a lower level before rolling up. [Inclusions →](/docs/advanced/inclusions/)
-
-## Aggregation Functions
-
-### Sum
-
-```yaml
-- type: measure
-  name: Total Revenue
-  data_type: decimal
-  expression:
-    sql: sum(amount)
-```
-
-### Average
-
-```yaml
-- type: measure
-  name: Average Order Value
-  data_type: decimal
-  expression:
-    sql: avg(amount)
-```
-
-### Count
-
-```yaml
-- type: measure
-  name: Order Count
-  data_type: integer
-  expression:
-    sql: count(*)
-```
-
-### Count Distinct
-
-```yaml
-- type: measure
-  name: Unique Customers
-  data_type: integer
-  expression:
-    sql: count(distinct customer_id)
-```
-
-### Min/Max
-
-```yaml
-- type: measure
-  name: First Order Date
-  data_type: date
-  expression:
-    sql: min(order_date)
-
-- type: measure
-  name: Last Order Date
-  data_type: date
-  expression:
-    sql: max(order_date)
-```
-
-## Common Patterns
-
-### Simple Sum
-
-```yaml
-- type: measure
-  name: Total Sales
-  data_type: decimal
   format: currency:2
   expression:
-    sql: sum(sales_amount)
+    sql: sum(amount)
 ```
 
-### Count with Filter
+## Aggregation
+
+The aggregate in `expression.sql` is passed straight through to the datasource. Strata does not restrict you to a fixed set of functions or rewrite them: whatever aggregate the warehouse supports, in the warehouse's own dialect, is a valid measure expression. `sum`, `avg`, `count`, `min`, and `max` work everywhere. Beyond those, use what the engine offers: `approx_count_distinct` or `hll` sketches on Snowflake, `percentile_cont` and `median`, `stddev` and `variance`, `listagg` or `string_agg`, `bool_or`, `any_value`, `uniqExact` and `quantile` on ClickHouse, and so on.
+
+```yaml
+- type: measure
+  name: Median Order Value
+  data_type: decimal
+  expression:
+    sql: percentile_cont(0.5) within group (order by amount)
+
+- type: measure
+  name: Unique Visitors (approx)
+  data_type: integer
+  expression:
+    sql: approx_count_distinct(visitor_id)
+```
+
+Two consequences of pass-through:
+
+- **The expression is dialect-specific.** A measure is defined on one table in one datasource, so write it for that engine. When the same measure name is defined on a hot-tier table in a different engine, write that table's expression in its dialect; the shared name is what makes them one measure (see [One name, one concept](/docs/getting-started/concepts/#core-design-principles)).
+- **The planner still needs to recognize an aggregate.** Strata knows each adapter's aggregate functions and uses that to tell a measure expression from a row-level one, which matters for grouping, for blending, and for [calculations](/docs/getting-started/concepts/#calculations) written on top of measures. Standard SQL aggregates and each engine's own are recognized; if you use an unusual one and Strata treats it as non-aggregating, say so and it can be added to the adapter's list.
+
+Conditional aggregation is plain SQL:
 
 ```yaml
 - type: measure
   name: Completed Orders
   data_type: integer
   expression:
-    sql: count(CASE WHEN status = 'completed' THEN 1 END)
+    sql: count(case when status = 'completed' then 1 end)
 ```
 
-### Percentage (simple)
+## Properties
+
+| Property | Required | Description |
+|---|---|---|
+| `type` | yes | `measure` |
+| `name` | yes | The name users see and other fields reference. One name is one concept across the model; see [naming](/docs/getting-started/concepts/#core-design-principles) |
+| `data_type` | yes | The aggregate's result type, usually `decimal` or `integer`; a `min(order_date)` is a `date`. See [data types](/docs/semantic-model/fields/data-types/) |
+| `expression.sql` | yes | The aggregate expression, in the datasource's dialect. Compound measures reference other fields as `[Name]` |
+| `description` | no | Shown in the UI and read by the AI assistant |
+| `format` | no | Display format, as a shortcut (`currency:2`, `percent:1`) or a hash. See [formatters](/docs/semantic-model/fields/formatters/) |
+| `hidden` | no | Hide from pickers while keeping it available to compound measures and calculations |
+| `synonyms` | no | Other names people use for it ("gross revenue", "sales amount"), so natural-language and AI queries resolve to this field |
+| `snapshot` | no | `beginning` or `ending`; makes this a [snapshot measure](/docs/semantic-model/fields/measures/snapshot/) |
+| `exclusion_type`, `exclusions` | no | Dimensions to leave out of grouping and/or filtering; see [exclusions](/docs/advanced/exclusions/) |
+| `inclusions` | no | Dimensions to aggregate by first; see [inclusions](/docs/advanced/inclusions/) |
+| `tags` | no | Free-form labels for organization |
+
+## Patterns
+
+**Ratio inside one table.** Both sides aggregate the same rows, so a single expression is enough:
 
 ```yaml
 - type: measure
   name: Profit Margin
   data_type: decimal
-  format: percent:2
+  format: percent:1
   expression:
-    sql: sum(profit) / sum(revenue)
+    sql: sum(profit) / nullif(sum(revenue), 0)
 ```
 
-For ratios that reference other **measures** by name, use [compound measures](/docs/semantic-model/fields/measures/compound/).
-
-### Complex Calculation
+**Ratio across measures.** When the numerator and denominator are already measures, possibly on different tables, reference them by name so the planner blends them correctly:
 
 ```yaml
 - type: measure
-  name: Revenue per Customer
+  name: Revenue per Order
   data_type: decimal
   format: currency:2
   expression:
-    sql: sum(amount) / count(distinct customer_id)
+    sql: "[Total Revenue] / nullif([Order Count], 0)"
 ```
 
-## Best Practices
+**Share of total.** A measure that ignores the query's grouping for its denominator is an exclusion measure, not a ratio. See [exclusions](/docs/advanced/exclusions/). For an ad-hoc share on one view, the percent-of-total [decorator](/docs/advanced/decorators/contribution/) needs no modeling.
 
-1. **Always include aggregation** - SUM, AVG, COUNT, etc.
-2. **Use appropriate data types** - `decimal` for money, `integer` for counts
-3. **Add format** - Currency, percentage shortcuts
-4. **Add descriptions** - Help users understand measures
-5. **Use descriptive names**
-6. **Test calculations** - Verify measures are correct
+**Balances and inventory.** Summing a daily balance across a month is wrong; use a [snapshot measure](/docs/semantic-model/fields/measures/snapshot/).
+
+## Guidelines
+
+1. **One aggregate per standard measure.** Put math between measures in a compound measure, where the planner can blend it, rather than in one expression that assumes one table.
+2. **Guard denominators** with `nullif(..., 0)`.
+3. **Match `data_type` to the result**, and let `format` handle display.
+4. **Write descriptions and synonyms.** They are what the AI assistant and natural-language search match on.
+5. **Same concept, same name.** Define "Total Revenue" on every table that can serve it and let the planner choose; give a different concept a different name.
+6. **Test with `strata test`** against known results before deploying.
 
 ## Next Steps
 
-- [Compound measures](/docs/semantic-model/fields/measures/compound/) - Expressions referencing other measures
-- [Snapshot measures](/docs/semantic-model/fields/measures/snapshot/) - Point-in-time values
+- [Compound measures](/docs/semantic-model/fields/measures/compound/)
+- [Snapshot measures](/docs/semantic-model/fields/measures/snapshot/)
+- [Exclusions](/docs/advanced/exclusions/) and [Inclusions](/docs/advanced/inclusions/)
 - [Dimensions](/docs/semantic-model/fields/dimensions/)
-- [Data types](/docs/semantic-model/fields/data-types/)
-- [Field format](/docs/semantic-model/fields/formatters/)
 - [Expressions](/docs/semantic-model/expressions/sql/)

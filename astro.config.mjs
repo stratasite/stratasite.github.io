@@ -57,6 +57,17 @@ export default defineConfig({
     '/developer-docs/developer-guide': '/docs/',
     '/developer-docs/developer-guide/[...slug]': '/docs/[...slug]',
     ...selfHostingRedirects,
+    // Extended blending used to have a second page under Expressions.
+    '/docs/semantic-model/expressions/extended-blending': '/docs/semantic-model/extended-blending-groups/',
+    '/developer-docs/developer-guide/semantic-model/expressions/extended-blending': '/docs/semantic-model/extended-blending-groups/',
+    // Extended blending groups and partitions moved out of Advanced into Semantic Model.
+    '/docs/advanced/extended-blending-groups': '/docs/semantic-model/extended-blending-groups/',
+    '/developer-docs/developer-guide/advanced/extended-blending-groups': '/docs/semantic-model/extended-blending-groups/',
+    '/docs/advanced/partitions': '/docs/semantic-model/partitions/',
+    '/developer-docs/developer-guide/advanced/partitions': '/docs/semantic-model/partitions/',
+    // Multi-datasource queries were never a thing; routing is the answer.
+    '/docs/advanced/multi-datasource': '/docs/advanced/semantic-routing/',
+    '/developer-docs/developer-guide/advanced/multi-datasource': '/docs/advanced/semantic-routing/',
     '/developer-docs/api/rest/openapi': '/docs/api-reference/',
     '/developer-docs/llms.txt': '/docs/llms.txt',
     '/developer-docs/api/docs.json': '/docs/api/docs.json',

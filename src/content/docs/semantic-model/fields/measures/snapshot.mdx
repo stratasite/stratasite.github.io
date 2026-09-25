@@ -10,10 +10,10 @@ Snapshot measures capture values at specific points in time (beginning or ending
 
 ## Requirements
 
-1. **Table must have `snapshot_date`** – Identifies the date dimension that drives snapshot behavior.
+1. **Table must set `snapshot`** – Names the date dimension that drives snapshot behavior.
 2. **Measure must specify `snapshot`** – `ending` or `beginning`.
 
-The `snapshot_date` can:
+The table's `snapshot` dimension can:
 
 - Reference a date dimension defined **on the same table**, or
 - Refer to a date dimension in the table’s **universe**, as long as the association is unambiguous (for example, a single “As Of Date” dimension that always joins to this fact).
@@ -27,7 +27,7 @@ name: Inventory
 physical_name: inventory
 datasource: warehouse
 cost: 100
-snapshot_date: Date  # Required for snapshot measures
+snapshot: Date  # Required for snapshot measures: the date dimension the table is snapped by
 
 fields:
   - type: dimension
@@ -87,7 +87,7 @@ This means that:
 
 ```yaml
 name: Inventory
-snapshot_date: Date
+snapshot: Date
 
 fields:
   - type: measure
@@ -101,7 +101,7 @@ fields:
 
 ```yaml
 name: Accounts
-snapshot_date: Date
+snapshot: Date
 
 fields:
   - type: measure
@@ -118,7 +118,7 @@ name: Inventory
 physical_name: inventory
 datasource: warehouse
 cost: 100
-snapshot_date: Date
+snapshot: Date
 
 fields:
   - type: dimension
@@ -150,7 +150,7 @@ fields:
 
 ## Best Practices
 
-1. **Set `snapshot_date`** – Required on the table; keep the association with the driving date dimension clear.
+1. **Set `snapshot` on the table** – Required; keep the association with the driving date dimension clear.
 2. **Use descriptive names** – e.g. "Ending Inventory" not just "Inventory".
 3. **Document purpose** – Note that the measure is point-in-time and should not be summed across long ranges.
 4. **Test queries** – Verify snapshot behavior by comparing:

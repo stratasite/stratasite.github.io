@@ -79,7 +79,8 @@ export const GET: APIRoute = async () => {
       'strata deploy': 'Deploy semantic model to Strata server',
       'strata deploy --dry-run': 'Preview deployment without applying',
       'strata test': 'Run query validation tests',
-      'strata migration create': 'Create a migration file for renaming',
+      'strata create migration rename': 'Create a migration file to rename a field or table',
+      'strata create migration swap': 'Create a migration file to swap two entities',
     },
 
     critical_constraints: [

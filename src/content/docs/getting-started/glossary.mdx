@@ -18,7 +18,9 @@ These terms are used throughout the docs. If you are new to Strata (or to semant
 
 **Snapshot measure** — A measure that captures a value at a **point in time** (beginning or end of a period) rather than summing over the period. Used for stateful metrics: inventory, balances, membership counts. Not for transactional flows.
 
-**Compound measure** — A measure whose expression references other measures or dimensions by name (e.g. `[Total Revenue] - [Total Cost]`). Resolved at query time; all referenced fields must be in the same datasource and universe.
+**Compound measure** — A measure whose expression references other measures and dimensions by name (e.g. `[Total Revenue] - [Total Cost]`). Resolved at query time: each referenced measure is planned on its own fact and the results are blended, so a formula can span fact domains (within one datasource). A referenced dimension is resolved within each measure's own universe, so it may sit anywhere along that fact's join path; it must be reachable from every fact involved. No shared universe is required. See also **auto-leveled compound measure**.
+
+**Auto-leveled compound measure** — What a cross-domain compound measure becomes when the query groups by a dimension only some of its components can reach. Strata excludes that dimension from the components that can't reach it, aggregating them at the coarser grain, and joins the results on the dimensions all components share, so the leveled component repeats as a fixed total across the dimension it can't see (`Tickets per 1000 Orders` by Contact Channel: tickets per channel, orders for the month). See: [Compound measures](/docs/semantic-model/fields/measures/compound/#auto-leveled-compound-measures)
 
 **Complex dimension** — A dimension whose expression references other dimensions (e.g. `CASE WHEN [Status Code] = 'A' THEN 'Active' ...`). Only dimensions can be referenced; not measures. Same universe required.
 

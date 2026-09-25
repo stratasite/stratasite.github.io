@@ -51,103 +51,6 @@ Measures are aggregatable metrics. They represent quantitative values that can b
     sql: sum(amount)
 ```
 
-## Data Types
-
-Strata supports the following data types:
-
-### string
-Text values. Use for names, descriptions, codes, etc.
-
-```yaml
-- type: dimension
-  name: Product Name
-  data_type: string
-  expression:
-    sql: product_name
-```
-
-### integer
-Whole numbers. Use for counts, IDs, quantities.
-
-```yaml
-- type: dimension
-  name: Order ID
-  data_type: integer
-  expression:
-    primary_key: true
-    sql: order_id
-```
-
-### bigint
-Large whole numbers. Use for very large integers.
-
-```yaml
-- type: dimension
-  name: Customer ID
-  data_type: bigint
-  expression:
-    sql: customer_id
-```
-
-### decimal
-Floating-point numbers. Use for monetary values, percentages, measurements.
-
-```yaml
-- type: measure
-  name: Total Revenue
-  data_type: decimal
-  expression:
-    sql: sum(amount)
-```
-
-### date
-Date values (without time). Use for date dimensions.
-
-```yaml
-- type: dimension
-  name: Order Date
-  data_type: date
-  expression:
-    sql: order_date
-  grains:
-    - day
-    - week
-    - month
-    - quarter
-    - year
-```
-
-### date_time
-Timestamp values (with time). Use for precise timestamps.
-
-```yaml
-- type: dimension
-  name: Created At
-  data_type: date_time
-  expression:
-    sql: created_at
-  grains:
-    - raw
-    - hour
-    - day
-    - week
-    - month
-```
-
-### boolean
-True/false values.
-
-```yaml
-- type: dimension
-  name: Is Active
-  data_type: boolean
-  expression:
-    sql: is_active
-```
-
-### binary
-Binary data. Rarely used in analytics.
-
 ## Field Properties
 
 ### Display Types
@@ -253,6 +156,40 @@ Specify supported granularities for date fields:
 ```
 
 Available grains: `raw`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
+
+## Data Types
+
+Every field declares a `data_type` that matches the warehouse column (or, for a measure, the aggregate's result):
+
+| `data_type` | Warehouse types | Use for |
+|---|---|---|
+| `string` | VARCHAR, TEXT | names, codes, categories, status values |
+| `integer` | INT | counts, quantities, small IDs |
+| `bigint` | BIGINT | large IDs, epoch timestamps |
+| `decimal` | DECIMAL, NUMERIC, FLOAT, DOUBLE | money, ratios, averages, measurements |
+| `date` | DATE | dates without time; takes `grains` |
+| `date_time` | TIMESTAMP, DATETIME | timestamps; takes `grains` |
+| `boolean` | BOOLEAN | flags |
+| `binary` | BLOB, BINARY | rare; prefer a `string` URL or path |
+
+Date types also declare which `grains` users may group by (see [Grains](#grains-datedatetime-only) above):
+
+```yaml
+- type: dimension
+  name: Order Date
+  data_type: date
+  grains: [day, week, month, quarter, year]
+  expression:
+    sql: order_date
+
+- type: measure
+  name: Total Revenue
+  data_type: decimal
+  expression:
+    sql: sum(amount)
+```
+
+Full reference: [Data Types](/docs/semantic-model/fields/data-types/).
 
 ## Complete Example
 

@@ -67,7 +67,7 @@ redshift_dw:
 
 1. **Use a read-only database user** - Grant `SELECT` on the schemas the model reads
 2. **Enable SSL** - `ssl: true` with `sslmode: require` for any cluster outside the VPC
-3. **Pair with a hot tier** - Redshift is a good system of record; route dashboard-hot queries to ClickHouse or DuckDB in front of it. See [Multi-Datasource](/docs/advanced/multi-datasource/)
+3. **Pair with a hot tier** - Redshift is a good system of record; route dashboard-hot queries to ClickHouse or DuckDB in front of it. See [Semantic Routing](/docs/advanced/semantic-routing/)
 
 ## Next Steps
 

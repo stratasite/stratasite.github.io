@@ -1,37 +1,25 @@
 ---
 title: "Data Types"
-description: "All supported data types in Strata semantic models."
+description: "The eight data types a field can declare, and which warehouse types they map to."
 ---
-All supported data types in Strata semantic models.
+The eight data types a field can declare, and which warehouse types they map to.
 
-## Overview
+## Reference
 
-Strata supports 8 data types for dimensions and measures. Choose the type that matches your database column type.
+| `data_type` | Warehouse types | Use for | Notes |
+|---|---|---|---|
+| `string` | VARCHAR, TEXT, CHAR | names, descriptions, codes, categories, status values | Keep order numbers and SKUs as strings unless you do math on them |
+| `integer` | INT, INTEGER, SMALLINT | counts, quantities, years, small IDs | 32-bit range |
+| `bigint` | BIGINT | large IDs, epoch timestamps, large counts | 64-bit range |
+| `decimal` | DECIMAL, NUMERIC, FLOAT, DOUBLE | money, percentages, ratios, averages, measurements | Precision follows the warehouse; use it for every monetary value |
+| `date` | DATE | dates without a time part | Declares `grains`: `day`, `week`, `month`, `quarter`, `year` |
+| `date_time` | TIMESTAMP, DATETIME | timestamps, event times | Declares `grains`, plus `raw`, `second`, `minute`, `hour` |
+| `boolean` | BOOLEAN, BOOL | flags, yes/no fields | Values `true`, `false`, `NULL` |
+| `binary` | BLOB, BINARY, BYTEA | binary payloads | Rare; store a URL or path as a `string` instead |
 
-## Supported Types
+A measure's `data_type` describes the aggregate's result: `count(*)` is an `integer`, `sum(amount)` a `decimal`.
 
-### string
-
-Text values. Use for names, descriptions, codes, etc.
-
-```yaml
-- type: dimension
-  name: Customer Name
-  data_type: string
-  expression:
-    sql: customer_name
-```
-
-**Use cases:**
-- Names (customer, product, etc.)
-- Descriptions
-- Codes (SKU, order number as text)
-- Categories
-- Status values
-
-### integer
-
-Whole numbers. Use for counts, IDs, quantities.
+## Examples
 
 ```yaml
 - type: dimension
@@ -41,45 +29,20 @@ Whole numbers. Use for counts, IDs, quantities.
     primary_key: true
     sql: order_id
 
-- type: measure
-  name: Order Count
-  data_type: integer
-  expression:
-    sql: count(*)
-```
-
-**Use cases:**
-- IDs (order, customer, product)
-- Counts
-- Quantities
-- Years
-
-**Range:** -2,147,483,648 to 2,147,483,647
-
-### bigint
-
-Large whole numbers. Use for very large integers.
-
-```yaml
 - type: dimension
-  name: Customer ID
-  data_type: bigint
+  name: Order Date
+  data_type: date
+  grains: [day, week, month, quarter, year]
   expression:
-    sql: customer_id
-```
+    sql: order_date
 
-**Use cases:**
-- Very large IDs
-- Timestamps (Unix epoch)
-- Large counts
+- type: dimension
+  name: Created At
+  data_type: date_time
+  grains: [raw, hour, day, week, month]
+  expression:
+    sql: created_at
 
-**Range:** -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
-
-### decimal
-
-Floating-point numbers. Use for monetary values, percentages, measurements.
-
-```yaml
 - type: measure
   name: Total Revenue
   data_type: decimal
@@ -88,172 +51,25 @@ Floating-point numbers. Use for monetary values, percentages, measurements.
     sql: sum(amount)
 ```
 
-**Use cases:**
-- Money/currency
-- Percentages
-- Measurements (weight, distance, etc.)
-- Ratios
-- Averages
+## Grains
 
-**Precision:** Database-dependent (typically 38 digits)
+`date` and `date_time` fields list the granularities users can group and filter by. Strata truncates the column to the chosen grain in SQL; grains that aren't listed aren't offered.
 
-### date
+| Grain | Applies to |
+|---|---|
+| `raw` | `date_time` only: the untruncated value |
+| `second`, `minute`, `hour` | `date_time` only |
+| `day`, `week`, `month`, `quarter`, `year` | both |
 
-Date values (without time). Use for date dimensions.
+## Guidelines
 
-```yaml
-- type: dimension
-  name: Order Date
-  data_type: date
-  grains:
-    - day
-    - week
-    - month
-    - quarter
-    - year
-  expression:
-    sql: order_date
-```
-
-**Use cases:**
-- Date dimensions
-- Order dates
-- Birth dates
-- Any date without time
-
-**Format:** YYYY-MM-DD
-
-**Grains:** `day`, `week`, `month`, `quarter`, `year`
-
-### date_time
-
-Timestamp values (with time). Use for precise timestamps.
-
-```yaml
-- type: dimension
-  name: Created At
-  data_type: date_time
-  grains:
-    - raw
-    - hour
-    - day
-    - week
-    - month
-  expression:
-    sql: created_at
-```
-
-**Use cases:**
-- Timestamps
-- Created/updated dates
-- Event times
-- Any date with time
-
-**Format:** YYYY-MM-DD HH:MM:SS
-
-**Grains:** `raw`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
-
-### boolean
-
-True/false values.
-
-```yaml
-- type: dimension
-  name: Is Active
-  data_type: boolean
-  expression:
-    sql: is_active
-```
-
-**Use cases:**
-- Flags (is_active, is_deleted, etc.)
-- Binary states
-- Yes/no fields
-
-**Values:** `true`, `false`, `NULL`
-
-### binary
-
-Binary data. Rarely used in analytics.
-
-```yaml
-- type: dimension
-  name: Image Data
-  data_type: binary
-  expression:
-    sql: image_blob
-```
-
-**Use cases:**
-- Binary files
-- Images (prefer storing URLs as string)
-- Encrypted data
-
-**Note:** Rarely used. Prefer storing references (URLs, file paths) as strings.
-
-## Date and DateTime Grains
-
-For `date` and `date_time` types, specify supported granularities:
-
-```yaml
-grains:
-  - day
-  - week
-  - month
-  - quarter
-  - year
-```
-
-**Available grains:**
-- `raw` - Original value (date_time only)
-- `second` - Second-level granularity (date_time only)
-- `minute` - Minute-level granularity (date_time only)
-- `hour` - Hour-level granularity (date_time only)
-- `day` - Day-level granularity
-- `week` - Week-level granularity
-- `month` - Month-level granularity
-- `quarter` - Quarter-level granularity
-- `year` - Year-level granularity
-
-**Example:**
-```yaml
-- type: dimension
-  name: Order Date
-  data_type: date
-  grains:
-    - day
-    - week
-    - month
-    - quarter
-    - year
-  expression:
-    sql: order_date
-```
-
-## Type Selection Guide
-
-| Database Type | Strata Type | Notes |
-|--------------|-------------|-------|
-| VARCHAR, TEXT | `string` | Text values |
-| INT, INTEGER | `integer` | Whole numbers |
-| BIGINT | `bigint` | Large integers |
-| DECIMAL, NUMERIC, FLOAT, DOUBLE | `decimal` | Floating-point |
-| DATE | `date` | Date without time |
-| TIMESTAMP, DATETIME | `date_time` | Date with time |
-| BOOLEAN, BOOL | `boolean` | True/false |
-| BLOB, BINARY | `binary` | Binary data (rare) |
-
-## Best Practices
-
-1. **Match database types** - Use the corresponding Strata type
-2. **Use decimal for money** - Never use float for currency
-3. **Set grains for dates** - Enable flexible date grouping
-4. **Use integer for IDs** - Unless you need bigint
-5. **Avoid binary** - Prefer storing references as strings
+- **Match the column.** Mismatches surface as cast errors at query time, not at deploy.
+- **`decimal` for money, never a float column type name.** Currency formatting comes from `format`, not the type. See [Formatters](/docs/semantic-model/fields/formatters/).
+- **List only useful grains.** A daily inventory table has no business offering `hour`.
+- **Prefer `integer` for IDs** unless the column is a BIGINT.
 
 ## Next Steps
 
-- Learn about [dimensions](/docs/semantic-model/fields/dimensions/)
-- Learn about [measures](/docs/semantic-model/fields/measures/)
-- Understand [field format](/docs/semantic-model/fields/formatters/)
-- Read about [expressions](/docs/semantic-model/expressions/sql/)
+- [Fields and Types](/docs/semantic-model/fields-and-types/) - properties every field can set
+- [Dimensions](/docs/semantic-model/fields/dimensions/) and [Measures](/docs/semantic-model/fields/measures/)
+- [Formatters](/docs/semantic-model/fields/formatters/) - display formats
