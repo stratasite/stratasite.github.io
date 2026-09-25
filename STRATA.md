@@ -51,7 +51,7 @@
 
 ### 3.4 Role-playing dimensions & dates
 - Each date can have its own role (e.g. order date, ship date, invoice date), and a table can also map a common **"Date"** used for blending across all date-conformed measures.
-- Snapshot handling: declare `snapshot: beginning/ending` on a measure, plus a table-level `snapshot_date: Date` pointing to the date dimension the table is snapped by.
+- Snapshot handling: declare `snapshot: beginning/ending` on a measure, plus a table-level `snapshot: Date` pointing to the date dimension the table is snapped by.
 
 ### 3.5 Measure types & aggregation
 Aggregation is defined at the model/table level. Strata offers these kinds of measures:

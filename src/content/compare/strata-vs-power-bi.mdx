@@ -33,9 +33,10 @@ slice Web Sales by a Store dimension via **cross join**. Correctness rests on th
 legal combination. Strata derives what is legal and refuses invalid combinations before they run, so
 blends stay grain-safe.
 
-**Models proliferate, outside Git.** Every use case tends to spawn another semantic model, and
-versioning is built in but not Git. Dozens accumulate with no shared source of truth. Strata models a
-whole domain comprehensively in a single semantic layer, all version controlled via Git.
+**Models proliferate.** Every use case tends to spawn another semantic model. Git is possible, through
+Fabric workspace integration and PBIP project files, but it is opt in and per model, and most teams
+still pass .pbix files around. Dozens accumulate with no shared source of truth. Strata models a whole
+domain comprehensively in a single semantic layer that lives in Git from the first commit.
 
 **The rest adds up.** Import, DirectQuery, and Composite are all fast, but lock you further into the
 Microsoft ecosystem. Strata federates with aggregate-aware, partition-aware hot-tier routing across

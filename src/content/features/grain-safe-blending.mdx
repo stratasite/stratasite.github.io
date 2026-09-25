@@ -17,16 +17,16 @@ import BlendingDiagram from '../../components/BlendingDiagram.astro';
 ## The Problem
 
 Measures live at different granularities across fact domains. Naive tools either
-refuse valid cross domain questions or require frequent involvment from data engineers. 
+refuse valid cross domain questions or require frequent involvement from data engineers. 
 These engineers are bogged down creating new explorers, cubes, or other artifacts to 
 enable novel analytics instead of building critical engineering infrastructure.
 
-End users are frusted not understanding why seemingly simple requests (i.e. Show me revenue
+End users are frustrated not understanding why seemingly simple requests (e.g. Show me revenue
 and customer service contact volume by day) cannot be quickly resolved.
 
-The core issues is that both measures originate from different fact tables at wildly different
+The core issue is that both measures originate from different fact tables at wildly different
 grains.  However, they also have overlapping granularities (i.e. date)!  You can see 
-the frustrations of engineers with simpleton Semantic Layers and users with the data.
+the frustrations of engineers with simplistic semantic layers and users with the data.
 
 ## How Strata Automatic Blending Works 
 

@@ -46,8 +46,8 @@ export const competitorCells: Record<string, string[]> = {
     'Only through authored views; mixing grains hits unresolvable join paths',
     'On the model author; dashboards surface "can\'t find join path" errors to users',
     'Semi-additive needs undocumented workarounds; complex measures cannot use dimensions',
-    'Strong managed pre-aggregations via proprietary Cube Store',
-    'Queries many warehouses, but the fast tier is closed Cube Store',
+    'Strong managed pre-aggregations via its own Cube Store',
+    'Queries many warehouses, but the fast tier is always Cube Store',
     'Cloud-only workbooks; click-to-place, manual layout, no query guardrails',
     'Built-in chat, but it inherits view quality and its limits; no custom model',
   ],
@@ -75,7 +75,7 @@ export const competitorCells: Record<string, string[]> = {
   ],
   'strata-vs-power-bi': [
     'Technical experts who know the model and DAX; non-technical users get slicers only',
-    'Every source becomes a model; versioned, but not in Git; models proliferate',
+    'Every source becomes a model; Git is opt in per model; models proliferate',
     'Conformed dims blend, but the model relies on you to make legal queries',
     'On the author; nothing stops an invalid dimension',
     'DAX: expressive but steep, and not one-to-one with SQL',
@@ -118,7 +118,7 @@ export const extraRows: Record<
   'strata-vs-cube': [
     {
       capability: 'Fast tier',
-      them: 'Proprietary Cube Store cache; not queryable by other tools or replaceable',
+      them: 'Cube Store only; not queryable by other tools or swappable for your own engine',
       strata: 'Any OLAP engine you own, queryable over SQL and swappable, with no lock in',
     },
     {

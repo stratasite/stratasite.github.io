@@ -2,13 +2,17 @@
 title: Strata vs Cube
 competitor: Cube
 category: semantic-layer
-summary: Cube is a capable semantic layer with strong pre-aggregations, now growing a BI layer on top. But its operator is still technical, cross-fact analysis needs a view for every combination, and the fast tier is a proprietary cache. Strata makes the non-technical user the operator, blends by naming, and runs on OLAP engines you own.
+summary: Cube is a capable semantic layer with strong pre-aggregations, now growing a BI layer on top. But its operator is still technical, cross-fact analysis needs a view for every combination, and the fast tier is always Cube Store. Strata makes the non-technical user the operator, blends by naming, and runs on OLAP engines you own.
 order: 20
 ---
 
 import Callout from '../../components/Callout.astro';
 
 ## Where Cube Is Strong
+
+This page condenses our hands on evaluation. The full write up, with the model
+and the generated SQL, is in the
+[full review of Cube](https://blog.strata.do/p/full-review-of-cube) on the Strata blog.
 
 Cube is a genuinely capable semantic layer, and it is moving fast. Model
 definition in YAML is intuitive, the open-source Docker build iterates in
@@ -53,7 +57,9 @@ alternative.
 **Hard measures mean hard SQL.** Simple measures are easy in both tools. But a
 semi-additive measure, a monthly inventory balance, took undocumented
 multi-stage workarounds in Cube and generated well over a hundred lines of SQL
-for a single number, and calculated measures can reference other measures but
+for a single number (the
+[review](https://blog.strata.do/p/full-review-of-cube) shows the model and the
+SQL), and calculated measures can reference other measures but
 not dimensions. As you layer on complexity the generated SQL only gets harder to
 debug. Strata ships five measure types, Standard, Complex, Snapshot, LOD, and
 ad-hoc. Snapshot is a first-class declaration rather than a workaround, and
@@ -69,9 +75,10 @@ with a layout engine, and validates every query as it is built, so a
 non-technical user cannot construct a broken or wrong-numbered view in the first
 place.
 
-**A proprietary cache, versus engines you own.** Cube's speed comes from Cube
-Store, a closed OLAP engine. It is fast, but it is a black box you cannot query
-with your other tools or replace when something better ships. Strata's
+**A purpose built cache, versus engines you own.** Cube's speed comes from Cube
+Store, an OLAP store built for Cube. It is fast, but it exists to serve Cube: you
+cannot point your other tools at it or swap it for a better engine when one
+ships. Strata's
 performance is aggregate-aware and federated across OLAP engines you bring and
 own, ClickHouse, Druid, whatever fits, with partition-aware routing to the
 fastest source that can answer. One measure definition serves every engine, your
@@ -86,6 +93,6 @@ governed model and get the same grain-safe refusals and correct answers a person
 does, so agent quality rises with the model instead of being gated by a
 hand-built view for every question.
 
-The review of Cube ends on the right question: which persona are you trying to
+Our [review of Cube](https://blog.strata.do/p/full-review-of-cube) ends on the right question: which persona are you trying to
 enable? Cube enables the engineer, and does it well. Strata enables the domain
 expert, and the agent, on the same governed, grain-safe, federated model.

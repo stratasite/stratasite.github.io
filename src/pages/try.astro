@@ -215,7 +215,7 @@ const faq = [
                     <td class="px-4 py-3 text-muted-foreground">Host, port, database, schema, username, password. Turn on SSL if your server requires it.</td>
                   </tr>
                   <tr>
-                    <td class="px-4 py-3 font-semibold text-foreground">Athena, Trino, Druid</td>
+                    <td class="px-4 py-3 font-semibold text-foreground">ClickHouse, Athena, Trino, Druid</td>
                     <td class="px-4 py-3 text-muted-foreground">Endpoint or region plus credentials.</td>
                   </tr>
                   <tr>
@@ -238,7 +238,7 @@ const faq = [
             <CommandBlock
               id="datasource-add"
               step="3"
-              code={`strata datasource add snowflake\n# or: databricks, postgres, redshift, mysql, sqlserver, athena, trino, druid, duckdb, sqlite`}
+              code={`strata datasource add snowflake\n# or: clickhouse, databricks, postgres, redshift, mysql, sqlserver, athena, trino, druid, duckdb, sqlite`}
               class="mt-4"
             />
 
