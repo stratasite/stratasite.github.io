@@ -414,7 +414,9 @@ const rotatingWords = ['Agents', 'Humans', 'Everyone'];
       }
     }
 
-    show(0);
+    // Reduced motion never auto-advances, so open on the slide that holds the
+    // h1 and the buttons instead of the video.
+    show(reduced && typerIndex >= 0 ? typerIndex : 0);
 
     // Re-measure on resize and after fonts/images settle so the height stays right.
     window.addEventListener('resize', setStageHeight);

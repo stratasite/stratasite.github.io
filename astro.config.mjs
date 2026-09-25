@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import mdx from '@astrojs/mdx';
+import sitemap from '@astrojs/sitemap';
 import rehypeSlug from 'rehype-slug';
 import { rehypeLegalSections } from './src/plugins/rehype-legal-sections.mjs';
 
@@ -24,5 +25,7 @@ export default defineConfig({
     // (brand/tokens.css owns the base layer).
     tailwind({ applyBaseStyles: false }),
     mdx(),
+    // sitemap-index.xml + sitemap-0.xml at the site root; linked from robots.txt.
+    sitemap(),
   ],
 });

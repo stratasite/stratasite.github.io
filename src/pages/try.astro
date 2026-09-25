@@ -92,7 +92,7 @@ const faq = [
 ];
 ---
 
-<Base title={`${title} — Strata`} description={description}>
+<Base title={`${title} — Strata`} description={description} image={`${site.domain}/og/try.png`}>
   <!-- HERO -->
   <section class="border-b border-border">
     <div class="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
@@ -316,6 +316,10 @@ const faq = [
               </div>
             </Tabs>
 
+            <p class="text-sm text-muted-foreground">
+              Already on dbt MetricFlow, Cube, or LookML? Point the same agent at those files. Both sides are
+              YAML, so it transpiles your existing definitions into a Strata model in minutes.
+            </p>
             <p class="text-sm text-muted-foreground">
               Full guide:
               <a href={docs('developer-guide/cli/building-your-model')} target="_blank" rel="noopener" data-track="trial_docs_click" data-track-target="building-your-model">Building your model</a>.

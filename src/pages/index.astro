@@ -19,6 +19,41 @@ const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draf
   (a, b) => a.data.order - b.data.order
 );
 const featuredStudy = caseStudies[0];
+
+// Shipped capabilities that do not get a feature row of their own.
+const shipped = [
+  { title: 'Segments', body: 'Restrict a view or a single measure to a cohort. New customer revenue beside total revenue, in one view.', href: '/features/measure-types/' },
+  { title: 'Row level security', body: 'Masking and auto filtering live in the model, so one report is safe for every audience.', href: '/product/semantic-layer/' },
+  { title: 'Google Sheets add on', body: 'Push a view into a spreadsheet through Strata\'s own add on. Results refresh in place.', href: '/product/business-intelligence/' },
+  { title: 'Subscriptions', body: 'Subscribe people to a report and it arrives on a cadence instead of being pulled.', href: '/product/business-intelligence/' },
+  { title: 'Schedules', body: 'Run a report at a set time. Recurring questions become answers that show up on their own.', href: '/product/business-intelligence/' },
+];
+
+// Latest posts from the blog, fetched at build time. A fetch failure just
+// falls back to the plain "Read the blog" link.
+interface Post { title: string; link: string; date: string }
+let posts: Post[] = [];
+try {
+  const res = await fetch(`${site.blogUrl}/feed`);
+  if (res.ok) {
+    const xml = await res.text();
+    const items = xml.split('<item>').slice(1, 4);
+    posts = items.map((it) => {
+      const pick = (tag: string) => {
+        const m = it.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</${tag}>`));
+        return m ? m[1].trim() : '';
+      };
+      const d = new Date(pick('pubDate'));
+      return {
+        title: pick('title'),
+        link: pick('link'),
+        date: Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      };
+    }).filter((p) => p.title && p.link);
+  }
+} catch {
+  posts = [];
+}
 ---
 
 <Base>
@@ -65,6 +100,21 @@ const featuredStudy = caseStudies[0];
       <div class="mt-16">
         <FeatureRows features={features} />
       </div>
+
+      <!-- Shipped and easy to miss: the smaller differentiators that never get a row. -->
+      <div class="mx-auto mt-24 max-w-6xl">
+        <p class="text-center font-display text-sm font-semibold uppercase tracking-wider text-primary">Also shipped</p>
+        <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {shipped.map((s) => (
+            <li>
+              <a href={s.href} class="group/ship flex h-full flex-col rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary/50 hover:bg-surface-2">
+                <span class="font-display font-bold text-foreground">{s.title}</span>
+                <span class="mt-1.5 text-sm leading-relaxed text-muted-foreground">{s.body}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -87,6 +137,18 @@ const featuredStudy = caseStudies[0];
     <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 text-center">
       <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Latest from the blog</h2>
       <p class="mt-4 text-muted-foreground">Deep dives on semantic modeling, federation, and analytics in the AI age.</p>
+      {posts.length > 0 && (
+        <ul class="mx-auto mt-10 grid max-w-5xl gap-4 text-left sm:grid-cols-3">
+          {posts.map((p) => (
+            <li>
+              <a href={p.link} target="_blank" rel="noopener" class="flex h-full flex-col rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary/50 hover:bg-surface-2">
+                <span class="font-display font-bold leading-snug text-foreground">{p.title}</span>
+                {p.date && <span class="mt-auto pt-3 text-xs text-muted-foreground">{p.date}</span>}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
       <a href={site.blogUrl} target="_blank" rel="noopener" class="mt-6 inline-flex items-center gap-1 font-semibold text-primary hover:gap-2 transition-all">
         Read the blog
         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>

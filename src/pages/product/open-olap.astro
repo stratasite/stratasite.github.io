@@ -25,6 +25,7 @@ import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
 import PartitionRoutingDiagram from '../../components/PartitionRoutingDiagram.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import CtaButton from '../../components/CtaButton.astro';
+import CodePanel from '../../components/CodePanel.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
@@ -163,8 +164,8 @@ const gained = [
         <div>
           <h3 class="font-display text-lg font-bold tracking-tight text-primary">Aggregate aware</h3>
           <p class="mt-2 leading-relaxed text-muted-foreground">
-            When a pre aggregated table can satisfy the request, Strata uses it instead of scanning the
-            base facts, on whichever engine holds it.
+            When a pre aggregated table your pipelines maintain can satisfy the request, Strata uses it
+            instead of scanning the base facts, on whichever engine holds it.
           </p>
         </div>
         <div>
@@ -173,6 +174,55 @@ const gained = [
             The same measure serves every source. Add or swap an engine and nothing about the model
             changes, so there is no double modeling to keep in sync.
           </p>
+        </div>
+      </div>
+
+      <!-- What you declare: a tier per datasource, a range and a cost per table. -->
+      <div class="mx-auto mt-20 grid max-w-6xl items-start gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-14">
+        <div>
+          <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">What you declare</p>
+          <h3 class="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">Three lines per source. The planner does the rest.</h3>
+          <p class="mt-4 leading-relaxed text-muted-foreground">
+            A datasource carries a tier. A table carries the range it holds and a cost. That is the whole
+            routing model: the planner prefers hot over warm over cold, checks the partition against the
+            query's filters, and picks the cheapest table that can answer. A query that reaches past the
+            hot tier's window falls back to the warehouse, and a query that spans both is merged at the
+            result level, never joined across sources.
+          </p>
+          <p class="mt-4 leading-relaxed text-muted-foreground">
+            The hot tier and any aggregate tables are yours: loaded by your own pipelines, on engines you
+            run, queryable by any tool. Strata routes to them. It does not build or refresh them.
+          </p>
+          <p class="mt-5">
+            <a href="https://strata.do/developer-docs/developer-guide/advanced/partitions" target="_blank" rel="noopener" class="font-semibold text-primary hover:underline" data-track="trial_docs_click" data-track-target="partitions">Partitions and cost in the docs</a>
+          </p>
+        </div>
+        <div class="space-y-4">
+          <CodePanel
+            file="datasources.yml"
+            code={`hot:
+  adapter: clickhouse
+  name: ClickHouse hot tier
+  tier: hot            # preferred when it can answer
+
+warehouse:
+  adapter: snowflake
+  name: Snowflake
+  tier: warm           # system of record, the fallback`}
+          />
+          <CodePanel
+            file="models/sales/tbl.recent_sales.yml"
+            code={`name: Recent Sales
+physical_name: recent_sales
+datasource: hot
+cost: 10               # cheap: preferred over the warehouse copy
+partitions:
+  - dimension: Order Date
+    predicate: between
+    filter_value: 24m       # holds the last 24 months
+    filter_value_end: 1d
+    description: Rolling two year window`}
+          />
         </div>
       </div>
     </div>

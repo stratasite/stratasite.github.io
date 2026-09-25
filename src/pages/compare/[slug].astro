@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Article from '../../layouts/Article.astro';
 import VersusVerdict from '../../components/VersusVerdict.astro';
 import { themes } from '../../data/comparisons';
+import { site } from '../../config/site';
 
 export async function getStaticPaths() {
   const entries = await getCollection('compare', ({ data }) => !data.draft);
@@ -28,6 +29,7 @@ const sections = [
   title={entry.data.title}
   summary={entry.data.summary}
   sections={sections}
+  ogImage={`${site.domain}/og/compare.png`}
 >
   <div class="mb-14">
     <VersusVerdict slug={entry.slug} />

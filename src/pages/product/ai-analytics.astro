@@ -86,6 +86,40 @@ const steps = [
     alt: 'Opening and adjusting a governed query in the Strata editor, validated live at every step',
   },
   {
+    time: 'API',
+    title: 'The validation loop is the agent API',
+    body: [
+      'Anything that builds a query, a person in the editor or an agent over REST, goes through the same interface. A request names semantic fields, not warehouse columns. The response is either a validated, executed query or a structured refusal with a machine readable code.',
+      'That is why an agent cannot return a semantically invalid answer. There is no raw SQL path to fall back to, so a bad request stops at 422 with an explanation instead of becoming a confident wrong number.',
+    ],
+    underHood: {
+      text: 'Field names resolve on the branch at request time, ambiguous names are rejected rather than guessed, and every error is <code>{ code, message }</code> the agent can act on.',
+      href: 'https://strata.do/developer-docs/developer-guide/api/rest/query-spec',
+      label: 'Query spec',
+    },
+    tryIt: { label: 'Call the API against your own model in the free trial', href: '/try/#step-5' },
+    codeLang: 'json',
+    codeFile: 'POST /api/v1/projects/acme/queries',
+    code: `{
+  "branch": "main",
+  "spec": {
+    "projections": [
+      { "field": "Ship Country", "axis": "x" },
+      { "field": "Support Contacts", "axis": "y" }
+    ]
+  }
+}
+
+// 422 Unprocessable Entity
+{
+  "status": "invalid",
+  "errors": [
+    { "code": "invalid_query_construction",
+      "message": "No field named 'Ship Country'" }
+  ]
+}`,
+  },
+  {
     time: 'Share',
     title: 'Share an agent the way you share a report',
     body: [

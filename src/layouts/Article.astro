@@ -13,12 +13,14 @@ interface Props {
   // The summary above acts as its caption.
   video?: string;
   image?: string;
+  /** Social card override (absolute URL). */
+  ogImage?: string;
 }
 
-const { title, summary, eyebrow, sections = [], description, video, image } = Astro.props;
+const { title, summary, eyebrow, sections = [], description, video, image, ogImage } = Astro.props;
 ---
 
-<Base title={`${title} — Strata`} description={description ?? summary}>
+<Base title={`${title} — Strata`} description={description ?? summary} image={ogImage}>
   <article class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
     <header class="mx-auto max-w-3xl text-center">
       {eyebrow && (

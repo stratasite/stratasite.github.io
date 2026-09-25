@@ -1,0 +1,57 @@
+---
+// A code artifact panel: file name header, syntax highlighted body, on the
+// code surface. Same look as the walkthrough code panels in DayInLife, for
+// use anywhere a page needs to show a real YAML or JSON artifact.
+import { Code } from 'astro:components';
+
+interface Props {
+  code: string;
+  lang?: string;
+  file?: string;
+  class?: string;
+}
+const { code, lang = 'yaml', file, class: className = '' } = Astro.props;
+---
+
+<div class={`code-panel ${className}`}>
+  {file && (
+    <div class="code-panel-head">
+      <span class="code-panel-dot" aria-hidden="true"></span>
+      {file}
+    </div>
+  )}
+  <Code code={code} lang={lang as any} theme="github-dark" />
+</div>
+
+<style>
+  .code-panel {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--strata-cream) 12%, transparent);
+  }
+  .code-panel-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 0.95rem;
+    background: var(--strata-ink-soft);
+    border-bottom: 1px solid var(--strata-ink-line);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--menu-muted-foreground);
+  }
+  .code-panel-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: var(--strata-peach);
+  }
+  .code-panel :global(pre.astro-code) {
+    margin: 0;
+    background: var(--code-surface) !important;
+    padding: 1.15rem 1.3rem;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+</style>

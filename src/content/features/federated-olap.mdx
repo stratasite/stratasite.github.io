@@ -3,7 +3,8 @@ title: Federated Smart OLAP Routing at Agent Speed
 summary: One agent prompt can fan out into dozens of warehouse queries. At 15 seconds each, that is minutes per turn and adoption quietly dies. Strata routes every query to the fastest engine that can answer it and falls back to the warehouse when filters fall outside the hot tier's range. Sub second for agents, sub second for the dashboards people watch, and far less load on the warehouse either way.
 icon: gauge
 diagram: federation
-order: 20
+order: 30
+blurb: "Every query is routed to the fastest engine that can answer it, with a fallback to the warehouse when filters fall outside the hot tier. Sub second for agents and dashboards, less load on the warehouse."
 sections:
   - { id: speed-is-all-you-need, label: Speed Is All You Need }
   - { id: aggregate-aware, label: Aggregate Aware across Compute Engines }
@@ -53,7 +54,7 @@ closed tiers: you build a cube, and it's reachable only through that vendor's AP
 compute engine suited to the workload, whether that's a time-series engine like Druid or a generalist like ClickHouse, and 
 Strata models across all of them under one measure definition.
 
-The payoff is that your high-performance investments stay yours. The aggregate tables Strata builds live in open, SQL-native 
+The payoff is that your high-performance investments stay yours. The aggregate tables your pipelines build live in open, SQL-native 
 engines, not behind a proprietary cube API, so the same hot-tier infrastructure can serve other workloads instead of sitting 
 locked to one tool. That frees you from vendor lock-in, cuts duplicate data and pipelines, and maximizes the return on the
 OLAP infrastructure you've already paid for.
