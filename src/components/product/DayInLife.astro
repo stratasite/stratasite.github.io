@@ -118,9 +118,7 @@ const { steps, ctaLocation = 'product' } = Astro.props;
      diagrams render borderless and blend into the page, like the homepage rows. */
   .dil-media :global(img),
   .dil-media :global(video) {
-    box-shadow:
-      0 20px 44px -20px rgba(0, 0, 0, 0.5),
-      0 0 70px 4px color-mix(in srgb, var(--strata-peach) 20%, transparent);
+    box-shadow: var(--media-shadow);
   }
 
   /* Code panel: a dark ink surface that reads as a real artifact on the rust

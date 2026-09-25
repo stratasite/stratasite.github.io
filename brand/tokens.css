@@ -42,6 +42,16 @@
   --diagram-fill:       #BC3908;
   /* Terminal / code surface: a step deeper than the page. */
   --code-surface:       #0A1123;
+  /* Lifted media (screenshots, video, diagrams): a cream hairline, deep
+     shadow, and a faint cool steel halo. No warm glow on ink. */
+  --media-shadow:
+    0 0 0 1px rgba(255, 246, 234, 0.10),
+    0 30px 60px -24px rgba(0, 0, 0, 0.75),
+    0 0 90px -10px rgba(91, 110, 140, 0.55);
+  --media-shadow-hover:
+    0 0 0 1px rgba(255, 246, 234, 0.16),
+    0 36px 70px -24px rgba(0, 0, 0, 0.8),
+    0 0 120px -8px rgba(91, 110, 140, 0.7);
 
   /* --- Menus & overlays (ink family) ---
      Overlay chrome that floats above the rust field — nav dropdowns, popovers.
@@ -107,4 +117,11 @@
   --cta:                #FFC26E;  /* rust button on rust vanishes: use peach here */
   --cta-foreground:     #9C2A04;
   --diagram-fill:       #9C2A04;
+  /* On rust the peach backlight still works. */
+  --media-shadow:
+    0 24px 50px -18px rgba(0, 0, 0, 0.5),
+    0 0 90px 6px color-mix(in srgb, #FFC26E 32%, transparent);
+  --media-shadow-hover:
+    0 36px 70px -20px rgba(0, 0, 0, 0.55),
+    0 0 150px 26px color-mix(in srgb, #FFC26E 72%, transparent);
 }
