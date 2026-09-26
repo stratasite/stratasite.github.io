@@ -1,0 +1,223 @@
+---
+title: "Row-Level Security"
+sidebarLabel: "Row-Level Security"
+description: "How security policies mask or filter sensitive data at query planning time, and the full security.yml reference."
+---
+Security policies restrict which rows and values each user can see. They are defined in `security.yml`, deployed with the semantic model, and enforced at query planning time, so every query path (reports, the REST API, MCP tools, calculations, segments, decorators) gets the same protection.
+
+:::note[Team and Enterprise]
+Row-level security is available on the Team and Enterprise plans. A server on the Free plan rejects any deploy that includes a `security.yml`. See [Pricing](/pricing/) or email [sales@strata.do](mailto:sales@strata.do) to upgrade.
+:::
+
+To scaffold a policy from the command line, see [Security Policies](/docs/cli/security-policies/) in the CLI guide. This page explains how policies work and documents every key.
+
+## How a Policy Works
+
+A policy has three parts, evaluated in order for every query:
+
+1. **Triggers** decide whether the policy applies. It fires when the query projects a field carrying one of the policy's tags, or one of its explicitly named fields. A query that touches no triggered field is unaffected.
+2. **Context dimension** is the security boundary: the dimension whose values partition the data, such as `Call Center ID`, `Region`, or `Employee Email`. It must be reachable from every table that contains a triggered field. If it is not, the query is rejected with a hard error rather than returning unprotected data.
+3. **Permission resolution** works out which context values the current user may see, from their group memberships or their own user record. The planner then applies the mode to every other value.
+
+### Enforcement modes
+
+| Mode | What the user sees |
+|------|--------------------|
+| `mask_data` | Every row stays in the result. Triggered field values on rows outside the user's allowed context values are replaced with the mask string. Users can tell restricted data exists but cannot read it. |
+| `filter_data` | Rows outside the user's allowed context values are removed entirely. Restricted data is invisible, and aggregates only count what the user may see. |
+
+Choose `mask_data` when users need to know a row exists (a ticket count that must reconcile, for example) and `filter_data` when they must not.
+
+### Where it is enforced
+
+Policies are applied inside the planner, so they hold wherever a query is built:
+
+- Reports and dashboards in the web app
+- The [REST API](/docs/api/rest/) and MCP tools
+- [Segments](/docs/getting-started/concepts/#segments): row policies apply inside the segment's CTE, so a user cannot reach members they are not allowed to see
+- [Calculations](/docs/getting-started/concepts/#calculations) and [decorated measures](/docs/getting-started/concepts/#decorated-runtime-measures), which inherit the policies of the fields they read
+
+## Tagging Fields
+
+Triggers work on tags. Add a `tags` key to any dimension in a table YAML file:
+
+```yaml
+fields:
+  - type: dimension
+    name: Agent Name
+    tags: [pii]
+    data_type: string
+    expression:
+      sql: agent_name
+```
+
+Tags are free-form labels. Use one tag per sensitivity class (`pii`, `hipaa`, `finance`) so that protecting a new field is a matter of tagging it, not editing the policy.
+
+## security.yml Reference
+
+```yaml
+policies:
+  - name: PII Call Center Masking
+    mode: mask_data              # mask_data | filter_data
+    mask_value: "#######"        # mask_data only, default "#######"
+
+    triggers:
+      field_tags: [pii]          # any field tagged "pii"
+      field_names:               # optional: specific fields by display name
+        - Agent Name
+
+    context_dimension: Call Center ID
+
+    permission_resolution:
+      source: groups             # groups | user
+      value_from: tag            # groups: name | tag   /   user: email | tag
+      tag_key: call_center_id    # required when value_from is "tag"
+
+    bypass:
+      system_admin: true
+      project_admin: false
+```
+
+The file must have a top-level `policies` key. An empty list (`policies: []`) is valid and removes every policy from the branch on deploy.
+
+### name
+
+Required. Identifies the policy within the branch. Redeploying with the same name updates the existing policy; renaming creates a new one and deletes the old.
+
+### mode
+
+Required. `mask_data` or `filter_data`. See [enforcement modes](#enforcement-modes).
+
+### mask_value
+
+Used by `mask_data` only. The string shown in place of restricted values. Defaults to `#######`.
+
+### triggers
+
+At least one of the two lists should be set.
+
+- **field_tags**: the policy applies when a query projects any field carrying one of these tags.
+- **field_names**: explicit field display names. They are resolved at deploy time, and a name that does not exist in the branch fails the deploy.
+
+### context_dimension
+
+Required. The display name of a dimension in the branch. It is resolved at deploy time and the deploy fails if it cannot be found.
+
+Every table that contains a triggered field must have a join path to this dimension. A triggered field on a table with no path is rejected at query time, so pick a dimension that sits on or near your fact tables, such as a key that every fact carries.
+
+### permission_resolution
+
+Determines the set of context values the user may see.
+
+| source | value_from | Allowed values come from |
+|--------|------------|--------------------------|
+| `groups` | `tag` | Each of the user's groups that carries a tag `tag_key:VALUE`. A user in groups tagged `call_center_id:TMNT` and `call_center_id:NYC` may see both call centers. |
+| `groups` | `name` | The display name of each of the user's groups. Name your groups after the context values. |
+| `user` | `email` | The user's email address. Use with a context dimension that holds emails, such as `Employee Email`. |
+| `user` | `tag` | A tag `tag_key:VALUE` on the user record. |
+
+`tag_key` is required whenever `value_from` is `tag`. Group and user tags are managed in the Strata web app.
+
+A user with no matching groups or tags has no allowed values, so `mask_data` masks every triggered value and `filter_data` returns no rows.
+
+### bypass
+
+- **system_admin** (default `true`): system administrators skip the policy entirely.
+- **project_admin** (default `false`): project administrators skip the policy.
+
+Leave the system admin bypass on so an administrator can always verify the full data set.
+
+## Examples
+
+### Mask PII by call center
+
+Agents see every row, but names and other PII outside their own call centers are masked.
+
+```yaml
+policies:
+  - name: PII Call Center Masking
+    mode: mask_data
+    mask_value: "#######"
+    triggers:
+      field_tags: [pii]
+    context_dimension: Call Center ID
+    permission_resolution:
+      source: groups
+      value_from: tag
+      tag_key: call_center_id
+    bypass:
+      system_admin: true
+      project_admin: false
+```
+
+### Filter rows to the user's own record
+
+Each employee sees only rows where the employee email matches their login.
+
+```yaml
+policies:
+  - name: Employee Self-Service
+    mode: filter_data
+    triggers:
+      field_tags: [employee_pii]
+    context_dimension: Employee Email
+    permission_resolution:
+      source: user
+      value_from: email
+    bypass:
+      system_admin: true
+      project_admin: false
+```
+
+### Region groups by name
+
+Groups are named after regions (`EMEA`, `APAC`) and a `Region` dimension carries the same values.
+
+```yaml
+policies:
+  - name: Regional Sales
+    mode: filter_data
+    triggers:
+      field_tags: [regional]
+    context_dimension: Region
+    permission_resolution:
+      source: groups
+      value_from: name
+    bypass:
+      system_admin: true
+      project_admin: true
+```
+
+## Deploying Policies
+
+`security.yml` is deployed with the rest of the project by `strata deploy`, and it is the source of truth for the branch:
+
+- A policy in the file that is new to the branch is created.
+- A policy whose name already exists is updated in place.
+- A policy that was deployed earlier but is no longer in the file is deleted.
+
+Policies are branch-scoped, so a policy deployed to a feature branch does not affect production until that branch is deployed there.
+
+### License error
+
+If the server is on the Free plan the deploy fails with:
+
+```
+Row-level security is not available on your current license plan.
+```
+
+Delete `security.yml` from the project and redeploy, or email [sales@strata.do](mailto:sales@strata.do) to upgrade to Team or Enterprise.
+
+## Best Practices
+
+1. **Tag once, protect everywhere.** Prefer `field_tags` over `field_names` so new sensitive fields are covered by adding a tag.
+2. **Pick a context dimension every fact can reach.** A triggered field with no path to the context dimension fails at query time.
+3. **Start with `mask_data`** when counts must reconcile; use `filter_data` when restricted rows must be invisible.
+4. **Leave the system admin bypass on** so someone can always verify the full data set.
+5. **Test with a non-admin account** after deploying: run a report that projects a tagged field and confirm the mask or filter applies.
+
+## Next Steps
+
+- [Security Policies](/docs/cli/security-policies/) - Scaffold a policy with `strata create policy`
+- [Deployment](/docs/cli/deployment/) - Deploy the policy to your server
+- [Authentication](/docs/self-hosting/authentication/) - Set up SSO so groups map to your identity provider

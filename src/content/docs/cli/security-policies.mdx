@@ -1,0 +1,129 @@
+---
+title: "Security Policies"
+description: "Scaffold a row-level security policy in security.yml with strata create policy."
+---
+Scaffold a row-level security policy in `security.yml` with `strata create policy`.
+
+:::note[Team and Enterprise]
+Row-level security is available on the Team and Enterprise plans. A server on the Free plan rejects any deploy that includes a `security.yml`, so only add one when your server's license supports it. See [Pricing](/pricing/) or email [sales@strata.do](mailto:sales@strata.do) to upgrade.
+:::
+
+This page covers the command. For how policies are enforced and the full `security.yml` reference, see [Row-Level Security](/docs/security/).
+
+## Learning Objectives
+
+After completing this guide, you will be able to:
+- Tag a sensitive field so a policy can trigger on it
+- Scaffold a policy interactively or with options
+- Deploy the policy
+
+## Prerequisites
+
+- A Strata project with at least one table model
+- A server on the Team or Enterprise plan
+
+## Step 1: Tag Sensitive Fields
+
+Policies trigger on field tags. Add a `tags` key to any dimension in your table YAML files:
+
+```yaml
+fields:
+  - type: dimension
+    name: Agent Name
+    tags: [pii]
+    data_type: string
+    expression:
+      sql: agent_name
+```
+
+## Step 2: Create a Policy
+
+Run the command from the project root. The first policy creates `security.yml` from a documented template; later policies are appended to it.
+
+```bash
+strata create policy
+```
+
+With no options the command walks you through every setting:
+
+```
+  Policy
+  Policy name: PII Call Center Masking
+  Enforcement mode: mask_data  — replace restricted values with a mask
+  Mask value (shown for restricted data): #######
+
+  Triggers
+  Field tags that trigger this policy (comma-separated, e.g. pii,hipaa): pii
+  Specific field names (comma-separated, optional — leave blank to skip):
+
+  Context
+  Context dimension name: Call Center ID
+
+  Permission Resolution
+  Permission source: groups — derive from the user's group memberships
+  Resolve allowed values from: tag  — extract value from a group tag (e.g. call_center_id:TMNT)
+  Tag key (e.g. call_center_id): call_center_id
+
+  Bypass
+  Bypass for system admins? Yes
+  Bypass for project admins? No
+
+✔ Policy 'PII Call Center Masking' added to security.yml
+💡 Run 'strata deploy' to activate this policy
+```
+
+The result in `security.yml`:
+
+```yaml
+policies:
+  - name: PII Call Center Masking
+    mode: mask_data
+    mask_value: "#######"
+    triggers:
+      field_tags: [pii]
+    context_dimension: Call Center ID
+    permission_resolution:
+      source: groups
+      value_from: tag
+      tag_key: call_center_id
+    bypass:
+      system_admin: true
+      project_admin: false
+```
+
+Each key is explained in the [security.yml reference](/docs/security/#securityyml-reference).
+
+### Fast path
+
+Pass any of `--mode`, `--tags`, or `--context` to skip the prompts. Anything you leave out is written as a placeholder for you to fill in.
+
+```bash
+strata create policy "PII Call Center Masking" --mode mask_data --tags pii --context "Call Center ID"
+```
+
+The fast path defaults permission resolution to `groups` with `value_from: tag` and writes `<tag_key>` as a placeholder. Edit `security.yml` to set the real tag key before deploying. Use `-i` to force the interactive walkthrough even when you pass options.
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `NAME` | Policy name (positional, optional) |
+| `--mode` | `mask_data` or `filter_data` |
+| `--tags` | Field tags that trigger the policy, space-separated |
+| `--context` | Context dimension name |
+| `-i, --interactive` | Walk through all settings interactively |
+
+## Step 3: Deploy
+
+```bash
+strata deploy
+```
+
+`security.yml` is the source of truth for the branch: policies in the file are created or updated, and policies no longer in the file are deleted. Verify with a non-admin account by running a report that projects a tagged field.
+
+If the deploy fails with `Row-level security is not available on your current license plan.`, the server is on the Free plan. Delete `security.yml` and redeploy, or email [sales@strata.do](mailto:sales@strata.do) to upgrade.
+
+## Next Steps
+
+- [Row-Level Security](/docs/security/) - How policies are enforced and every `security.yml` key
+- [Deployment](/docs/cli/deployment/) - Deploy the policy to your server
