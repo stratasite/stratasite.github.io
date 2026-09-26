@@ -255,6 +255,14 @@ The CLI does not manage this infrastructure; it assumes the server is reachable 
 - Fix errors in model files
 - Retry deployment
 
+### Row-Level Security Is Not Available on Your License
+
+```
+Row-level security is not available on your current license plan.
+```
+
+The project contains a `security.yml` but the server is on the Free plan. Delete `security.yml` and redeploy, or email [sales@strata.do](mailto:sales@strata.do) to upgrade to Team or Enterprise. See [Row-Level Security](/docs/security/).
+
 ### Deploy Job Breaks Mid-Run
 
 If the deployment fails partway through for any reason (transient error, server issue, network blip, or anything else), the deployment is marked as **failed** and the error is recorded. You will see this immediately when checking status (e.g. `strata deploy status` or in the Strata web app).

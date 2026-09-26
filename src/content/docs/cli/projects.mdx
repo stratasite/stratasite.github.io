@@ -34,12 +34,13 @@ my-project/
 ├── AGENTS.md            # Rules a coding agent follows to build the model
 ├── project.yml          # Project configuration
 ├── datasources.yml      # Datasource definitions
-├── security.yml         # Security policies
 ├── .strata              # Local secrets (gitignored)
 ├── models/              # Semantic model files
 ├── migrations/          # Migration files
 └── tests/               # Test definitions
 ```
+
+`security.yml` is not created by `init`. Row-level security is a Team and Enterprise feature and a Free-plan server rejects deploys that include the file, so it is added the first time you run `strata create policy`. See [Security Policies](/docs/cli/security-policies/).
 
 The CLI also initializes a git repository and makes an initial commit of these files. `AGENTS.md` is committed with them — it is what lets a coding agent build the semantic model for you. See [Building Your Model](/docs/cli/building-your-model/).
 
