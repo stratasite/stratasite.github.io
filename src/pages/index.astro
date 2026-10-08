@@ -7,6 +7,7 @@ import FeatureRows from '../components/FeatureRows.astro';
 import StackUp from '../components/StackUp.astro';
 import CaseStudySpotlight from '../components/CaseStudySpotlight.astro';
 import CtaButton from '../components/CtaButton.astro';
+import LiveDemoBand from '../components/LiveDemoBand.astro';
 import { site } from '../config/site';
 
 const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
@@ -68,6 +69,9 @@ try {
       </p>
     </div>
   </section>
+
+  <!-- LIVE DEMO: hands on before the pitch -->
+  <LiveDemoBand location="home-band" />
 
   <!-- PRODUCTS -->
   <section id="products" class="band-rust scroll-mt-20 border-t border-border bg-background">
@@ -160,7 +164,7 @@ try {
   <section class="band-rust border-t border-border bg-background">
     <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
       <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Run Strata on your own data today</h2>
-      <p class="mt-4 text-muted-foreground">15 minutes from setup to insights, on your machine with Docker and your own coding agent. Or let us walk you through it.</p>
+      <p class="mt-4 text-muted-foreground">Play with the live demo in your browser, or install it on your machine in 15 minutes with Docker and your own coding agent. Or let us walk you through it.</p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
         <CtaButton location="home-closing" />
         <CtaButton action="demo" location="home-closing" />

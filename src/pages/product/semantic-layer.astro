@@ -24,6 +24,7 @@ import Icon from '../../components/Icon.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import VideoLightbox from '../../components/product/VideoLightbox.astro';
 import CtaButton from '../../components/CtaButton.astro';
+import LiveDemoBand from '../../components/LiveDemoBand.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
@@ -439,6 +440,9 @@ const gained = [
   </section>
 
   {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
+
+  <!-- LIVE DEMO: see it before you install it -->
+  <LiveDemoBand location="sl-band" body="Drag a measure from one fact next to a dimension from another and watch it blend, or refuse with a reason." />
 
   <!-- CLOSING CTA -->
   <section class="band-rust border-t border-border bg-background">

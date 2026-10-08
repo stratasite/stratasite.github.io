@@ -1,6 +1,6 @@
 // Pricing tiers and the full offering matrix. Single source of truth for the
 // pricing page (cards + comparison table). Free sends visitors to the trial
-// page; Team and Enterprise use the site-wide demo action. No prices here.
+// page; Team and Enterprise use the site-wide book-a-call action. No prices here.
 
 export type Cell = string | boolean | null; // string = text, true/false = yes/no, null = not applicable
 

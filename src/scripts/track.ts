@@ -6,8 +6,11 @@
  *
  * Event vocabulary (keep this list current when adding events):
  *
- *   generate_lead        Demo CTA click.                {cta_location}
+ *   generate_lead        "Book a call" CTA click.       {cta_location}
  *   trial_cta_click      "Try it free" CTA click.       {cta_location}
+ *   live_demo_click      Outbound click to the hosted demo site (demo.strata.do).
+ *                        The cheapest "tried it" signal; mark it a key event
+ *                        in GA4.                        {cta_location}
  *   trial_step_view      A /try/ step scrolled into view (once per step per
  *                        page load).                    {step, step_id}
  *   trial_path_select    A /try/ tab chosen (install path, OS, modeling path).

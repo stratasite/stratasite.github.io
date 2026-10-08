@@ -1,6 +1,7 @@
 ---
-// One line under a trial CTA that says what the trial actually is. Data
-// engineers do not click "Try it free"; they click "runs on my machine".
+// One line under a trial CTA that says what the trial actually is: a hosted
+// demo to click around in, or Docker on your own machine. Nobody clicks a
+// vague "Try it free"; they click a concrete thing that is about to happen.
 interface Props {
   class?: string;
 }
@@ -8,5 +9,5 @@ const { class: className = '' } = Astro.props;
 ---
 
 <p class={`text-sm text-muted-foreground ${className}`}>
-  15 minutes from setup to insights. On your machine, with Docker and your own coding agent.
+  Play with the live demo in your browser, or run it on your own machine with Docker. Free, no credit card.
 </p>

@@ -1,6 +1,6 @@
 /**
- * Single source of truth for site-wide config: outbound URLs, the demo CTA
- * target, and the primary navigation structure. Update the CTA in ONE place
+ * Single source of truth for site-wide config: outbound URLs, the live demo
+ * and book-a-call targets, and the primary navigation structure. Update the CTA in ONE place
  * here when the real scheduler (Calendly / Cal.com) is wired up.
  */
 
@@ -11,17 +11,26 @@ export const site = {
     'High-performance, AI-safe self-service analytics — a governed semantic layer fused with beautiful-by-default dashboards, for humans and agents.',
 
   /**
-   * Demo call-to-action (the secondary action site-wide). Single source of
+   * Book-a-call action (the secondary action site-wide). Single source of
    * truth for CtaButton action="demo" and the nav/footer links; update here
    * to swap schedulers.
    */
   demoUrl: 'https://calendar.app.google/KjU3TdPwfVNpfuSs5',
-  demoLabel: 'Schedule a demo',
+  demoLabel: 'Book a call',
+
+  /**
+   * Hosted live demo: a running Strata anyone can sign in to and play with,
+   * nothing to install. The /try/ page leads with it; CtaButton
+   * action="live-demo" and the footer link point here.
+   */
+  liveDemoUrl: 'https://demo.strata.do',
+  liveDemoLabel: 'Try the live demo',
 
   /**
    * Free trial. The primary call to action site-wide: every CtaButton defaults
-   * to it, with the demo as the secondary action. The page itself walks a
-   * visitor through the Docker install and the CLI quick start.
+   * to it, with book-a-call as the secondary action. The page offers two
+   * paths, the hosted live demo first, then the Docker install and CLI quick
+   * start on your own machine.
    */
   trialUrl: '/try/',
   trialLabel: 'Try it free',
