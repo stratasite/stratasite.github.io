@@ -22,6 +22,8 @@
  *   trial_faq_open       A troubleshooting entry expanded.  {question}
  *   trial_docs_click     Outbound click from /try/ into the docs. {target}
  *   trial_sample_project Click on the sample project shortcut.   {cta_location}
+ *   zerosql_click        Outbound click to 0sql.io (site, docs or repository),
+ *                        the open source server.      {cta_location, target}
  */
 
 type Params = Record<string, string | number | boolean>;

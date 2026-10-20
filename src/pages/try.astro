@@ -12,6 +12,7 @@
 //
 // Analytics events are listed in src/scripts/track.ts.
 import Base from '../layouts/Base.astro';
+import ZeroSqlBand from '../components/ZeroSqlBand.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Icon from '../components/Icon.astro';
 import CommandBlock from '../components/try/CommandBlock.astro';
@@ -167,6 +168,13 @@ const faq = [
       </div>
     </div>
   </section>
+
+  <!-- A THIRD PATH, ON ANOTHER DOMAIN: the open source layer without the platform -->
+  <ZeroSqlBand
+    location="try-band"
+    heading="Or run just the semantic layer, open source."
+    body="Both paths above are the full platform. If you want a server that turns a query spec into SQL for your own app or agent, and nothing else, 0sql is that server."
+  />
 
   <!-- GUIDE -->
   <section>

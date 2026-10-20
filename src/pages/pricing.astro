@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Callout from '../components/Callout.astro';
+import ZeroSqlBand from '../components/ZeroSqlBand.astro';
 import { tiers, featureGroups } from '../data/pricing';
 
 const title = 'Pricing — Strata';
@@ -119,6 +120,13 @@ const fitChecklist = [
       </div>
     </div>
   </section>
+
+  <!-- THE FREE, SELF-HOSTED OPTION: every tier above is the platform; the layer alone is open source -->
+  <ZeroSqlBand
+    location="pricing-band"
+    heading="Only need the semantic layer? It is open source."
+    body="Every plan above is the Strata platform. If you only need the SQL, run 0sql instead. There is no tier because there is nothing to pay for."
+  />
 
   <!-- QUALIFY: is Strata right for you? -->
   <section class="border-t border-border bg-surface-2">

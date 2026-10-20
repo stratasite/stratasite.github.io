@@ -70,6 +70,26 @@ const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draf
                   </span>
                 </a>
               ))}
+              <!-- The open source layer underneath, on its own domain. Its own mark,
+                   used as published; see public/vendor/0sql/. -->
+              <p class="mt-4 px-3 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-menu-muted">
+                Open source
+              </p>
+              <a
+                href={site.zerosql.url}
+                target="_blank"
+                rel="noopener"
+                class="group/item flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-menu-raised"
+                data-track="zerosql_click"
+                data-track-cta-location="nav"
+                data-track-target="site"
+              >
+                <img src="/vendor/0sql/0sql_icon_dark.svg" alt="" aria-hidden="true" class="h-9 w-9 shrink-0 rounded-md" />
+                <span class="min-w-0">
+                  <span class="block text-sm font-semibold leading-snug text-menu-primary">0sql, the open source semantic layer</span>
+                  <span class="mt-0.5 block text-xs leading-snug text-menu-muted">The planner inside Strata, {site.zerosql.license} licensed. Run it free on your own server.</span>
+                </span>
+              </a>
             </div>
           </div>
         </div>

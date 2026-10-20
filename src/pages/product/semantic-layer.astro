@@ -25,6 +25,7 @@ import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import VideoLightbox from '../../components/product/VideoLightbox.astro';
 import CtaButton from '../../components/CtaButton.astro';
 import LiveDemoBand from '../../components/LiveDemoBand.astro';
+import ZeroSqlBand from '../../components/ZeroSqlBand.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
@@ -440,6 +441,13 @@ const gained = [
   </section>
 
   {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
+
+  <!-- THE LAYER ON ITS OWN: the planner described above is open source as 0sql -->
+  <ZeroSqlBand
+    location="sl-band"
+    heading="This semantic layer is open source."
+    body="Everything on this page is the planner, and the planner ships on its own as 0sql. Take it alone if you are building the product around it."
+  />
 
   <!-- LIVE DEMO: see it before you install it -->
   <LiveDemoBand location="sl-band" body="Drag a measure from one fact next to a dimension from another and watch it blend, or refuse with a reason." />

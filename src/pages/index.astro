@@ -8,6 +8,7 @@ import StackUp from '../components/StackUp.astro';
 import CaseStudySpotlight from '../components/CaseStudySpotlight.astro';
 import CtaButton from '../components/CtaButton.astro';
 import LiveDemoBand from '../components/LiveDemoBand.astro';
+import ZeroSqlBand from '../components/ZeroSqlBand.astro';
 import { site } from '../config/site';
 
 const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
@@ -135,6 +136,9 @@ try {
 
   <!-- CASE STUDY SPOTLIGHT -->
   {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
+
+  <!-- THE OPEN SOURCE OPTION: 0sql, the layer on its own -->
+  <ZeroSqlBand location="home-band" />
 
   <!-- LATEST FROM THE BLOG (links out to blog.strata.do) -->
   <section class="scroll-mt-20">

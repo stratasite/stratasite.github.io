@@ -39,6 +39,22 @@ export const site = {
   docsUrl: '/docs/',
   // Outbound destinations (live on other domains today).
   blogUrl: 'https://blog.strata.do',
+
+  /**
+   * 0sql: the open source semantic layer inside Strata, published on its own
+   * at 0sql.io under MIT. The free, self-hosted option for a team that only
+   * needs the planner and the SQL it returns. Every mention on this site
+   * links there (followed, with "0sql" in the anchor text, so the brand term
+   * accrues to that domain); the docs and repository links are secondary.
+   */
+  zerosql: {
+    name: '0sql',
+    url: 'https://0sql.io/',
+    docsUrl: 'https://0sql.io/docs/',
+    repoUrl: 'https://github.com/stratasite/0sql',
+    installCmd: 'curl -fsSL https://0sql.io/install.sh | sh',
+    license: 'MIT',
+  },
 } as const;
 
 /**
