@@ -1,7 +1,6 @@
 /**
- * Single source of truth for site-wide config: outbound URLs, the live demo
- * and book-a-call targets, and the primary navigation structure. Update the CTA in ONE place
- * here when the real scheduler (Calendly / Cal.com) is wired up.
+ * Single source of truth for site-wide config: outbound URLs, the trial and
+ * book-a-call targets, and the primary navigation structure.
  */
 
 export const site = {
@@ -11,29 +10,22 @@ export const site = {
     'High-performance, AI-safe self-service analytics — a governed semantic layer fused with beautiful-by-default dashboards, for humans and agents.',
 
   /**
-   * Book-a-call action (the secondary action site-wide). Single source of
-   * truth for CtaButton action="demo" and the nav/footer links; update here
-   * to swap schedulers.
+   * Book-a-call scheduler. Strata is self-serve SaaS, so this appears only on
+   * the pricing page (Enterprise card and the help line under the sizer).
    */
   demoUrl: 'https://calendar.app.google/KjU3TdPwfVNpfuSs5',
   demoLabel: 'Book a call',
+  salesEmail: 'sales@strata.do',
 
   /**
-   * Hosted live demo: a running Strata anyone can sign in to and play with,
-   * nothing to install. The /try/ page leads with it; CtaButton
-   * action="live-demo" and the footer link point here.
+   * Free trial of the hosted app. The primary call to action site-wide: every
+   * CtaButton defaults to it. The trial includes everything in Team.
    */
-  liveDemoUrl: 'https://demo.strata.do',
-  liveDemoLabel: 'Try the live demo',
-
-  /**
-   * Free trial. The primary call to action site-wide: every CtaButton defaults
-   * to it, with book-a-call as the secondary action. The page offers two
-   * paths, the hosted live demo first, then the Docker install and CLI quick
-   * start on your own machine.
-   */
-  trialUrl: '/try/',
-  trialLabel: 'Try it free',
+  trialUrl: 'https://app.strata.do/signup',
+  /** The hosted app: the server the CLI deploys to and the API base URL. */
+  appUrl: 'https://app.strata.do',
+  trialLabel: 'Start 14-day trial',
+  trialDays: 14,
 
   // Documentation lives in this site: src/content/docs/, served at /docs/.
   docsUrl: '/docs/',

@@ -2,12 +2,16 @@
 import Base from '../layouts/Base.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Callout from '../components/Callout.astro';
-import ZeroSqlBand from '../components/ZeroSqlBand.astro';
-import { tiers, featureGroups } from '../data/pricing';
+import { site } from '../config/site';
+import { editions, enterprise, featureGroups } from '../data/pricing';
 
 const title = 'Pricing — Strata';
 const description =
-  'Strata pricing: Free, Team, and Enterprise. Start free, scale governed self-service, and add SSO, row-level security, and airgapped deployment as you grow.';
+  'Strata pricing: Entry from $99 a month, Team from $499 a month, and Enterprise on your terms. Every edition includes users and developers, with more seats at a flat rate. Start a 14-day trial.';
+
+const fmt = (n: number) => `$${n.toLocaleString('en-US')}`;
+const [defaultEdition] = editions;
+const defaultAnnual = defaultEdition.price * 12;
 
 // A qualifying checklist. The goal is to self-select teams that want broad,
 // fast, non-technical and agent-ready self-service on their existing warehouse,
@@ -42,91 +46,207 @@ const fitChecklist = [
 
 <Base title={title} description={description}>
   <!-- HEADER -->
-  <section class="border-b border-border">
-    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+  <section>
+    <div class="mx-auto max-w-3xl px-4 pb-4 pt-20 text-center sm:px-6 lg:px-8">
       <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Pricing</p>
       <h1 class="mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">
-        Plans that scale with your team
+        Start with a {site.trialDays}-day trial
       </h1>
-      <p class="mx-auto mt-5 max-w-xl text-muted-foreground">
-        Start free on your own machine and grow into governed, AI-safe self-service. Team and Enterprise
-        start with a call and a walkthrough on your own data.
+      <p class="mx-auto mt-5 max-w-2xl text-muted-foreground">
+        Your trial includes everything in Team. Pick an edition and size it to your team; each one
+        includes a set of users and developers, with more users at a flat rate. Billed annually.
       </p>
     </div>
   </section>
 
-  <!-- TIERS: three self-contained columns, full offering in each -->
+  <!-- EDITIONS + SIZER -->
   <section>
-    <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <div
+      class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8"
+      data-pricing
+      data-editions={JSON.stringify(editions)}
+      data-trial-url={site.trialUrl}
+    >
       <div class="grid items-stretch gap-6 md:grid-cols-3">
-        {tiers.map((tier, ti) => (
-          <div
-            class={`flex flex-col rounded-2xl border p-8 ${
-              tier.highlighted ? 'border-primary bg-surface ring-1 ring-primary' : 'border-border bg-surface'
-            }`}
+        {editions.map((e, i) => (
+          <button
+            type="button"
+            class="edition-card flex flex-col rounded-2xl border bg-surface p-8 text-left transition-colors"
+            data-edition={e.key}
+            data-track="pricing_plan_select"
+            data-track-plan={e.key}
+            aria-pressed={i === 0 ? 'true' : 'false'}
           >
-            <div class="flex items-center justify-between gap-3">
-              <h2 class="font-display text-2xl font-bold tracking-tight">{tier.name}</h2>
-              {tier.highlighted && (
-                <span class="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground">
-                  Most popular
-                </span>
-              )}
-            </div>
-            <p class="mt-2 text-sm text-muted-foreground">{tier.tagline}</p>
-
-            <dl class="mt-8 space-y-6">
-              {featureGroups.map((group) => (
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-wider text-primary">{group.label}</p>
-                  <div class="mt-3 space-y-2.5">
-                    {group.rows.map((row) => (
-                      <div class="flex items-start justify-between gap-4 text-sm">
-                        <dt class="text-muted-foreground">{row.label}</dt>
-                        <dd class="text-right font-medium">
-                          {typeof row.values[ti] === 'string' ? (
-                            <span class="text-foreground">{row.values[ti]}</span>
-                          ) : row.values[ti] === true ? (
-                            <svg class="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor" aria-label="Included">
-                              <path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd" />
-                            </svg>
-                          ) : row.values[ti] === false ? (
-                            <svg class="h-4 w-4 text-muted-foreground/50" viewBox="0 0 20 20" fill="currentColor" aria-label="Not included">
-                              <path fill-rule="evenodd" d="M4 9a1 1 0 100 2h12a1 1 0 100-2H4z" clip-rule="evenodd" />
-                            </svg>
-                          ) : (
-                            <span class="text-muted-foreground/60" aria-label="Not applicable">—</span>
-                          )}
-                        </dd>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <h2 class="font-display text-2xl font-bold tracking-tight text-foreground">{e.name}</h2>
+            <p class="mt-5">
+              <span class="font-display text-5xl font-bold tracking-tight text-foreground">{fmt(e.price)}</span>
+              <span class="text-muted-foreground"> / month</span>
+            </p>
+            <p class="mt-2 text-sm text-muted-foreground">
+              includes {e.users.included} users and {e.developers.included}{' '}
+              {e.developers.included === 1 ? 'developer' : 'developers'}, billed annually
+            </p>
+            <ul class="mt-6 space-y-2 text-sm text-foreground">
+              {[
+                ...e.features,
+                `More users at ${fmt(e.users.price)} / user / month, up to ${e.users.max}`,
+                `More developers at ${fmt(e.developers.price)} / developer / month, up to ${e.developers.max}`,
+              ].map((f) => (
+                <li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span>{f}</li>
               ))}
-            </dl>
-
-            {tier.key === 'free' ? (
-              <CtaButton location={`pricing-${tier.key}`} label="Start free" class="mt-8 w-full" />
-            ) : (
-              <CtaButton
-                action="demo"
-                variant={tier.highlighted ? 'primary' : 'ghost'}
-                location={`pricing-${tier.key}`}
-                class="mt-8 w-full"
-              />
-            )}
-          </div>
+            </ul>
+          </button>
         ))}
+
+        <div class="flex flex-col rounded-2xl border border-border bg-surface p-8">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="font-display text-2xl font-bold tracking-tight text-foreground">{enterprise.name}</h2>
+            <span class="rounded-md border border-border px-2.5 py-1 text-xs font-semibold text-foreground">Talk to us</span>
+          </div>
+          <p class="mt-5 font-display text-5xl font-bold tracking-tight text-foreground">Custom</p>
+          <p class="mt-2 text-sm text-muted-foreground">{enterprise.tagline}</p>
+          <ul class="mt-6 space-y-2 text-sm text-foreground">
+            {enterprise.features.map((f) => (
+              <li class="flex gap-2"><span class="text-primary" aria-hidden="true">✓</span>{f}</li>
+            ))}
+          </ul>
+          <div class="mt-auto pt-8"><CtaButton action="demo" location="pricing-enterprise" class="w-full" /></div>
+        </div>
       </div>
+
+      <!-- Sizer: sliders on the left, the bill on the right -->
+      <div class="mt-6 grid overflow-hidden rounded-2xl border border-border bg-surface lg:grid-cols-2">
+        <div class="p-8">
+          <h2 class="font-display text-xl font-bold tracking-tight text-foreground">
+            Size your <span data-out="name">{defaultEdition.name}</span> plan
+          </h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            The base price covers the included seats. Slide to add users; each one is a flat monthly rate.
+          </p>
+
+          {(['users', 'developers'] as const).map((kind) => (
+            <div class="mt-8">
+              <div class="flex items-end justify-between">
+                <label for={`seats-${kind}`} class="text-sm font-semibold uppercase tracking-wider text-foreground">
+                  {kind}
+                </label>
+                <output for={`seats-${kind}`} class="tnum font-display text-3xl font-bold text-foreground" data-out={`${kind}-count`}>
+                  {defaultEdition[kind].included}
+                </output>
+              </div>
+              <input
+                id={`seats-${kind}`}
+                type="range"
+                class="seat-range mt-3 w-full"
+                data-seats={kind}
+                min={defaultEdition[kind].included}
+                max={defaultEdition[kind].max}
+                value={defaultEdition[kind].included}
+              />
+              <p class="mt-2 text-sm text-muted-foreground" data-out={`${kind}-hint`}>
+                {defaultEdition[kind].included} included, then {fmt(defaultEdition[kind].price)} / {kind === 'users' ? 'user' : 'developer'} / month, up to {defaultEdition[kind].max}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div class="tnum border-t border-border p-8 lg:border-l lg:border-t-0">
+          <dl class="space-y-3 text-sm">
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground"><span data-out="name">{defaultEdition.name}</span> base</dt>
+              <dd class="text-foreground" data-out="base">{fmt(defaultAnnual)} / yr</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Extra users</dt>
+              <dd class="text-foreground" data-out="users-line">0 × {fmt(defaultEdition.users.price * 12)} / yr</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Extra developers</dt>
+              <dd class="text-foreground" data-out="developers-line">0 × {fmt(defaultEdition.developers.price * 12)} / yr</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Annual total</dt>
+              <dd class="font-semibold text-foreground" data-out="annual">{fmt(defaultAnnual)} / yr</dd>
+            </div>
+          </dl>
+          <div class="mt-6 border-t border-border pt-6">
+            <p>
+              <span class="font-display text-5xl font-bold tracking-tight text-foreground" data-out="monthly">{fmt(defaultEdition.price)}</span>
+              <span class="text-lg text-muted-foreground"> / month</span>
+            </p>
+            <p class="mt-2 text-sm text-muted-foreground">Billed <span data-out="annual-plain">{fmt(defaultAnnual)}</span> once a year.</p>
+          </div>
+          <a
+            href={`${site.trialUrl}?plan=${defaultEdition.key}`}
+            class="cta mt-6 inline-flex w-full items-center justify-center rounded-sm bg-cta px-6 py-3 font-display font-bold uppercase tracking-wide text-cta-foreground no-underline shadow-sm transition-[box-shadow,transform,filter] duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            data-out="trial"
+            data-cta="trial"
+            data-track="trial_cta_click"
+            data-track-cta-location="pricing-sizer"
+            data-track-plan={defaultEdition.key}
+          >
+            {site.trialLabel}
+          </a>
+          <p class="mt-3 text-sm text-muted-foreground">
+            Cancel any time from your billing page. Seats can be changed later and are prorated.
+          </p>
+        </div>
+      </div>
+
+      <p class="mt-8 text-center text-sm text-muted-foreground">
+        Questions about editions, limits or a setup that doesn't fit?
+        <a href={`mailto:${site.salesEmail}`} class="font-semibold text-primary hover:underline">Email us</a>
+        or
+        <a href={site.demoUrl} target="_blank" rel="noopener" class="font-semibold text-primary hover:underline" data-track="generate_lead" data-track-cta-location="pricing-help">book a call</a>.
+      </p>
     </div>
   </section>
 
-  <!-- THE FREE, SELF-HOSTED OPTION: every tier above is the platform; the layer alone is open source -->
-  <ZeroSqlBand
-    location="pricing-band"
-    heading="Only need the semantic layer? It is open source."
-    body="Every plan above is the Strata platform. If you only need the SQL, run 0sql instead. There is no tier because there is nothing to pay for."
-  />
+  <!-- COMPARE EDITIONS -->
+  <section class="border-t border-border">
+    <div class="mx-auto max-w-5xl px-4 py-20 sm:px-6 lg:px-8">
+      <h2 class="text-center font-display text-3xl font-bold tracking-tight sm:text-4xl">Compare editions</h2>
+      <div class="mt-10 overflow-x-auto">
+        <table class="w-full min-w-[36rem] text-sm">
+          <thead>
+            <tr class="border-b border-border">
+              <th class="py-3 pr-4 text-left font-normal text-muted-foreground"><span class="sr-only">Feature</span></th>
+              {[...editions.map((e) => e.name), enterprise.name].map((n) => (
+                <th class="px-4 py-3 text-left font-display text-base font-bold text-foreground">{n}</th>
+              ))}
+            </tr>
+          </thead>
+          {featureGroups.map((group) => (
+            <tbody>
+              <tr>
+                <th colspan="4" class="pb-2 pt-8 text-left text-xs font-semibold uppercase tracking-wider text-primary">{group.label}</th>
+              </tr>
+              {group.rows.map((row) => (
+                <tr class="border-b border-border">
+                  <th class="py-3 pr-4 text-left font-normal text-muted-foreground">{row.label}</th>
+                  {row.values.map((v) => (
+                    <td class="px-4 py-3 text-foreground">
+                      {typeof v === 'string' ? (
+                        v
+                      ) : v === true ? (
+                        <svg class="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor" aria-label="Included">
+                          <path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg class="h-4 w-4 text-muted-foreground/50" viewBox="0 0 20 20" fill="currentColor" aria-label="Not included">
+                          <path fill-rule="evenodd" d="M4 9a1 1 0 100 2h12a1 1 0 100-2H4z" clip-rule="evenodd" />
+                        </svg>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </div>
+  </section>
 
   <!-- QUALIFY: is Strata right for you? -->
   <section class="border-t border-border bg-surface-2">
@@ -169,7 +289,7 @@ const fitChecklist = [
   <section class="band-rust border-t border-border bg-background">
     <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
       <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Find the right plan for your team</h2>
-      <p class="mt-4 text-muted-foreground">Start free today, or see Strata on your own data and we will help you pick the tier that fits.</p>
+      <p class="mt-4 text-muted-foreground">Start a {site.trialDays}-day trial with everything in Team, or talk to us about Enterprise.</p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
         <CtaButton location="pricing-closing" />
         <CtaButton action="demo" location="pricing-closing" />
@@ -177,3 +297,114 @@ const fitChecklist = [
     </div>
   </section>
 </Base>
+
+<style>
+  .edition-card {
+    border-color: var(--border);
+    cursor: pointer;
+  }
+  .edition-card:hover {
+    border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+  }
+  .edition-card[aria-pressed='true'] {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+  }
+  .edition-card:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .tnum {
+    font-feature-settings: 'tnum' 1;
+  }
+  .seat-range {
+    appearance: none;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--foreground) 22%, transparent);
+    accent-color: var(--primary);
+  }
+  .seat-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 9999px;
+    background: var(--primary);
+    cursor: pointer;
+  }
+  .seat-range::-moz-range-thumb {
+    width: 1.375rem;
+    height: 1.375rem;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--primary);
+    cursor: pointer;
+  }
+  .seat-range:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+  }
+</style>
+
+<script>
+  import type { SelfServeEdition } from '../data/pricing';
+
+  const root = document.querySelector<HTMLElement>('[data-pricing]');
+  if (root) {
+    const editions: SelfServeEdition[] = JSON.parse(root.dataset.editions ?? '[]');
+    const trialUrl = root.dataset.trialUrl ?? '';
+    const fmt = (n: number) => `$${n.toLocaleString('en-US')}`;
+    const out = (key: string) => root.querySelectorAll<HTMLElement>(`[data-out="${key}"]`);
+    const set = (key: string, text: string) => out(key).forEach((el) => (el.textContent = text));
+    const range = (kind: 'users' | 'developers') =>
+      root.querySelector<HTMLInputElement>(`[data-seats="${kind}"]`)!;
+
+    let edition = editions[0];
+
+    const render = () => {
+      const users = Number(range('users').value);
+      const devs = Number(range('developers').value);
+      const extraUsers = users - edition.users.included;
+      const extraDevs = devs - edition.developers.included;
+      const annual =
+        edition.price * 12 + extraUsers * edition.users.price * 12 + extraDevs * edition.developers.price * 12;
+
+      set('name', edition.name);
+      set('users-count', String(users));
+      set('developers-count', String(devs));
+      set('users-hint', `${edition.users.included} included, then ${fmt(edition.users.price)} / user / month, up to ${edition.users.max}`);
+      set('developers-hint', `${edition.developers.included} included, then ${fmt(edition.developers.price)} / developer / month, up to ${edition.developers.max}`);
+      set('base', `${fmt(edition.price * 12)} / yr`);
+      set('users-line', `${extraUsers} × ${fmt(edition.users.price * 12)} / yr`);
+      set('developers-line', `${extraDevs} × ${fmt(edition.developers.price * 12)} / yr`);
+      set('annual', `${fmt(annual)} / yr`);
+      set('annual-plain', fmt(annual));
+      set('monthly', fmt(annual / 12));
+
+      const params = new URLSearchParams({ plan: edition.key, users: String(users), developers: String(devs) });
+      out('trial').forEach((el) => {
+        el.setAttribute('href', `${trialUrl}?${params}`);
+        el.dataset.trackPlan = edition.key;
+      });
+    };
+
+    const select = (key: string) => {
+      edition = editions.find((e) => e.key === key) ?? edition;
+      root.querySelectorAll<HTMLElement>('[data-edition]').forEach((card) => {
+        card.setAttribute('aria-pressed', String(card.dataset.edition === key));
+      });
+      for (const kind of ['users', 'developers'] as const) {
+        const input = range(kind);
+        input.min = String(edition[kind].included);
+        input.max = String(edition[kind].max);
+        input.value = String(edition[kind].included);
+      }
+      render();
+    };
+
+    root.querySelectorAll<HTMLElement>('[data-edition]').forEach((card) =>
+      card.addEventListener('click', () => select(card.dataset.edition!))
+    );
+    root.querySelectorAll<HTMLInputElement>('[data-seats]').forEach((input) => input.addEventListener('input', render));
+  }
+</script>

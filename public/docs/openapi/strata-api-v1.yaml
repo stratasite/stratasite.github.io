@@ -21,8 +21,8 @@ servers:
   - url: "{server}/api/v1"
     variables:
       server:
-        default: http://localhost:8080
-        description: Strata server base URL (no trailing slash)
+        default: https://app.strata.do
+        description: Strata server base URL (no trailing slash). app.strata.do, or your own server on a self-hosted Enterprise install.
 
 security:
   - bearerAuth: []

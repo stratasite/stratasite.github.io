@@ -18,7 +18,6 @@ import OperatorTable from '../../components/product/OperatorTable.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import VideoLightbox from '../../components/product/VideoLightbox.astro';
 import CtaButton from '../../components/CtaButton.astro';
-import LiveDemoBand from '../../components/LiveDemoBand.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
@@ -379,7 +378,6 @@ const operatorRows = [
   {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
 
   <!-- LIVE DEMO: see it before you install it -->
-  <LiveDemoBand location="bi-band" body="Build a report from a few views and let the layout engine arrange it." />
 
   <!-- CLOSING CTA -->
   <section class="band-rust border-t border-border bg-background">
@@ -392,7 +390,7 @@ const operatorRows = [
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
         <CtaButton location="bi-closing" />
-        <CtaButton action="demo" location="bi-closing" />
+        <CtaButton action="pricing" location="bi-closing" />
       </div>
     </div>
   </section>

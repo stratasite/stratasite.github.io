@@ -9,7 +9,7 @@ What the common errors mean and how to fix them, from installing the CLI to a qu
 | Symptom | Likely cause | Start here |
 |---|---|---|
 | `strata: command not found` | Gem bin directory not on `PATH` | [Install](#cli-installation) |
-| `Cannot reach server at …` | Server not running, or wrong URL in `project.yml` | [Server](#server-and-sign-in) |
+| `Cannot reach server at …` | Wrong URL in `project.yml` (should be `https://app.strata.do`) | [Server](#server-and-sign-in) |
 | `You have uncommitted changes` | Deploy requires a clean git tree | [Deployment](#deployment) |
 | `No files changed since last deployment` | Nothing to deploy; use `--force` to redeploy anyway | [Deployment](#deployment) |
 | `Audit checks failed` | Model errors caught before upload | [Model validation](#model-validation) |
@@ -75,8 +75,8 @@ A build error during `gem install` almost always means the native library is mis
 
 The CLI could not open a connection to the URL in `project.yml`.
 
-1. Confirm the server is up: open the URL in a browser, or `docker ps` on the host.
-2. Check `server:` in `project.yml` for the right scheme, host, and port (the Docker quick install listens on `8080`).
+1. Check `server:` in `project.yml`. It should be `https://app.strata.do` (or your own server's URL on a self-hosted Enterprise install).
+2. Open the URL in a browser to confirm you can reach it from your network.
 3. If deploying with `-e`, check the `server:` under that environment's key in `.strata` instead.
 
 ### `Authentication timed out. Please try again.`
@@ -87,9 +87,9 @@ The first deploy offers **Sign in via browser** and waits for you to approve it.
 
 Run `strata deploy` and choose browser sign-in; the CLI saves the key to `.strata`. A placeholder `YOUR_STRATA_API_KEY` counts as no key. To re-authenticate later, delete the `api_key` line from `.strata` and deploy again.
 
-### Server asks for a license key
+### Self-hosted server problems
 
-A fresh server needs a license before the first admin account is created. Get a free key at [license.strata.do](https://license.strata.do). Server-side startup problems (container exits, health check never passes, database errors) are covered in [Troubleshooting Deployments](/docs/self-hosting/troubleshooting-deployments/) in the Self-Hosting Guide.
+On a self-hosted Enterprise install, server-side startup problems (license prompts, container exits, health check never passes, database errors) are covered in [Troubleshooting Deployments](/docs/self-hosting/troubleshooting-deployments/) in the Self-Hosting Guide.
 
 ---
 
@@ -179,10 +179,10 @@ strata datasource list               # keys and names
 
 ### Works locally, fails on the server
 
-`strata datasource test` runs from your machine. Queries and deployment-time checks run from the **Strata server**. Two things differ:
+`strata datasource test` runs from your machine. Queries and deployment-time checks run from the **Strata server** (app.strata.do). Two things differ:
 
 - **Credentials travel with the deploy.** The CLI merges each datasource's `.strata` entry into the uploaded `datasources.yml`. If you never ran `strata datasource auth` for a datasource, the server has no credentials for it. On a self-hosted server you can also set credentials on the datasource record in the app instead of shipping them from the CLI.
-- **The server needs network access to the database.** A warehouse reachable from your laptop over VPN may not be reachable from the container or ECS task. Check security groups, allow-lists, and DNS from the server's network.
+- **The server needs network access to the database.** A warehouse reachable from your laptop over VPN may not be reachable from app.strata.do. Allow both of Strata's IP addresses, `162.35.185.254` and `68.168.222.246`, in your security groups, firewall, or Snowflake network policy (see the [Quick Start](/docs/getting-started/quickstart/#before-you-start-allow-stratas-ip-addresses)). On a self-hosted install, check them from the server's network.
 
 ### Cloud permission errors
 

@@ -1,7 +1,8 @@
 ---
-// One line under a trial CTA that says what the trial actually is: a hosted
-// demo to click around in, or Docker on your own machine. Nobody clicks a
-// vague "Try it free"; they click a concrete thing that is about to happen.
+// One line under a trial CTA that says what the trial actually is, so the
+// click is a concrete thing rather than a vague "try it".
+import { site } from '../config/site';
+
 interface Props {
   class?: string;
 }
@@ -9,5 +10,5 @@ const { class: className = '' } = Astro.props;
 ---
 
 <p class={`text-sm text-muted-foreground ${className}`}>
-  Play with the live demo in your browser, or run it on your own machine with Docker. Free, no credit card.
+  {site.trialDays} days of everything in Team, hosted for you. Nothing to install.
 </p>

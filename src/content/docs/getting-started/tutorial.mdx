@@ -2,31 +2,31 @@
 title: "Tutorial: TPC-DS with DuckDB"
 description: "This tutorial walks you through building a semantic model for the TPC-DS benchmark using DuckDB. You will set up the Strata TPC-DS tutorial project, connect it to a DuckDB database, and complete the m"
 ---
-This tutorial walks you through building a semantic model for the TPC-DS benchmark using **DuckDB**. You will set up the Strata TPC-DS tutorial project, connect it to a DuckDB database, and complete the model by adding the missing web channel tables and relationships. No cloud database or hosting is required.
+This tutorial walks you through building a semantic model for the TPC-DS benchmark using **DuckDB**. You will set up the Strata TPC-DS tutorial project, connect it to a DuckDB database, and complete the model by adding the missing web channel tables and relationships. No cloud database is required; the model deploys to [app.strata.do](https://app.strata.do).
 
 ## Quick Start (Recommended)
 
-If you have a Strata server running locally (see [Quick Install](/docs/self-hosting/quick-install/)), the fastest way to get started is:
+With a Strata account (no account yet? [start a 14-day trial](https://app.strata.do/signup)), the fastest way to get started is:
 
 ```bash
-strata project sample
+strata project sample --server https://app.strata.do
 cd tpc-ds-retail-sample
 strata deploy --skip-audit
 ```
 
-`strata project sample` prompts for your server URL, opens your browser so you can sign in, and fetches an API key automatically — no manual key handling needed. (To skip the browser, pass both `--api-key` and `--server`.)
+`strata project sample` opens your browser so you can sign in to app.strata.do, and fetches an API key automatically, so there is no manual key handling. (To skip the browser, pass `--api-key` as well.)
 
-`--skip-audit` skips the pre-deploy datasource connection check. The tutorial's DuckDB database is bundled **inside the Strata Docker image** at `/data/tpcds.duckdb` — the server can reach it, but the CLI running on your local machine cannot find that path and would fail the connection check before ever sending anything to the server. Skipping it is safe here; for your own projects, leave the flag off so the CLI catches connection issues early.
+`--skip-audit` skips the pre-deploy datasource connection check. The tutorial's DuckDB database lives **on app.strata.do** at `/data/tpcds.duckdb`. The server can reach it, but the CLI running on your local machine cannot find that path and would fail the connection check before ever sending anything to the server. Skipping it is safe here; for your own projects, leave the flag off so the CLI catches connection issues early.
 
-The TPC-DS dataset is bundled in the Strata Docker image — no separate database setup needed.
+The TPC-DS dataset is already on app.strata.do, so there is no separate database setup.
 
-Open [http://localhost:8080](http://localhost:8080) to explore the deployed model, then return here to complete the learning exercise (adding the missing web channel tables).
+Open [app.strata.do](https://app.strata.do) to explore the deployed model, then return here to complete the learning exercise (adding the missing web channel tables).
 
 ---
 
 ## Manual Setup
 
-Use the steps below if you want to understand the internals, use your own DuckDB file, or connect to a remote Strata server.
+Use the steps below if you want to understand the internals or build the data yourself. You will generate a local DuckDB file to audit and test against; app.strata.do cannot read files on your machine, so you deploy against the hosted copy of the same data (see Step 6).
 
 ## Overview
 
@@ -154,21 +154,23 @@ The same patterns apply to the web channel tables you will add next.
 
 ## Step 6: Deploy and Explore the Web UI
 
-Before adding your own tables, let's deploy the existing model to your Strata server and see it in action. This gives you a visual understanding of what the semantic model looks like when deployed.
+Before adding your own tables, let's deploy the existing model to app.strata.do and see it in action. This gives you a visual understanding of what the semantic model looks like when deployed.
 
 ### 6a. Configure the Server URL and API Key
 
-You can skip this step entirely: the first `strata deploy` prompts for anything missing. It asks for the server URL (saved to `project.yml`), then offers **Sign in via browser (recommended)** — the CLI opens your browser, you sign in, and it fetches and saves an API key to `.strata` automatically.
+You can skip this step entirely: the first `strata deploy` prompts for anything missing. It asks for the server URL (enter `https://app.strata.do`; it is saved to `project.yml`), then offers **Sign in via browser (recommended)** — the CLI opens your browser, you sign in, and it fetches and saves an API key to `.strata` automatically.
 
 To configure manually instead (or for non-interactive environments like CI):
 
 **Server URL** — Configure the Strata server URL in **`project.yml`** (not in `.strata`). Open `project.yml` and set the `server` key:
 
 ```yaml
-server: https://your-strata-server.com
+server: https://app.strata.do
 ```
 
-Replace `https://your-strata-server.com` with the URL of your Strata server (e.g. `http://localhost:8080` for a local instance). The tpcds-tutorial repo includes `server: http://localhost:8080` by default; change it if your server runs elsewhere.
+The tpcds-tutorial repo may still include `server: http://localhost:8080`; change it to `https://app.strata.do`.
+
+**Datasource path** — app.strata.do cannot read the `tpcds.duckdb` file on your machine. Before deploying, point the `tpcds` datasource at the hosted copy of the same data, `file: /data/tpcds.duckdb`, and deploy with `strata deploy --skip-audit` (the local audit cannot find that path). Keep your local path for `strata datasource test` and local audits.
 
 **API key** — Store your Strata API key in **`.strata`** (gitignored). Create `.strata` if it doesn't exist and add:
 
@@ -190,17 +192,17 @@ This checks for errors in table definitions, relationships, and datasource confi
 
 ### 6c. Deploy to the Server
 
-Deploy the semantic model to your Strata server:
+Deploy the semantic model to app.strata.do:
 
 ```bash
-strata deploy
+strata deploy --skip-audit
 ```
 
 This pushes your table definitions, relationships, and datasource configurations to the server. You'll see a summary of what's being deployed.
 
 ### 6d. Explore the Web UI
 
-Open your Strata server URL in a browser and sign in. You should now see the deployed project there:
+Open [app.strata.do](https://app.strata.do) in a browser and sign in. You should now see the deployed project there:
 
 - **Query Builder**: Try building a simple query — select a measure from Store Sales (e.g., total quantity) and a dimension from Date (e.g., year) to see the star schema in action
 
@@ -1103,10 +1105,10 @@ Fix any reported errors (e.g. typos in table names, missing relationships, or in
 Now that you've added the web channel tables and relationships, deploy your updated model to see the changes:
 
 ```bash
-strata deploy
+strata deploy --skip-audit
 ```
 
-Return to your Strata server in the browser and refresh. You should now see:
+Return to app.strata.do in the browser and refresh. You should now see:
 
 - **New Query Options**: You can now build queries using Web Sales measures and dimensions from your new tables
 

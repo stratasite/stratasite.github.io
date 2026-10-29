@@ -4,6 +4,7 @@
 // line that hands the technical reader a link without interrupting the story.
 import { Code } from 'astro:components';
 import FeatureVisual from '../FeatureVisual.astro';
+import { site } from '../../config/site';
 
 interface Step {
   time: string;
@@ -21,7 +22,7 @@ interface Step {
   codeLang?: string;
   codeFile?: string;
   alt?: string;
-  /** "Run this yourself in the free trial" link. `href` defaults to /try/. */
+  /** "Run this yourself in the free trial" link. `href` defaults to the trial signup. */
   tryIt?: { label: string; href?: string };
 }
 interface Props {
@@ -97,7 +98,7 @@ const { steps, ctaLocation = 'product' } = Astro.props;
           {s.tryIt && (
             <p class="mt-4">
               <a
-                href={s.tryIt.href ?? '/try/'}
+                href={s.tryIt.href ?? site.trialUrl}
                 class="group/try inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all hover:gap-2.5"
                 data-track="trial_cta_click"
                 data-track-cta-location={`${ctaLocation}-step-${i + 1}`}

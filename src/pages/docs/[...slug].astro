@@ -3,6 +3,8 @@ import { getCollection } from 'astro:content';
 import Docs from '../../layouts/Docs.astro';
 import Tabs from '../../components/docs/Tabs.astro';
 import TabItem from '../../components/docs/TabItem.astro';
+import Callout from '../../components/Callout.astro';
+import { site } from '../../config/site';
 import { docHref, docId, flatten, guideFor, trailFor } from '../../config/docs';
 
 export async function getStaticPaths() {
@@ -47,5 +49,17 @@ const editUrl = `https://github.com/stratasite/stratasite.github.io/edit/main/sr
   next={next}
   editUrl={editUrl}
 >
+  {guide.id === 'self-hosting' && (
+    // Self-hosting is an Enterprise feature; every page in the guide says so
+    // up front, before any install instructions.
+    <Callout type="info" title="Enterprise only">
+      <p>
+        Self-hosting is available on the Enterprise plan. Every other plan runs on the hosted app at{' '}
+        <a href={site.appUrl}>app.strata.do</a>, with nothing to install.{' '}
+        <a href={site.demoUrl} target="_blank" rel="noopener" data-track="generate_lead" data-track-cta-location="docs-self-hosting">Book a call</a>{' '}
+        to get access to the server image and a license.
+      </p>
+    </Callout>
+  )}
   <Content components={{ Tabs, TabItem }} />
 </Docs>

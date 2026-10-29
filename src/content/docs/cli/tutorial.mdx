@@ -7,10 +7,10 @@ Bootstrap the Strata TPC-DS tutorial project on your local machine with a single
 ## Usage
 
 ```bash
-strata project sample
+strata project sample --server https://app.strata.do
 ```
 
-The command prompts for your Strata server URL (default `http://localhost:8080`), then opens your browser so you can sign in — the CLI fetches an API key automatically once you do. No manual key handling required.
+The command opens your browser so you can sign in to app.strata.do, and the CLI fetches an API key automatically once you do. No manual key handling required. Without `--server` it prompts for the server URL; enter `https://app.strata.do`.
 
 | Flag | Required | Description |
 |------|----------|-------------|
@@ -29,20 +29,20 @@ The command prompts for your Strata server URL (default `http://localhost:8080`)
 
 ```bash
 cd tpc-ds-retail-sample
-strata deploy
+strata deploy --skip-audit
 ```
 
-Then open [http://localhost:8080](http://localhost:8080) in your browser to explore the deployed model.
+Then open [app.strata.do](https://app.strata.do) in your browser to explore the deployed model. `--skip-audit` skips the local datasource check, since the sample's DuckDB file lives on the server, not on your machine.
 
 ## Prerequisites
 
 - Strata CLI installed — see [Installation](/docs/getting-started/installation/)
-- A running Strata server — see [Quick Install](/docs/self-hosting/quick-install/)
+- A Strata account on app.strata.do. No account yet? [Start a 14-day trial](https://app.strata.do/signup).
 - Git installed
 
 ## Notes
 
-- The TPC-DS dataset is bundled inside the Strata Docker image at `/data/tpcds.duckdb` — no separate database setup required.
+- The TPC-DS dataset is hosted on app.strata.do at `/data/tpcds.duckdb`, so there is no separate database setup.
 - If a `tpc-ds-retail-sample/` directory already exists in the current folder, the command re-uses it and skips cloning.
 - Browser sign-in waits up to 5 minutes for you to complete authentication, then times out.
 

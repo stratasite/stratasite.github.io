@@ -56,6 +56,9 @@ export default defineConfig({
   // /developer-docs/. Once that deployment is switched off these paths fall
   // through to this site, and these send them on to the new home.
   redirects: {
+    // The self-install trial page is gone; the trial is the hosted app now
+    // (site.trialUrl in src/config/site.ts).
+    '/try': 'https://app.strata.do/signup',
     '/developer-docs': '/docs/',
     '/developer-docs/developer-guide': '/docs/',
     '/developer-docs/developer-guide/[...slug]': '/docs/[...slug]',

@@ -23,7 +23,6 @@ import Icon from '../../components/Icon.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import VideoLightbox from '../../components/product/VideoLightbox.astro';
 import CtaButton from '../../components/CtaButton.astro';
-import LiveDemoBand from '../../components/LiveDemoBand.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
@@ -44,7 +43,7 @@ const steps = [
       href: 'https://strata.do/developer-docs/developer-guide/cli/building-your-model',
       label: 'Building your model',
     },
-    tryIt: { label: 'Point your agent at your warehouse in the free trial', href: '/try/#step-4' },
+    tryIt: { label: 'Point your agent at your warehouse in the free trial' },
     codeLang: 'text',
     codeFile: 'claude code, from the project root',
     code: `> Build the semantic model for the tables in my warehouse
@@ -98,7 +97,7 @@ const steps = [
       href: 'https://strata.do/developer-docs/developer-guide/api/rest/query-spec',
       label: 'Query spec',
     },
-    tryIt: { label: 'Call the API against your own model in the free trial', href: '/try/#step-5' },
+    tryIt: { label: 'Call the API against your own model in the free trial' },
     codeLang: 'json',
     codeFile: 'POST /api/v1/projects/acme/queries',
     code: `{
@@ -312,7 +311,6 @@ const gained = [
   {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
 
   <!-- LIVE DEMO: see it before you install it -->
-  <LiveDemoBand location="aa-band" body="Type a question in plain language and watch it resolve to the right fields on a governed model." />
 
   <!-- CLOSING CTA -->
   <section class="band-rust border-t border-border bg-background">
@@ -326,7 +324,7 @@ const gained = [
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
         <CtaButton location="aa-closing" />
-        <CtaButton action="demo" location="aa-closing" />
+        <CtaButton action="pricing" location="aa-closing" />
       </div>
     </div>
   </section>

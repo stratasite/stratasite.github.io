@@ -55,12 +55,10 @@ const year = new Date().getFullYear();
         {caseStudies.map((cs) => (
           <li><a class="text-muted-foreground hover:text-foreground" href={`/case-studies/${cs.slug}/`}>{cs.data.navLabel ?? cs.data.title}</a></li>
         ))}
-        <li><a class="text-muted-foreground hover:text-foreground" href={site.liveDemoUrl} target="_blank" rel="noopener" data-track="live_demo_click" data-track-cta-location="footer">Live demo</a></li>
         <li><a class="text-muted-foreground hover:text-foreground" href={site.trialUrl} data-track="trial_cta_click" data-track-cta-location="footer">{site.trialLabel}</a></li>
         <li><a class="text-muted-foreground hover:text-foreground" href="/pricing/">Pricing</a></li>
         <li><a class="text-muted-foreground hover:text-foreground" href={site.docsUrl}>Docs</a></li>
         <li><a class="text-muted-foreground hover:text-foreground" href={site.blogUrl} target="_blank" rel="noopener">Blog</a></li>
-        <li><a class="text-muted-foreground hover:text-foreground" href={site.demoUrl} target="_blank" rel="noopener" data-track="generate_lead" data-track-cta-location="footer">{site.demoLabel}</a></li>
       </ul>
     </div>
   </div>

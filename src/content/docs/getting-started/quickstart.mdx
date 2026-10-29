@@ -1,55 +1,54 @@
 ---
 title: "Quick Start"
-description: "From nothing to a deployed semantic model in about 15 minutes: run the server, install the CLI, create a project."
+description: "From nothing to a deployed semantic model on your own warehouse: install the CLI, create a project, and deploy it to app.strata.do."
 ---
-From nothing to a deployed semantic model in about 15 minutes: run the server, install the CLI, create a project.
+From nothing to a deployed semantic model on your own warehouse: install the CLI, create a project, and deploy it to [app.strata.do](https://app.strata.do). There is no server to install; Strata hosts it for you.
 
-## 1. Run Strata Server
+You need a Strata account. No account yet? [Start a 14-day trial](https://app.strata.do/signup); it includes everything in Team.
 
-The server hosts the web UI and is where the CLI deploys your model, so it comes first.
+## Before you start: allow Strata's IP addresses
+
+Queries run from app.strata.do, not from your laptop. If your warehouse only accepts connections from approved IP addresses (a firewall, security group, or Snowflake network policy), add both of Strata's addresses to the allowlist:
+
+| IP address |
+|---|
+| `162.35.185.254` |
+| `68.168.222.246` |
+
+Allow both: Strata connects from either one.
 
 <Tabs>
-  <TabItem value="docker" label="Docker" default>
+  <TabItem value="snowflake" label="Snowflake" default>
 
-One command. No configuration needed.
+Scope the rule to the user Strata signs in as, so the rest of your account is unaffected:
 
-```bash
-docker run -d -p 8080:80 -v strata_data:/data --name strata ghcr.io/stratasite/server:latest
+```sql
+CREATE NETWORK RULE strata_ips
+  MODE = INGRESS
+  TYPE = IPV4
+  VALUE_LIST = ('162.35.185.254', '68.168.222.246');
+
+CREATE NETWORK POLICY strata_policy
+  ALLOWED_NETWORK_RULE_LIST = ('strata_ips');
+
+ALTER USER strata_svc SET NETWORK_POLICY = strata_policy;
 ```
 
-Strata starts a bundled PostgreSQL instance and generates encryption secrets on first boot. Both are persisted to the `strata_data` volume.
-
-Open [http://localhost:8080](http://localhost:8080), enter your license key, then create your admin account. Get a free license key at [license.strata.do](https://license.strata.do).
-
-The image ships with the TPC-DS retail sample project already deployed, so there is a model, reports, and an AI agent to explore as soon as you sign in.
-
-:::caution[Bundled database]
-The bundled Postgres is for local evaluation. For production, use a dedicated PostgreSQL instance — see [Production Deployment](/docs/self-hosting/production-deployment/).
-:::
+Replace `strata_svc` with the user in your datasource. Snowflake requires a network policy on a user before it accepts that user's personal access tokens, so this step is needed for `auth_mode: pat` as well.
 
   </TabItem>
-  <TabItem value="installer" label="Installer Script">
+  <TabItem value="other" label="Other warehouses">
 
-The installer checks prerequisites, prompts for a database and port, and starts Strata as Docker Compose services.
-
-```bash
-curl -fsSL https://strata.do/server/install.sh | bash
-```
-
-Leave the database prompts empty to use the bundled Postgres. After setup, open `http://<your-host>:<PORT>`, enter your license key, then create your admin account. Get a free license key at [license.strata.do](https://license.strata.do).
-
-The image ships with the TPC-DS retail sample project already deployed, so there is a model, reports, and an AI agent to explore as soon as you sign in.
-
-Full prompt reference and management commands: [Quick Install](/docs/self-hosting/quick-install/).
+Allow inbound connections from `162.35.185.254` and `68.168.222.246` on your database port: an AWS security group or Redshift cluster rule, a GCP or Azure firewall rule, `pg_hba.conf` for PostgreSQL, or your own firewall.
 
   </TabItem>
 </Tabs>
 
-Already have a server running? Skip to the next step.
+If your warehouse accepts connections from anywhere, skip this step.
 
-## 2. Install the CLI
+## 1. Install the CLI
 
-The CLI needs Ruby 3.4.4+ and Git. If you don't have them, see [CLI Installation](/docs/getting-started/installation/) for per-platform setup.
+The CLI is how you build and deploy a semantic model. It needs Ruby 3.4.4+ and Git. If you don't have them, see [CLI Installation](/docs/getting-started/installation/) for per-platform setup.
 
 <Tabs>
   <TabItem value="script" label="Shell Script" default>
@@ -74,30 +73,12 @@ Verify:
 strata --version
 ```
 
-## 3. Create a Project
+## 2. Create a Project
 
-Your server already has the sample model on it. Pick a path: clone the sample to see how a model is built and extend it, or start a project against your own warehouse.
+Start from scratch against your own warehouse. That is the fastest way to see Strata answer questions about your data. If you would rather explore a finished model first, the sample project is one command away.
 
 <Tabs>
-  <TabItem value="sample" label="Sample Project" default>
-
-The sample is a complete TPC-DS retail model backed by DuckDB, so it needs no warehouse. It is already deployed on every Docker install; this clones its source so you can work on it with the CLI.
-
-```bash
-strata project sample
-```
-
-The command signs you in to your server via browser, clones the project into `tpc-ds-retail-sample/`, and wires it to your server. Make a change and deploy it:
-
-```bash
-cd tpc-ds-retail-sample
-strata deploy
-```
-
-Refresh your server UI to see the change. The [Tutorial](/docs/getting-started/tutorial/) walks through extending the model.
-
-  </TabItem>
-  <TabItem value="scratch" label="From Scratch">
+  <TabItem value="scratch" label="From Scratch (recommended)" default>
 
 **Initialize** a project directory:
 
@@ -113,6 +94,10 @@ strata datasource add postgres
 # Prompts for connection details
 strata datasource test warehouse
 ```
+
+:::note[Your warehouse must be reachable from app.strata.do]
+`strata datasource test` connects from your laptop, but once deployed, queries run from app.strata.do. If the deployed project cannot connect, check that both of Strata's IP addresses are on your allowlist (see [Before you start](#before-you-start-allow-stratas-ip-addresses)).
+:::
 
 **Model a table** from a physical table, then a relationship:
 
@@ -134,18 +119,37 @@ strata audit
 strata deploy
 ```
 
-The first deploy prompts for your server URL and offers **Sign in via browser**. The CLI fetches and saves an API key, so there's no manual key setup.
+The first deploy prompts for your server URL. Enter `https://app.strata.do`, then choose **Sign in via browser**. The CLI fetches and saves an API key, so there's no manual key setup.
+
+  </TabItem>
+  <TabItem value="sample" label="Sample Project">
+
+The sample is a complete TPC-DS retail model backed by DuckDB, so it needs no warehouse. Use it to see how a finished model is structured before you build your own.
+
+```bash
+strata project sample --server https://app.strata.do
+```
+
+The command signs you in via browser, clones the project into `tpc-ds-retail-sample/`, and wires it to app.strata.do. Make a change and deploy it:
+
+```bash
+cd tpc-ds-retail-sample
+strata deploy --skip-audit
+```
+
+`--skip-audit` skips the local datasource check: the sample's DuckDB file lives on app.strata.do, not on your machine. Leave the flag off for your own projects. The [Tutorial](/docs/getting-started/tutorial/) walks through extending the model.
 
   </TabItem>
 </Tabs>
 
-You now have a semantic model running on your own Strata server.
+## 3. Explore
+
+Open [app.strata.do](https://app.strata.do) and pick your project. Build a view from a measure and a dimension, then try a measure from a second table to watch Strata blend across facts, or refuse the combination with a reason.
 
 ## Command Reference
 
 | Command | Syntax | Description |
 |---------|--------|-------------|
-| project sample | `strata project sample` | Clone the TPC-DS sample project locally |
 | init | `strata init PROJECT_NAME` | Initialize a new project |
 | datasource add | `strata datasource add ADAPTER` | Add a datasource connection |
 | datasource test | `strata datasource test DATASOURCE_KEY` | Test datasource connectivity |
@@ -155,12 +159,12 @@ You now have a semantic model running on your own Strata server.
 | create relation | `strata create relation PATH/RELATION_NAME` | Create a relationship file |
 | table list | `strata table list` | List defined table models |
 | audit | `strata audit` | Validate semantic model |
-| deploy | `strata deploy` | Deploy to Strata server |
+| deploy | `strata deploy` | Deploy to app.strata.do |
+| project sample | `strata project sample` | Clone the TPC-DS sample project locally |
 
 ## Next Steps
 
-- [Core Concepts](/docs/getting-started/concepts/) — What a datasource, table, and relationship are in Strata
-- [Tutorial](/docs/getting-started/tutorial/) — Hands-on walkthrough extending the TPC-DS model
-- [Building Your Model](/docs/cli/building-your-model/) — Build the model yourself or with a coding agent
-- [CLI Reference](/docs/cli/) — Detailed command documentation
-- [Self-Hosting Guide](/docs/self-hosting/) — Production deployment, SSO, and operations
+- [Building Your Model](/docs/cli/building-your-model/): build the model yourself or with a coding agent
+- [Core Concepts](/docs/getting-started/concepts/): what a datasource, table, and relationship are in Strata
+- [CLI Reference](/docs/cli/): detailed command documentation
+- [Tutorial](/docs/getting-started/tutorial/): hands-on walkthrough extending the TPC-DS sample

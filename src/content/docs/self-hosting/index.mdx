@@ -1,8 +1,12 @@
 ---
 title: "Server Installation"
-description: "Strata Server is the self-hosted web application for semantic analytics and BI workflows. It is distributed as a private container image and supports multiple deployment approaches."
+description: "Self-hosting Strata Server is an Enterprise feature. Strata Server is the web application for semantic analytics and BI workflows, distributed to Enterprise customers as a private container image."
 ---
-Strata Server is the self-hosted web application for semantic analytics and BI workflows. It is distributed as a private container image and supports multiple deployment approaches.
+Self-hosting Strata Server is an **Enterprise** feature. Every other plan runs on the hosted app at [app.strata.do](https://app.strata.do), so there is no server to install or operate. To start, follow the [Quick Start](/docs/getting-started/quickstart/) instead of this guide.
+
+Enterprise customers can run Strata in their own cloud or airgapped network. The server is distributed as a private container image with a license key, both provided as part of an Enterprise agreement. To get access, [book a call](https://calendar.app.google/KjU3TdPwfVNpfuSs5) or email [sales@strata.do](mailto:sales@strata.do).
+
+The rest of this guide is for teams that already have an Enterprise license.
 
 ## Deployment Flow
 
@@ -29,10 +33,15 @@ Scale by running more identical web service instances/tasks behind your load bal
 
 | Requirement | Version / Notes |
 |---|---|
+| Enterprise license | Provided with your Enterprise agreement |
 | Docker Engine | 24+ |
 | Docker Compose | v2.20+ |
 | PostgreSQL | 18 (managed or self-hosted) |
 | Network | Access to DB, registry, and storage endpoints |
+
+## Pointing the CLI at your server
+
+The developer guide uses `https://app.strata.do` as the server URL throughout. On a self-hosted install, use your own server's URL wherever it appears: the `server:` key in `project.yml`, the `--server` flag, and the REST API base URL.
 
 ## Next References
 

@@ -76,7 +76,7 @@ export const GET: APIRoute = async () => {
       'strata audit': 'Validate semantic model (syntax + semantics)',
       'strata audit syntax': 'Check YAML syntax only',
       'strata audit models': 'Validate model semantics only',
-      'strata deploy': 'Deploy semantic model to Strata server',
+      'strata deploy': 'Deploy semantic model to app.strata.do',
       'strata deploy --dry-run': 'Preview deployment without applying',
       'strata test': 'Run query validation tests',
       'strata create migration rename': 'Create a migration file to rename a field or table',

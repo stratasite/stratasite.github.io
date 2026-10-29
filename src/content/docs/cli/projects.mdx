@@ -10,14 +10,14 @@ After completing this guide, you will be able to:
 - Initialize a new Strata project
 - Add datasource adapters during initialization
 - Clone an existing project from a URL
-- Link a local project to an existing project on the Strata server
+- Link a local project to an existing project on app.strata.do
 - Configure `project.yml`
 
 ## Prerequisites
 
 - Strata CLI installed
 - For cloning: repository URL and API key (if required)
-- For linking: project ID from the Strata server
+- For linking: project ID from app.strata.do
 
 ## Step 1: Initialize a New Project
 
@@ -71,7 +71,7 @@ After initialization, edit `project.yml`:
 ```yaml
 name: My Project
 description: Project description
-server: https://strata.example.com
+server: https://app.strata.do
 production_branch: main
 git: https://github.com/example/project.git
 ```
@@ -89,4 +89,4 @@ The `project_id` is added automatically after your first deployment.
 - [Managing Datasources](/docs/cli/datasources/) - Add and configure datasources
 - [Building Your Model](/docs/cli/building-your-model/) - Author models yourself or with a coding agent
 - [Creating Tables](/docs/cli/tables/) - Create semantic table models
-- [Deployment](/docs/cli/deployment/) - Deploy to the Strata server
+- [Deployment](/docs/cli/deployment/) - Deploy to app.strata.do

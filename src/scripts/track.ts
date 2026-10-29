@@ -6,22 +6,11 @@
  *
  * Event vocabulary (keep this list current when adding events):
  *
- *   generate_lead        "Book a call" CTA click.       {cta_location}
- *   trial_cta_click      "Try it free" CTA click.       {cta_location}
- *   live_demo_click      Outbound click to the hosted demo site (demo.strata.do).
- *                        The cheapest "tried it" signal; mark it a key event
- *                        in GA4.                        {cta_location}
- *   trial_step_view      A /try/ step scrolled into view (once per step per
- *                        page load).                    {step, step_id}
- *   trial_path_select    A /try/ tab chosen (install path, OS, modeling path).
- *                                                       {group, choice}
- *   trial_command_copy   Copy button on a /try/ command. {command, step}
- *   trial_open_app       Click on the localhost link after install. The best
- *                        proxy for "started the trial"; mark it a key event
- *                        in GA4.                        {port}
- *   trial_faq_open       A troubleshooting entry expanded.  {question}
- *   trial_docs_click     Outbound click from /try/ into the docs. {target}
- *   trial_sample_project Click on the sample project shortcut.   {cta_location}
+ *   generate_lead        "Book a call" click (pricing page only). {cta_location}
+ *   trial_cta_click      "Start 14-day trial" click, out to the app signup.
+ *                        Mark it a key event in GA4.    {cta_location, plan?}
+ *   pricing_cta_click    "See pricing" secondary CTA.   {cta_location}
+ *   pricing_plan_select  An edition card chosen on /pricing/. {plan}
  *   zerosql_click        Outbound click to 0sql.io (site, docs or repository),
  *                        the open source server.      {cta_location, target}
  */

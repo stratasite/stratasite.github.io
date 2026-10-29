@@ -24,7 +24,6 @@ import Icon from '../../components/Icon.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import VideoLightbox from '../../components/product/VideoLightbox.astro';
 import CtaButton from '../../components/CtaButton.astro';
-import LiveDemoBand from '../../components/LiveDemoBand.astro';
 import ZeroSqlBand from '../../components/ZeroSqlBand.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
@@ -48,7 +47,7 @@ const steps = [
       href: '/features/semantic-layer-as-code/',
       label: 'Semantic layer as code',
     },
-    tryIt: { label: 'Model your own warehouse this way in the free trial', href: '/try/#step-3' },
+    tryIt: { label: 'Model your own warehouse this way in the free trial' },
     codeLang: 'yaml',
     codeFile: 'models/sales/tbl.orders.yml',
     code: `name: Orders
@@ -82,7 +81,7 @@ fields:
       href: '/features/grain-safe-blending/',
       label: 'Cross domain blending',
     },
-    tryIt: { label: 'Try a cross domain blend on your own data', href: '/try/#step-5' },
+    tryIt: { label: 'Try a cross domain blend on your own data' },
     diagram: 'blending',
     alt: 'Two facts at different grains aggregated independently and joined on a shared conformed key',
   },
@@ -141,7 +140,7 @@ fields:
       href: '/features/semantic-layer-as-code/',
       label: 'Semantic layer as code',
     },
-    tryIt: { label: 'Run these commands yourself in the free trial', href: '/try/#step-2' },
+    tryIt: { label: 'Run these commands yourself in the free trial' },
     codeLang: 'bash',
     codeFile: 'terminal',
     code: `strata init acme-analytics       # scaffold a project, AGENTS.md included
@@ -450,7 +449,6 @@ const gained = [
   />
 
   <!-- LIVE DEMO: see it before you install it -->
-  <LiveDemoBand location="sl-band" body="Drag a measure from one fact next to a dimension from another and watch it blend, or refuse with a reason." />
 
   <!-- CLOSING CTA -->
   <section class="band-rust border-t border-border bg-background">
@@ -464,7 +462,7 @@ const gained = [
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
         <CtaButton location="sl-closing" />
-        <CtaButton action="demo" location="sl-closing" />
+        <CtaButton action="pricing" location="sl-closing" />
       </div>
     </div>
   </section>

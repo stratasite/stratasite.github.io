@@ -1,13 +1,13 @@
 ---
 title: "Deployment"
-description: "Deploy your semantic model to a Strata server for production use."
+description: "Deploy your semantic model to app.strata.do for production use."
 ---
-Deploy your semantic model to a Strata server for production use.
+Deploy your semantic model to [app.strata.do](https://app.strata.do) for production use.
 
 ## Learning Objectives
 
 After completing this guide, you will be able to:
-- Deploy projects to Strata servers
+- Deploy projects to app.strata.do
 - Understand the deployment process
 - Monitor deployment progress
 - Check deployment status
@@ -40,14 +40,14 @@ This treats your semantic layer as **infrastructure as code** — the same rigor
 
 - Strata project initialized
 - Semantic models defined
-- A Strata account on the target server
+- A Strata account on [app.strata.do](https://app.strata.do) (no account yet? [start a 14-day trial](https://app.strata.do/signup))
 - Git repository initialized (for version tracking)
 
-You do **not** need to configure a server URL or API key up front. If either is missing, `strata deploy` prompts for the server URL (saved to `project.yml`) and then asks how you'd like to authenticate: **Sign in via browser (recommended)** — the CLI opens your browser and fetches an API key automatically once you sign in — or paste an API key manually (from your Strata web app under **Settings → API Keys**, or from your Strata administrator). Either way the key is saved to `.strata` (gitignored) for future runs.
+You do **not** need to configure a server URL or API key up front. If either is missing, `strata deploy` prompts for the server URL (enter `https://app.strata.do`; it is saved to `project.yml`) and then asks how you'd like to authenticate: **Sign in via browser (recommended)** — the CLI opens your browser and fetches an API key automatically once you sign in — or paste an API key manually (from your Strata web app under **Settings → API Keys**, or from your Strata administrator). Either way the key is saved to `.strata` (gitignored) for future runs.
 
 ## Basic Deployment
 
-Deploy your project to the Strata server:
+Deploy your project to app.strata.do:
 
 ```bash
 strata deploy
@@ -57,7 +57,7 @@ This will:
 1. **Run audits** - Validate YAML syntax, models, and connections
 2. **Check Git status** - Ensure working directory is clean
 3. **Create archive** - Package model files for upload
-4. **Upload to server** - Send archive to Strata server
+4. **Upload to server** - Send archive to app.strata.do
 5. **Monitor progress** - Track deployment status
 
 ## Deployment Process
@@ -105,7 +105,7 @@ The CLI creates an archive containing:
 
 ### 4. Upload and Processing
 
-The archive is uploaded to the Strata server, which:
+The archive is uploaded to app.strata.do, which:
 - Validates all files
 - Builds the semantic model
 - Generates universe paths
@@ -133,10 +133,10 @@ Environments are configured in `project.yml`:
 ```yaml
 environments:
   production:
-    server: https://strata.example.com
+    server: https://app.strata.do
     api_key: prod_key_here
   staging:
-    server: https://staging.strata.example.com
+    server: https://app.strata.do   # same server, a separate key and project
     api_key: staging_key_here
 ```
 
@@ -192,7 +192,7 @@ This shows:
 
 ```yaml
 name: My Project
-server: https://strata.example.com
+server: https://app.strata.do
 production_branch: main
 project_id: 123  # Auto-populated after first deployment
 ```
@@ -211,25 +211,11 @@ environments:
     api_key: staging_key_here
 ```
 
-## Deployment architecture and infrastructure
+## Where your model runs
 
-The `strata deploy` command publishes your **semantic model** to a running Strata server. In most production setups:
+`strata deploy` publishes your **semantic model** to [app.strata.do](https://app.strata.do), where Strata hosts the application, the API, and the database behind them. There is no infrastructure for you to run: queries go from app.strata.do straight to your warehouse, so the warehouse needs to accept connections from Strata.
 
-- The Strata server itself runs in a container (for example, Docker or Kubernetes) and hosts the Strata application and API only.
-- You are responsible for providing:
-  - A production-grade **database** for the Strata server (typically PostgreSQL).
-  - Object storage (such as S3, GCS, or Azure Blob) if you use features that store files or exports.
-
-Configuration for a deployed Strata server is provided via a combination of:
-
-- A server‑side configuration file, and/or
-- Environment variables for:
-  - Database connection (host, port, database, user, password, SSL).
-  - Email (SMTP) settings.
-  - Public host URL and any proxy headers.
-  - Storage backend configuration (bucket names, credentials, regions).
-
-The CLI does not manage this infrastructure; it assumes the server is reachable at the URL in `project.yml` and that the server has already been configured with the appropriate database and storage backends.
+On the Enterprise plan you can run Strata Server in your own cloud or network instead. The CLI works the same way; set `server:` in `project.yml` to your server's URL. See the [Self-Hosting Guide](/docs/self-hosting/).
 
 ## Best Practices
 
@@ -291,7 +277,7 @@ If the deployment fails partway through for any reason (transient error, server 
 - Network connectivity
 
 **Solution:**
-- Verify `project.yml` server URL
+- Verify `project.yml` server URL is `https://app.strata.do`
 - Re-authenticate: remove the `api_key` line from `.strata` and run `strata deploy` — it will offer browser sign-in again. (A placeholder value of `YOUR_STRATA_API_KEY` is treated as no key.)
 - Test network connection
 

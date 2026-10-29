@@ -25,7 +25,6 @@ import TradeoffPanel from '../../components/product/TradeoffPanel.astro';
 import PartitionRoutingDiagram from '../../components/PartitionRoutingDiagram.astro';
 import CaseStudySpotlight from '../../components/CaseStudySpotlight.astro';
 import CtaButton from '../../components/CtaButton.astro';
-import LiveDemoBand from '../../components/LiveDemoBand.astro';
 import CodePanel from '../../components/CodePanel.astro';
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
@@ -293,7 +292,6 @@ partitions:
   {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
 
   <!-- LIVE DEMO: see it before you install it -->
-  <LiveDemoBand location="oo-band" />
 
   <!-- CLOSING CTA -->
   <section class="band-rust border-t border-border bg-background">
@@ -307,7 +305,7 @@ partitions:
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
         <CtaButton location="oo-closing" />
-        <CtaButton action="demo" location="oo-closing" />
+        <CtaButton action="pricing" location="oo-closing" />
       </div>
     </div>
   </section>

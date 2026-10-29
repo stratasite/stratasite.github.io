@@ -3,15 +3,15 @@ import { site } from '../config/site';
 
 interface Props {
   /**
-   * What the button does. `trial` (default) sends the visitor to the free trial
-   * page; `demo` opens the book-a-call scheduler; `live-demo` opens the hosted
-   * demo site in a new tab. Site-wide, trial is the primary action and demo
-   * the secondary one.
+   * What the button does. `trial` (default) starts the 14-day trial in the
+   * app; `pricing` goes to the pricing page; `demo` opens the book-a-call
+   * scheduler. Site-wide, trial is the primary action and pricing the
+   * secondary one; book-a-call belongs on the pricing page only.
    */
-  action?: 'trial' | 'demo' | 'live-demo';
+  action?: 'trial' | 'pricing' | 'demo';
   /**
    * Visual style. `primary` = filled; `ghost` = outlined/subtle. Defaults
-   * to primary for trial and live-demo and ghost for demo, so a trial + demo
+   * to primary for trial and ghost for pricing and demo, so a trial + pricing
    * pair reads as primary + secondary without extra props.
    */
   variant?: 'primary' | 'ghost';
@@ -19,8 +19,8 @@ interface Props {
   class?: string;
   /**
    * In-page placement (e.g. `hero`, `pricing-team`, `footer`), sent as
-   * `cta_location` on the GA4 event (`trial_cta_click`, `generate_lead` or
-   * `live_demo_click`) so clicks can be attributed to where the visitor was.
+   * `cta_location` on the GA4 event (`trial_cta_click`, `pricing_cta_click`
+   * or `generate_lead`) so clicks can be attributed to where the visitor was.
    * Omit and the event still fires.
    */
   location?: string;
@@ -30,7 +30,7 @@ const { action = 'trial', class: className = '', location } = Astro.props;
 const targets = {
   trial: { label: site.trialLabel, href: site.trialUrl, event: 'trial_cta_click', variant: 'primary', external: false },
   demo: { label: site.demoLabel, href: site.demoUrl, event: 'generate_lead', variant: 'ghost', external: true },
-  'live-demo': { label: site.liveDemoLabel, href: site.liveDemoUrl, event: 'live_demo_click', variant: 'primary', external: true },
+  pricing: { label: 'See pricing', href: '/pricing/', event: 'pricing_cta_click', variant: 'ghost', external: false },
 } as const;
 const target = targets[action];
 const variant = Astro.props.variant ?? target.variant;
