@@ -107,6 +107,10 @@ const legal = defineCollection({
     numbered: z.boolean().default(true),
     order: z.number().default(100),
     draft: z.boolean().default(false),
+    // Listed in the site footer. Set false for a document that stays published
+    // at its permanent URL (linked from the app or old contracts) but no longer
+    // belongs in the site chrome; it still appears on the /legal/ index.
+    footer: z.boolean().default(true),
   }),
 });
 
