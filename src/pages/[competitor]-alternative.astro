@@ -1,0 +1,242 @@
+---
+/**
+ * Ad landing pages, one per incumbent BI tool: /power-bi-alternative/,
+ * /metabase-alternative/, /tableau-alternative/. Content comes from
+ * src/data/landing.ts; this file is the template.
+ *
+ * Built for a paid click: the H1 names the tool and the word "alternative",
+ * the first screen has the pitch and the trial button, the product shows
+ * itself before any comparison, and the FAQ answers the objections a buyer
+ * types into search (also emitted as FAQPage structured data).
+ */
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import CtaButton from '../components/CtaButton.astro';
+import TrialNote from '../components/TrialNote.astro';
+import ShowcaseBand from '../components/ShowcaseBand.astro';
+import { site } from '../config/site';
+import { editions } from '../data/pricing';
+import { landings } from '../data/landing';
+
+export async function getStaticPaths() {
+  return landings.map((l) => ({ params: { competitor: l.slug }, props: { landing: l } }));
+}
+
+const { landing: l } = Astro.props;
+const [entry] = editions;
+const perSeat = Math.ceil((entry.price / entry.users.included) * 100) / 100;
+
+const published = new Set((await getCollection('compare', ({ data }) => !data.draft)).map((c) => c.slug));
+const compareHref = l.compareSlug && published.has(l.compareSlug) ? `/compare/${l.compareSlug}/` : undefined;
+
+const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+const studyHref = caseStudies[0] ? `/case-studies/${caseStudies[0].slug}/` : '/case-studies/';
+
+const proof = [
+  { value: '5 → 100+', label: 'weekly self-serve users' },
+  { value: '90%', label: 'fewer ad hoc data requests' },
+  { value: `$${perSeat}`, label: 'a seat on Entry, hosted' },
+];
+
+const engines = [
+  'SQL Server and Azure SQL', 'Snowflake', 'Databricks', 'Redshift', 'Athena', 'Postgres',
+  'MySQL', 'ClickHouse', 'Druid', 'Trino', 'DuckDB',
+];
+
+const loc = `landing-${l.slug}`;
+
+const faqLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: l.faq.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+});
+---
+
+<Base title={l.title} description={l.description}>
+  <!-- HERO -->
+  <section class="border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+      <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">{l.competitor} alternative</p>
+          <h1 class="mt-4 font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+            {l.headline} <span class="text-primary">{l.headlineAccent}</span>
+          </h1>
+          <p class="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">{l.subhead}</p>
+          <div class="mt-8 flex flex-wrap items-center gap-4">
+            <CtaButton location={`${loc}-hero`} />
+            <CtaButton action="pricing" location={`${loc}-hero`} />
+          </div>
+          <TrialNote class="mt-4" />
+          <p class="mt-6 text-sm text-muted-foreground">
+            From ${entry.price} a month for {entry.users.included} users. Your data stays in your warehouse.
+          </p>
+        </div>
+        <div class="landing-media">
+          <video
+            class="w-full rounded-xl"
+            src="/interactive_dashboards.mp4"
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="metadata"
+            aria-label="An interactive Strata dashboard"
+          ></video>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROOF -->
+  <section class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <dl class="mx-auto grid max-w-4xl grid-cols-3 gap-6 text-center">
+        {proof.map((s) => (
+          <div>
+            <dt class="font-display text-2xl font-bold tabular-nums text-primary sm:text-3xl">{s.value}</dt>
+            <dd class="mt-1 text-sm leading-snug text-muted-foreground">{s.label}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="mt-6 text-center text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        Architecture born at Netflix. <a href={studyHref} class="text-primary hover:underline">Read the story</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- THE PAIN, IN THEIR WORDS -->
+  <section class="border-t border-border">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Sound familiar?</h2>
+      </div>
+      <ul class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
+        {l.pains.map((p) => (
+          <li class="rounded-xl border border-border bg-surface p-6">
+            <h3 class="font-display text-xl font-bold tracking-tight text-foreground">{p.title}</h3>
+            <p class="mt-2 leading-relaxed text-muted-foreground">{p.body}</p>
+          </li>
+        ))}
+      </ul>
+      <p class="mx-auto mt-14 max-w-3xl text-center font-display text-xl font-bold tracking-tight sm:text-2xl">
+        <span class="text-muted-foreground">Strata puts the operator at the controls, on one governed model.</span>
+        <span class="text-primary">They build it themselves, in minutes, and a wrong number is not possible.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- SHOWCASE: the product, before any comparison -->
+  <ShowcaseBand />
+
+  <!-- WHAT CHANGES -->
+  <section id="compare" class="scroll-mt-20 border-t border-border bg-surface-2">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          What changes when you move from <span class="text-primary">{l.competitor}</span>
+        </h2>
+      </div>
+      <div class="mx-auto mt-12 max-w-3xl">
+        <div class="hidden grid-cols-[9rem_1fr_1fr] gap-3 px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:grid">
+          <div></div>
+          <div>{l.competitor}</div>
+          <div class="text-primary">Strata</div>
+        </div>
+        {l.rows.map((r) => (
+          <div class="grid grid-cols-1 gap-3 border-t border-border py-4 sm:grid-cols-[9rem_1fr_1fr] sm:items-center">
+            <div class="text-sm font-semibold text-foreground">{r.axis}</div>
+            <div class="text-sm text-muted-foreground">{r.them}</div>
+            <div class="rounded-md bg-primary/10 px-3 py-2 text-sm font-medium text-foreground">
+              <span class="mr-1 font-bold text-primary">✓</span>{r.strata}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="mt-10 text-center">
+        {compareHref && (
+          <a href={compareHref} class="inline-flex items-center gap-1 font-semibold text-primary transition-all hover:gap-2">
+            The full Strata vs {l.competitor} comparison
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+          </a>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section class="border-t border-border">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <blockquote class="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        "{l.quote.text}"
+      </blockquote>
+      <p class="mt-4 text-sm text-muted-foreground">{l.quote.who}</p>
+      <a href={studyHref} class="mt-6 inline-flex items-center gap-1 font-semibold text-primary transition-all hover:gap-2">
+        Read the case study
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- CONNECTS TO -->
+  <section class="border-t border-border bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 text-center sm:px-6 lg:px-8">
+      <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">Connects to</p>
+      <ul class="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-2">
+        {engines.map((e) => (
+          <li class="rounded-full border border-border bg-surface-2 px-3 py-1 text-sm text-foreground">{e}</li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="scroll-mt-20 border-t border-border">
+    <div class="mx-auto max-w-3xl px-4 py-24 sm:px-6 lg:px-8">
+      <h2 class="text-center font-display text-3xl font-bold tracking-tight sm:text-4xl">Questions before you switch</h2>
+      <div class="mt-12 divide-y divide-border border-y border-border">
+        {l.faq.map((f) => (
+          <details class="group py-5">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-lg font-bold tracking-tight text-foreground">
+              {f.q}
+              <span class="shrink-0 text-primary transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+            </summary>
+            <p class="mt-3 leading-relaxed text-muted-foreground">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING CTA -->
+  <section class="border-t border-border bg-surface-2">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Put Strata in front of your operators this week</h2>
+      <p class="mt-4 text-muted-foreground">
+        {site.trialDays} days of the hosted app with a demo project ready to explore. Connect your warehouse when you are ready.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <CtaButton location={`${loc}-closing`} />
+        <CtaButton action="pricing" location={`${loc}-closing`} />
+      </div>
+    </div>
+  </section>
+
+  <script type="application/ld+json" set:html={faqLd} />
+</Base>
+
+<style>
+  .landing-media video {
+    display: block;
+    box-shadow: var(--media-shadow);
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

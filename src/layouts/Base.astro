@@ -18,6 +18,8 @@ interface Props {
   image?: string;
   /** Extra classes on <body>. Pass `dark` to render a whole page on the ink theme. */
   bodyClass?: string;
+  /** Keep a draft or experiment page out of search results. */
+  noindex?: boolean;
 }
 
 const {
@@ -26,6 +28,7 @@ const {
   path = Astro.url.pathname,
   image = `${site.domain}/og/default.png`,
   bodyClass = '',
+  noindex = false,
 } = Astro.props;
 
 const canonical = new URL(path, site.domain).href;
@@ -43,6 +46,7 @@ const canonical = new URL(path, site.domain).href;
     <meta name="description" content={description} />
     <meta name="author" content="Strata" />
     <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />

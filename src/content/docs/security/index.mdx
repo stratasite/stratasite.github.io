@@ -6,7 +6,7 @@ description: "How security policies mask or filter sensitive data at query plann
 Security policies restrict which rows and values each user can see. They are defined in `security.yml`, deployed with the semantic model, and enforced at query planning time, so every query path (reports, the REST API, MCP tools, calculations, segments, decorators) gets the same protection.
 
 :::note[Team and Enterprise]
-Row-level security is available on the Team and Enterprise plans. A server on the Free plan rejects any deploy that includes a `security.yml`. See [Pricing](/pricing/) or email [sales@strata.do](mailto:sales@strata.do) to upgrade.
+Row-level security is available on the Team and Enterprise plans. A server on the Entry plan rejects any deploy that includes a `security.yml`. See [Pricing](/pricing/) or email [sales@strata.do](mailto:sales@strata.do) to upgrade.
 :::
 
 To scaffold a policy from the command line, see [Security Policies](/docs/cli/security-policies/) in the CLI guide. This page explains how policies work and documents every key.
@@ -200,7 +200,7 @@ Policies are branch-scoped, so a policy deployed to a feature branch does not af
 
 ### License error
 
-If the server is on the Free plan the deploy fails with:
+If the server is on the Entry plan the deploy fails with:
 
 ```
 Row-level security is not available on your current license plan.

@@ -1,174 +1,270 @@
 ---
+/**
+ * Home page, aimed at the mid-market buyer: most have Power BI, Tableau or
+ * Looker, some have nothing but spreadsheets yet. The operator and correctness
+ * lead, the pain is named in the buyer's words, price and warehouse coverage
+ * are on the page, and the architecture pitch (OLAP, YAML, agents as
+ * infrastructure) moves to the back. The technical and enterprise buyer gets
+ * the platform story at /enterprise/.
+ */
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import Hero from '../components/Hero.astro';
-import ProductGrid from '../components/ProductGrid.astro';
 import FeatureRows from '../components/FeatureRows.astro';
-import StackUp from '../components/StackUp.astro';
-import CaseStudySpotlight from '../components/CaseStudySpotlight.astro';
 import CtaButton from '../components/CtaButton.astro';
-import ZeroSqlBand from '../components/ZeroSqlBand.astro';
+import TrialNote from '../components/TrialNote.astro';
+import ShowcaseBand from '../components/ShowcaseBand.astro';
 import { site } from '../config/site';
+import { editions } from '../data/pricing';
 
-const features = (await getCollection('features', ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.order - b.data.order
-);
-const comparisons = (await getCollection('compare', ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.order - b.data.order
-);
+const title = 'Strata: self-service BI your operators will actually use';
+const description =
+  'Business intelligence for the people who run the business. No formula language, no ticket queue, no two dashboards that disagree. Hosted on your warehouse, from $99 a month.';
+
+const [entry] = editions;
+const perSeat = Math.ceil((entry.price / entry.users.included) * 100) / 100; // Entry price spread over included users
+
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
 );
-const featuredStudy = caseStudies[0];
+const study = caseStudies[0];
+const studyHref = study ? `/case-studies/${study.slug}/` : '/case-studies/';
 
-// Shipped capabilities that do not get a feature row of their own.
-const shipped = [
-  { title: 'Segments', body: 'Restrict a view or a single measure to a cohort. New customer revenue beside total revenue, in one view.', href: '/features/measure-types/' },
-  { title: 'Row level security', body: 'Masking and auto filtering live in the model, so one report is safe for every audience.', href: '/product/semantic-layer/' },
-  { title: 'Google Sheets add on', body: 'Push a view into a spreadsheet through Strata\'s own add on. Results refresh in place.', href: '/product/business-intelligence/' },
-  { title: 'Subscriptions', body: 'Subscribe people to a report and it arrives on a cadence instead of being pulled.', href: '/product/business-intelligence/' },
-  { title: 'Schedules', body: 'Run a report at a set time. Recurring questions become answers that show up on their own.', href: '/product/business-intelligence/' },
+// Feature rows, reordered for this buyer and re-blurbed in their words. The
+// entries are the shared `features` collection; only the blurb is overridden,
+// so the detail pages and visuals are the same ones the current home uses.
+const blurbs: Record<string, string> = {
+  'beautiful-self-service':
+    'Drop views in the order you want them read and the layout engine sizes, places and colors them. No pixel pushing, and nobody waiting on the one person who makes dashboards look right.',
+  'instant-feedback':
+    'No dataset, explore or cube to pick first. The whole model is open, every step is validated as you build, and an invalid query is refused before it runs.',
+  'grain-safe-blending':
+    'Revenue from billing beside tickets from the CRM, by week, in one view. Strata aggregates each to the right grain and cannot double count.',
+  'measure-types':
+    'Running balances, share of total, year over year, a cohort beside the baseline. Fields and one-click transforms, not a formula language to learn.',
+  'ai-native':
+    'Type the question in English and it resolves to governed fields. Build an agent the way you build a report. There is no path to a wrong number.',
+  'semantic-layer-as-code':
+    'Your engineer, or their coding agent, models the warehouse once in plain YAML. strata audit checks it against the warehouse before it ships. Everything above runs on it.',
+  'federated-olap':
+    'Dashboards and agents answer in under a second from aggregate tables and hot tiers, and the warehouse does less work, not more.',
+};
+const order = Object.keys(blurbs);
+const all = await getCollection('features', ({ data }) => !data.draft);
+const features = order
+  .map((slug) => all.find((f) => f.slug === slug))
+  .filter((f): f is NonNullable<typeof f> => Boolean(f))
+  .map((f) => ({ ...f, data: { ...f.data, blurb: blurbs[f.slug] } }));
+
+const proof = [
+  { value: '5 → 100+', label: 'weekly self-serve users' },
+  { value: '90%', label: 'fewer ad hoc data requests' },
+  { value: `$${perSeat}`, label: 'a seat on Entry, hosted' },
 ];
 
-// Latest posts from the blog, fetched at build time. A fetch failure just
-// falls back to the plain "Read the blog" link.
-interface Post { title: string; link: string; date: string }
-let posts: Post[] = [];
-try {
-  const res = await fetch(`${site.blogUrl}/feed`);
-  if (res.ok) {
-    const xml = await res.text();
-    const items = xml.split('<item>').slice(1, 4);
-    posts = items.map((it) => {
-      const pick = (tag: string) => {
-        const m = it.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</${tag}>`));
-        return m ? m[1].trim() : '';
-      };
-      const d = new Date(pick('pubDate'));
-      return {
-        title: pick('title'),
-        link: pick('link'),
-        date: Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      };
-    }).filter((p) => p.title && p.link);
-  }
-} catch {
-  posts = [];
-}
+const pains = [
+  {
+    title: 'One person can drive the tool.',
+    body: 'DAX, LookML, a Tableau workbook, or the analyst with the SQL. Every new measure and every fix waits for them.',
+  },
+  {
+    title: 'Two dashboards, two totals.',
+    body: 'Each report carries its own model. Nobody is sure which revenue number is the right one.',
+  },
+  {
+    title: 'Every new question is a ticket, or a spreadsheet.',
+    body: 'The people who run the business get the data last, or rebuild it by hand from an export.',
+  },
+];
+
+const engines = [
+  'SQL Server and Azure SQL',
+  'Snowflake',
+  'Databricks',
+  'Redshift',
+  'Athena',
+  'Postgres',
+  'MySQL',
+  'ClickHouse',
+  'Druid',
+  'Trino',
+  'DuckDB',
+];
 ---
 
-<Base>
-  <!-- HERO -->
-  <Hero />
+<Base title={title} description={description}>
+  <!-- HERO: the operator and correctness, not the AI age -->
+  <section class="border-b border-border">
+    <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+      <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">Self-service BI, hosted</p>
+          <h1 class="mt-4 font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+            Self-service your operators will actually use. <span class="text-primary">Every number correct.</span>
+          </h1>
+          <p class="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            Business intelligence for the people who run the business. No formula language, no ticket queue, no
+            two dashboards that disagree. On your warehouse, hosted for you.
+          </p>
+          <div class="mt-8 flex flex-wrap items-center gap-4">
+            <CtaButton location="home-hero" />
+            <CtaButton action="pricing" location="home-hero" />
+          </div>
+          <TrialNote class="mt-4" />
+          <p class="mt-6 text-sm text-muted-foreground">
+            From ${entry.price} a month for {entry.users.included} users. Alongside the BI tool you have, or as your first.
+          </p>
+        </div>
+        <div class="v2-media">
+          <video
+            class="w-full rounded-xl"
+            src="/hero_demo_v2.mp4"
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="metadata"
+            aria-label="Strata product walkthrough"
+          ></video>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <!-- SOCIAL PROOF -->
+  <!-- PROOF: the outcome, not the logo -->
   <section class="bg-surface">
-    <div class="mx-auto max-w-7xl px-4 py-8 text-center sm:px-6 lg:px-8">
-      <p class="text-xs font-medium uppercase tracking-[0.2em] text-primary sm:text-sm">
-        Born at Netflix, ready for the world
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <dl class="mx-auto grid max-w-4xl grid-cols-3 gap-6 text-center">
+        {proof.map((s) => (
+          <div>
+            <dt class="font-display text-2xl font-bold tabular-nums text-primary sm:text-3xl">{s.value}</dt>
+            <dd class="mt-1 text-sm leading-snug text-muted-foreground">{s.label}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="mt-6 text-center text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        Architecture born at Netflix. <a href={studyHref} class="text-primary hover:underline">Read the story</a>
       </p>
     </div>
   </section>
 
-  <!-- PRODUCTS -->
-  <section id="products" class="band-rust scroll-mt-20 border-t border-border bg-background">
+  <!-- THE PAIN, IN THEIR WORDS -->
+  <section class="border-t border-border">
     <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-3xl text-center">
-        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          One platform, <span class="text-primary">four propositions</span>
-        </h2>
-        <p class="mt-4 text-muted-foreground">
-          A governed semantic layer, beautiful self-service dashboards, agents grounded in live data, and the
-          open OLAP engines that make it all fast. One system, four ways to put it to work.
-        </p>
+        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Sound familiar?</h2>
       </div>
-      <div class="mt-16">
-        <ProductGrid />
-      </div>
+      <ul class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
+        {pains.map((p) => (
+          <li class="rounded-xl border border-border bg-surface p-6">
+            <h3 class="font-display text-xl font-bold tracking-tight text-foreground">{p.title}</h3>
+            <p class="mt-2 leading-relaxed text-muted-foreground">{p.body}</p>
+          </li>
+        ))}
+      </ul>
+      <p class="mx-auto mt-14 max-w-3xl text-center font-display text-xl font-bold tracking-tight sm:text-2xl">
+        <span class="text-muted-foreground">Strata puts the operator at the controls, on one governed model.</span>
+        <span class="text-primary">They build it themselves, in minutes, and a wrong number is not possible.</span>
+      </p>
     </div>
   </section>
 
-  <!-- FEATURES -->
+  <!-- SHOWCASE (the page's one rust band) -->
+  <ShowcaseBand />
+
+  <!-- FEATURES, reordered for this buyer -->
   <section id="features" class="scroll-mt-20 border-t border-border">
     <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-3xl text-center">
         <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          World class <span class="text-primary">Semantic Engine</span> designed for
-          <span class="text-primary">Non-technical Users</span> and <span class="text-primary">Agents</span>
+          Built for the <span class="text-primary">operator</span>, safe for <span class="text-primary">AI</span>
         </h2>
-        <p class="mt-4 text-muted-foreground">A governed semantic layer fused with beautiful-by-default dashboards.</p>
+        <p class="mt-4 text-muted-foreground">
+          What the people who run the business get, and the model underneath that makes it correct.
+        </p>
       </div>
       <div class="mt-16">
         <FeatureRows features={features} />
       </div>
+    </div>
+  </section>
 
-      <!-- Shipped and easy to miss: the smaller differentiators that never get a row. -->
-      <div class="mx-auto mt-24 max-w-6xl">
-        <p class="text-center font-display text-sm font-semibold uppercase tracking-wider text-primary">Also shipped</p>
-        <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {shipped.map((s) => (
-            <li>
-              <a href={s.href} class="group/ship flex h-full flex-col rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary/50 hover:bg-surface-2">
-                <span class="font-display font-bold text-foreground">{s.title}</span>
-                <span class="mt-1.5 text-sm leading-relaxed text-muted-foreground">{s.body}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
+  <!-- CONNECTS TO: one line, because this is where a SQL Server shop bounces -->
+  <section class="border-t border-border bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 text-center sm:px-6 lg:px-8">
+      <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">Connects to</p>
+      <ul class="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-x-2 gap-y-2">
+        {engines.map((e) => (
+          <li class="rounded-full border border-border bg-surface-2 px-3 py-1 text-sm text-foreground">{e}</li>
+        ))}
+      </ul>
+      <p class="mt-4 text-sm text-muted-foreground">
+        Your data stays in your warehouse. <a href="/docs/semantic-model/adapters/" class="font-semibold text-primary hover:underline">All adapters</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- CUSTOMER STORY, framed for a smaller company -->
+  {study && (
+    <section class="border-t border-border">
+      <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+        <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">Customer story</p>
+            <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              <a href={studyHref} class="transition-colors hover:text-primary">The request queue problem, solved once</a>
+            </h2>
+            <p class="mt-5 text-lg text-muted-foreground">
+              A customer service org had a great BI tool and a Slack channel drowning in data requests. They gave 800
+              non-technical people governed self-service instead. Weekly self-serve users went from five to hundreds
+              and ad hoc requests fell 90%. Your team is smaller. The queue is the same.
+            </p>
+            <figure class="mt-8 border-l-2 border-primary pl-4">
+              <blockquote class="text-foreground">"You took the complexity of Tableau and smashed it down to nothing."</blockquote>
+              <figcaption class="mt-1.5 text-sm text-muted-foreground">Customer Service Product Manager</figcaption>
+            </figure>
+            <a href={studyHref} class="mt-8 inline-flex items-center gap-1 font-semibold text-primary transition-all hover:gap-2">
+              Read the case study
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+            </a>
+          </div>
+          <figure class="v2-media">
+            <img
+              src="/cs_case_study.jpg"
+              alt="Customer service team wearing headsets at their desks in a call center"
+              width="1024"
+              height="683"
+              loading="lazy"
+              class="h-auto w-full rounded-2xl border border-border"
+            />
+          </figure>
+        </div>
       </div>
-    </div>
-  </section>
-
-  <!-- HOW WE STACK UP -->
-  <section id="compare" class="scroll-mt-20 border-t border-border bg-surface-2">
-    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl text-center">
-        <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">How we stack up</h2>
-        <p class="mt-4 text-muted-foreground">The only product that is both a governed semantic layer and a beautiful self-service tool. Compare it to whatever you use today.</p>
-      </div>
-      <div class="mt-14"><StackUp comparisons={comparisons} /></div>
-    </div>
-  </section>
-
-  <!-- CASE STUDY SPOTLIGHT -->
-  {featuredStudy && <CaseStudySpotlight study={featuredStudy} />}
-
-  <!-- THE OPEN SOURCE OPTION: 0sql, the layer on its own -->
-  <ZeroSqlBand location="home-band" />
-
-  <!-- LATEST FROM THE BLOG (links out to blog.strata.do) -->
-  <section class="scroll-mt-20">
-    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 text-center">
-      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Latest from the blog</h2>
-      <p class="mt-4 text-muted-foreground">Deep dives on semantic modeling, federation, and analytics in the AI age.</p>
-      {posts.length > 0 && (
-        <ul class="mx-auto mt-10 grid max-w-5xl gap-4 text-left sm:grid-cols-3">
-          {posts.map((p) => (
-            <li>
-              <a href={p.link} target="_blank" rel="noopener" class="flex h-full flex-col rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary/50 hover:bg-surface-2">
-                <span class="font-display font-bold leading-snug text-foreground">{p.title}</span>
-                {p.date && <span class="mt-auto pt-3 text-xs text-muted-foreground">{p.date}</span>}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-      <a href={site.blogUrl} target="_blank" rel="noopener" class="mt-6 inline-flex items-center gap-1 font-semibold text-primary hover:gap-2 transition-all">
-        Read the blog
-        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
-      </a>
-    </div>
-  </section>
+    </section>
+  )}
 
   <!-- CLOSING CTA -->
-  <section class="band-rust border-t border-border bg-background">
+  <section class="border-t border-border bg-surface-2">
     <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
-      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Run Strata on your own data today</h2>
-      <p class="mt-4 text-muted-foreground">Start a 14-day trial of the hosted app, connect your warehouse, and let your coding agent build the semantic model. Nothing to install.</p>
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Put Strata in front of your operators this week</h2>
+      <p class="mt-4 text-muted-foreground">
+        {site.trialDays} days of the hosted app with a demo project ready to explore. Connect your warehouse when you
+        are ready. Keep the BI tool you have for what it does well, or make this your first.
+      </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
         <CtaButton location="home-closing" />
         <CtaButton action="pricing" location="home-closing" />
       </div>
+      <p class="mt-8 text-sm text-muted-foreground">
+        Evaluating the platform for a data team? <a href="/enterprise/" class="font-semibold text-primary hover:underline">Strata for enterprise</a>: semantic layer, federated OLAP, agents.
+      </p>
     </div>
   </section>
 </Base>
+
+<style>
+  .v2-media video,
+  .v2-media img {
+    display: block;
+    box-shadow: var(--media-shadow);
+  }
+</style>

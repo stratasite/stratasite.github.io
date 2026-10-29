@@ -1,0 +1,194 @@
+---
+/**
+ * The product doing the job, in four beats: one real clip each, one line each.
+ * Click a beat or let the clip run; when it ends the next one starts. Rendered
+ * as a rust band, so use it as the page's one rust surface.
+ */
+interface Props {
+  heading?: string;
+  /** The accented tail of the heading. */
+  accent?: string;
+  sub?: string;
+  class?: string;
+}
+const {
+  heading = 'From question to answer,',
+  accent = 'without the ticket',
+  sub = 'Here is what your operators do on day one.',
+  class: className = '',
+} = Astro.props;
+
+const showcase = [
+  {
+    label: 'Ask',
+    claim: 'Type the question in plain English. Strata resolves it to governed measures and the right filter.',
+    video: '/ai_sprinkled_editor.mp4',
+    alt: 'Resolving a natural language question into measures and a filter in the Strata editor',
+  },
+  {
+    label: 'Build',
+    claim: 'Pull measures from any domain. Only valid combinations are offered, and the preview updates as you go.',
+    video: '/instant_feedback.mp4',
+    alt: 'Building a cross domain view with instant validation and preview',
+  },
+  {
+    label: 'Explore',
+    claim: 'Dashboards that are beautiful by default and interactive out of the box. Drill, filter, compare.',
+    video: '/interactive_dashboards.mp4',
+    alt: 'Drilling and filtering an interactive Strata dashboard',
+  },
+  {
+    label: 'Deliver',
+    claim: 'Push it to Google Sheets, subscribe the team, or schedule it for Monday at seven.',
+    video: '/exports_and_schedules.mp4',
+    alt: 'Exporting a report to Google Sheets and scheduling it',
+  },
+];
+---
+
+<section id="see-it" class={`band-rust scroll-mt-20 border-t border-border bg-background ${className}`}>
+  <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-3xl text-center">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        {heading} <span class="text-primary">{accent}</span>
+      </h2>
+      <p class="mt-4 text-muted-foreground">{sub}</p>
+    </div>
+
+    <div class="mt-14 grid items-center gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-14" data-showcase>
+      <!-- beats -->
+      <ol class="space-y-3" role="tablist" aria-label="Product walkthrough">
+        {showcase.map((b, i) => (
+          <li>
+            <button
+              type="button"
+              role="tab"
+              id={`beat-${i}`}
+              aria-controls={`clip-${i}`}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+              data-beat={i}
+              class="beat w-full rounded-xl border border-border p-5 text-left transition-colors"
+            >
+              <span class="flex items-baseline gap-3">
+                <span class="font-display text-sm font-bold tabular-nums text-primary">{String(i + 1).padStart(2, '0')}</span>
+                <span class="font-display text-xl font-bold tracking-tight text-foreground">{b.label}</span>
+              </span>
+              <span class="mt-2 block text-sm leading-relaxed text-muted-foreground">{b.claim}</span>
+              <span class="beat-bar mt-4 block h-0.5 w-full overflow-hidden rounded-full bg-border" aria-hidden="true">
+                <span class="beat-fill block h-full w-0 bg-primary"></span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <!-- stage -->
+      <div class="showcase-media">
+        {showcase.map((b, i) => (
+          <video
+            id={`clip-${i}`}
+            role="tabpanel"
+            aria-labelledby={`beat-${i}`}
+            data-clip={i}
+            class="w-full rounded-xl"
+            src={b.video}
+            muted
+            playsinline
+            preload={i === 0 ? 'auto' : 'metadata'}
+            aria-label={b.alt}
+            hidden={i !== 0}
+          ></video>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .showcase-media video {
+    display: block;
+    box-shadow: var(--media-shadow);
+  }
+  .showcase-media video[hidden] {
+    display: none;
+  }
+  .beat {
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+  }
+  .beat:hover {
+    border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  }
+  .beat[aria-selected='true'] {
+    border-color: var(--primary);
+    background: var(--surface-2);
+  }
+  .beat-fill {
+    transition: width 0.25s linear;
+  }
+</style>
+
+<script>
+  // One clip plays at a time; the active beat's bar tracks it, and the next
+  // beat starts when the clip ends. Clicking a beat jumps to it.
+  const root = document.querySelector<HTMLElement>('[data-showcase]');
+  if (root) {
+    const beats = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-beat]'));
+    const clips = Array.from(root.querySelectorAll<HTMLVideoElement>('[data-clip]'));
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let current = 0;
+
+    function show(i: number, focus = false) {
+      current = i;
+      beats.forEach((b, idx) => {
+        const on = idx === i;
+        b.setAttribute('aria-selected', String(on));
+        b.tabIndex = on ? 0 : -1;
+        const fill = b.querySelector<HTMLElement>('.beat-fill');
+        if (fill && !on) fill.style.width = '0';
+        if (on && focus) b.focus();
+      });
+      clips.forEach((v, idx) => {
+        const on = idx === i;
+        v.hidden = !on;
+        if (on) {
+          v.currentTime = 0;
+          if (!reduced) v.play().catch(() => {});
+        } else {
+          v.pause();
+        }
+      });
+    }
+
+    clips.forEach((v, i) => {
+      v.addEventListener('timeupdate', () => {
+        if (i !== current || !Number.isFinite(v.duration) || v.duration === 0) return;
+        const fill = beats[i].querySelector<HTMLElement>('.beat-fill');
+        if (fill) fill.style.width = `${(v.currentTime / v.duration) * 100}%`;
+      });
+      v.addEventListener('ended', () => {
+        if (i === current) show((current + 1) % clips.length);
+      });
+    });
+
+    beats.forEach((b, i) => {
+      b.addEventListener('click', () => show(i));
+      b.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+        e.preventDefault();
+        const dir = e.key === 'ArrowDown' ? 1 : -1;
+        show((i + dir + beats.length) % beats.length, true);
+      });
+    });
+
+    // Only start once the band is on screen, so it is not competing with a
+    // hero clip at load.
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        show(0);
+        io.disconnect();
+      }
+    }, { threshold: 0.3 });
+    io.observe(root);
+  }
+</script>

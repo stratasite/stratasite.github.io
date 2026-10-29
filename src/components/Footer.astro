@@ -32,6 +32,7 @@ const year = new Date().getFullYear();
         {products.map((p) => (
           <li><a class="text-muted-foreground hover:text-foreground" href={`/product/${p.slug}/`}>{p.label}</a></li>
         ))}
+        <li><a class="text-muted-foreground hover:text-foreground" href="/enterprise/">Strata for enterprise</a></li>
         <li>
           <a class="text-muted-foreground hover:text-foreground" href={site.zerosql.url} target="_blank" rel="noopener" data-track="zerosql_click" data-track-cta-location="footer" data-track-target="site">
             0sql, open source semantic layer

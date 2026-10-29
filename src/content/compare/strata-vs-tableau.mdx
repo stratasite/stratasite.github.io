@@ -2,19 +2,103 @@
 title: Strata vs Tableau
 competitor: Tableau
 category: bi-tool
-summary: Tableau is best in class for visualization. Strata is the governed, grain-safe, federated semantic layer underneath, with Tableau's LOD idea lifted into governed measures.
+summary: Tableau is best in class for visualization, and its primary operator is the analyst with a Creator seat. Strata makes the non-technical user the operator, lifts Tableau's LOD idea into governed measures everyone shares, and cannot double count.
 order: 20
-draft: true
+draft: false
 ---
 
-## Where Tableau Is Strong
+import VersusSection from '../../components/VersusSection.astro';
 
-Tableau is best in class for visualization and visual exploration, has a huge ecosystem, and pioneered
-LOD expressions like FIXED and EXCLUDE.
+<VersusSection slug={props.slug} competitor={props.competitor} theme="modeling">
 
-## Where Strata Pulls Ahead
+Tableau models in published data sources and workbooks, and each one carries
+its own fields, joins and calculated fields. Every new question tends to spawn
+a new data source, redundant measures multiply, and users need a map to find
+where to look. The customer service org in our case study hit exactly this:
+one Tableau estate, hundreds of data sources, and a per-partner masking
+requirement that would have multiplied them ten times over.
 
-Tableau has no governed semantic layer and no multi-engine federation, so correctness and performance
-fall on you while extracts and per-workbook config pile up. Strata is the governed grain-safe layer
-underneath, with the LOD idea lifted into reusable governed measures, federated hot-tier performance,
-and agent-safe retrieval. It augments or replaces Tableau rather than connecting to it.
+Inside one data source, relationships do real work: Tableau aggregates each
+table at its own level before combining, so a well built source avoids the
+classic fan out. Across data sources, blending joins on linking fields with
+limits on what the secondary source can do, and calculated fields, joins and
+blends all trust the author. Strata models a whole domain once, in plain YAML
+in Git, derives what is legal from the model, and refuses an invalid
+combination before it runs. There is no path to a wrong number.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="measures">
+
+Tableau invented the level of detail expression. FIXED, INCLUDE and EXCLUDE,
+plus table calculations, make it possible to express share of total, fixed
+denominators and running balances. But each one lives in a workbook or a
+published source, written by a Creator, and the same measure ends up defined
+five ways in five workbooks.
+
+Strata lifts the idea into the model. Inclusion and Exclusion LOD are measure
+types, beside Standard, Complex and Snapshot, defined once and reused by
+everyone, with one click year over year, moving average and percent of total.
+A segment on a single measure puts a cohort beside the baseline in one view,
+which in Tableau is a set plus a calculated field.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="operator">
+
+The primary operator is the person who can drive the full tool, not just
+consume it. In Tableau that person holds a Creator seat: they build the data
+source, write the calculations, and lay out the dashboard. Explorers can edit
+on the web within what a Creator published, and Viewers consume. The queue
+forms in front of the Creators.
+
+In Strata the primary operator is the non-technical user. They start from a
+measure, Strata derives the valid paths and validates every keystroke, and
+they build reports, dashboards, agents and exports themselves. Tableau's
+dashboards are as good as the Creator makes them, pixel by pixel. Strata's are
+beautiful by default, arranged by a layout engine.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="performance">
+
+Tableau is fast on Hyper extracts, which means refresh schedules and numbers
+that are as fresh as the last run. Live connections put every interaction on
+the warehouse. Either way, speed is a property of extracts or of the warehouse,
+not of infrastructure you control.
+
+Strata is aggregate aware and federates across OLAP engines you own, with
+partition aware routing to the fastest source that can answer. The warehouse
+stays the system of record; a ClickHouse or Druid hot tier takes the repetitive
+queries, live. One measure definition serves every engine.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="ai">
+
+Tableau Pulse delivers insights on metrics defined against a published data
+source, and Tableau Agent helps a Creator author. Both inherit the data
+source's boundaries: a question that spans sources, or a calculation the
+author did not anticipate, is outside what they can answer safely.
+
+Strata's validation loop is the agent API. An agent builds queries through
+the same validated interface a person does, across the whole governed model,
+and gets the same refusals, so it cannot return a semantically invalid answer.
+
+</VersusSection>
+
+<VersusSection slug={props.slug} competitor={props.competitor} theme="better">
+
+Tableau is the best visualization tool there is. For an analyst who wants to
+explore freely, drag anything anywhere, and craft a dashboard to the pixel,
+nothing else comes close, and the community, templates and talent pool are
+enormous.
+
+If your analysts are the audience, if the sources you care about are files and
+SaaS apps rather than a warehouse, or if visual craft is the product, Tableau
+does those things and Strata does not. Strata does not connect to Tableau,
+on purpose. It augments or replaces it for governed self-service on the
+warehouse, which is where the customer service org in our case study took 800
+users.
+
+</VersusSection>

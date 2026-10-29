@@ -7,11 +7,12 @@ export const site = {
   name: 'Strata',
   domain: 'https://strata.do',
   description:
-    'High-performance, AI-safe self-service analytics — a governed semantic layer fused with beautiful-by-default dashboards, for humans and agents.',
+    'High-performance, AI-safe self-service analytics: a governed semantic layer fused with beautiful-by-default dashboards, for humans and agents.',
 
   /**
-   * Book-a-call scheduler. Strata is self-serve SaaS, so this appears only on
-   * the pricing page (Enterprise card and the help line under the sizer).
+   * Book-a-call scheduler. Strata is self-serve SaaS, so this appears only
+   * where the Enterprise buyer is: the pricing page (Enterprise card and the
+   * help line under the sizer) and the closing of /enterprise/.
    */
   demoUrl: 'https://calendar.app.google/KjU3TdPwfVNpfuSs5',
   demoLabel: 'Book a call',

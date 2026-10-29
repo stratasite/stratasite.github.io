@@ -174,6 +174,53 @@ export const competitors: Record<string, Competitor> = {
     ],
   },
 
+  'strata-vs-tableau': {
+    verified: 'October 2026',
+    verdict: [
+      'Tableau trusts the Creator to define every measure and every join; Strata defines each measure once in a governed model and refuses anything invalid.',
+      'Tableau invented LOD expressions and leaves them in the workbook; Strata lifts them into governed measure types everyone shares.',
+      'Tableau is built for the analyst with a Creator seat; Strata makes the non technical user the operator.',
+    ],
+    cells: {
+      modeling: 'Published data sources and workbooks, each with its own fields and calculations. Every new question tends to spawn a new data source.',
+      blending: 'Relationships inside one data source. Across data sources, blending on linking fields with limits on what the secondary source can do.',
+      grain: 'Relationships help inside one source. Calculated fields, joins and cross source blends trust the author.',
+      expressiveness: 'Calculated fields, LOD expressions and table calculations. Powerful, per workbook, and a skill to learn.',
+      segments: 'Sets and groups, with a calculated field to put a cohort beside the baseline.',
+      operator: 'Creators. Explorers get web authoring on what a Creator published; Viewers consume.',
+      dashboards: 'Best in class visualization with pixel level manual layout. As good as the Creator makes it.',
+      performance: 'Hyper extracts on a refresh schedule, or live connections. Speed is extracts or the warehouse.',
+      engines: 'Vast connector list, one data source at a time. No routing between engines.',
+      agents: 'Tableau Pulse and Tableau Agent on a published data source. Not grain safe retrieval across sources.',
+    },
+    extra: {
+      modeling: [
+        {
+          label: 'Version control',
+          them: 'Workbooks and data sources as .twb and .tds files on Tableau Server or Cloud. No native Git workflow.',
+          strata: 'Plain YAML in your repository. Branch deploys, review in pull requests, strata audit in CI.',
+        },
+      ],
+    },
+    better: [
+      {
+        label: 'Visual exploration',
+        them: 'Best in class visualization and freeform drag and drop exploration for analysts.',
+        strata: 'A layout engine and a considered palette. Beautiful by default, not freeform.',
+      },
+      {
+        label: 'Ecosystem and community',
+        them: 'A huge community, Tableau Public, and years of extensions, templates and talent.',
+        strata: 'A young product with a small community.',
+      },
+      {
+        label: 'Files and SaaS sources',
+        them: 'Hundreds of connectors, including spreadsheets, files and SaaS apps.',
+        strata: 'Warehouses and OLAP engines. Land the data first.',
+      },
+    ],
+  },
+
   'strata-vs-power-bi': {
     verified: 'September 2026',
     verdict: [
