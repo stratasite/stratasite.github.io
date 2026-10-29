@@ -13,6 +13,10 @@
  *   pricing_plan_select  An edition card chosen on /pricing/. {plan}
  *   zerosql_click        Outbound click to 0sql.io (site, docs or repository),
  *                        the open source server.      {cta_location, target}
+ *   video_open           The full walkthrough lightbox opened from the home
+ *                        hero (clip or button).        {cta_location}
+ *   video_progress       Watch depth on the walkthrough, once per milestone
+ *                        per play.                     {video, percent}
  */
 
 type Params = Record<string, string | number | boolean>;

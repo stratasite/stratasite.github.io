@@ -21,7 +21,7 @@ const description =
   'Business intelligence for the people who run the business. No formula language, no ticket queue, no two dashboards that disagree. Hosted on your warehouse, from $99 a month.';
 
 const [entry] = editions;
-const perSeat = Math.ceil((entry.price / entry.users.included) * 100) / 100; // Entry price spread over included users
+const perUser = entry.users.price; // what one more user costs on Entry
 
 const caseStudies = (await getCollection('casestudies', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order
@@ -58,7 +58,6 @@ const features = order
 const proof = [
   { value: '5 → 100+', label: 'weekly self-serve users' },
   { value: '90%', label: 'fewer ad hoc data requests' },
-  { value: `$${perSeat}`, label: 'a seat on Entry, hosted' },
 ];
 
 const pains = [
@@ -111,20 +110,28 @@ const engines = [
           </div>
           <TrialNote class="mt-4" />
           <p class="mt-6 text-sm text-muted-foreground">
-            From ${entry.price} a month for {entry.users.included} users. Alongside the BI tool you have, or as your first.
+            ${entry.price} a month for {entry.users.included} users, then <span class="font-semibold text-foreground">${perUser} a user</span>. Alongside the BI tool you have, or as your first.
           </p>
         </div>
         <div class="v2-media">
-          <video
-            class="w-full rounded-xl"
-            src="/hero_demo_v2.mp4"
-            autoplay
-            loop
-            muted
-            playsinline
-            preload="metadata"
-            aria-label="Strata product walkthrough"
-          ></video>
+          <!-- The loop is a teaser; clicking it opens the full walkthrough in a lightbox. -->
+          <button type="button" class="hero-play group relative block w-full rounded-xl" data-hero-open data-track="video_open" data-track-cta-location="home-hero-clip" aria-label="Watch the full walkthrough">
+            <video
+              class="w-full rounded-xl"
+              src="/hero_v2_short.mp4"
+              autoplay
+              loop
+              muted
+              playsinline
+              preload="metadata"
+              aria-hidden="true"
+              data-hero-loop
+            ></video>
+          </button>
+          <button type="button" class="hero-play-pill mx-auto mt-4 flex items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider transition-colors" data-hero-open data-track="video_open" data-track-cta-location="home-hero-button">
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 3.6A1 1 0 0 0 4.8 4.5v11a1 1 0 0 0 1.5.9l9.5-5.5a1 1 0 0 0 0-1.8z" /></svg>
+            Watch the full walkthrough · 2 min
+          </button>
         </div>
       </div>
     </div>
@@ -134,8 +141,14 @@ const engines = [
   <section class="bg-surface">
     <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <dl class="mx-auto grid max-w-4xl grid-cols-3 gap-6 text-center">
+        <!-- Price leads: the number nobody else can match. -->
+        <div class="rounded-xl bg-primary/10 px-4 py-3">
+          <dt class="font-display text-4xl font-bold tabular-nums text-primary sm:text-5xl">${perUser}</dt>
+          <dd class="mt-1 text-sm font-semibold leading-snug text-foreground">per user, per month</dd>
+          <dd class="text-xs leading-snug text-muted-foreground">Add a user for the price of a coffee.</dd>
+        </div>
         {proof.map((s) => (
-          <div>
+          <div class="self-center">
             <dt class="font-display text-2xl font-bold tabular-nums text-primary sm:text-3xl">{s.value}</dt>
             <dd class="mt-1 text-sm leading-snug text-muted-foreground">{s.label}</dd>
           </div>
@@ -259,6 +272,25 @@ const engines = [
       </p>
     </div>
   </section>
+
+  <!-- FULL WALKTHROUGH: opened from the hero loop -->
+  <dialog class="hero-lightbox" data-hero-dialog aria-label="Strata walkthrough">
+    <div class="hero-lightbox-frame">
+      <button type="button" class="hero-lightbox-close" data-hero-close aria-label="Close">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <video
+        class="hero-lightbox-video"
+        data-hero-full
+        src="/hero_v2.mp4"
+        controls
+        muted
+        playsinline
+        preload="none"
+        aria-label="Full walkthrough: asking the Strata agent for a dashboard, subscribing the team with a PDF, and exporting to Google Sheets"
+      ></video>
+    </div>
+  </dialog>
 </Base>
 
 <style>
@@ -267,4 +299,125 @@ const engines = [
     display: block;
     box-shadow: var(--media-shadow);
   }
+  .hero-play {
+    cursor: pointer;
+  }
+  .hero-play:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
+  }
+  .hero-play-pill {
+    color: var(--foreground);
+    border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+  }
+  .hero-play-pill:hover,
+  .hero-play-pill:focus-visible,
+  .v2-media:has(.hero-play:hover) .hero-play-pill {
+    background: var(--cta);
+    color: var(--cta-foreground);
+    border-color: transparent;
+  }
+
+  .hero-lightbox {
+    width: min(96vw, calc((100vh - 6rem) * 16 / 9));
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .hero-lightbox::backdrop {
+    background: color-mix(in srgb, var(--background) 88%, transparent);
+    backdrop-filter: blur(4px);
+  }
+  .hero-lightbox-frame {
+    position: relative;
+  }
+  .hero-lightbox-video {
+    display: block;
+    width: 100%;
+    border-radius: 0.75rem;
+    background: var(--background);
+    box-shadow: var(--media-shadow);
+  }
+  .hero-lightbox-close {
+    position: absolute;
+    top: -2.75rem;
+    right: 0;
+    display: inline-flex;
+    padding: 0.5rem;
+    border-radius: 9999px;
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+  .hero-lightbox-close:hover,
+  .hero-lightbox-close:focus-visible {
+    background: var(--cta);
+    color: var(--cta-foreground);
+    outline: none;
+  }
 </style>
+
+<script>
+  import { track } from '../scripts/track';
+
+  // Hero lightbox: the short loop is the teaser; clicking it opens the full
+  // walkthrough with controls. The loop pauses while the lightbox is open.
+  // Opens are tracked by the delegated [data-track] listener; watch depth is
+  // sent from here as video_progress at 25/50/75/100 percent.
+  const openers = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-hero-open]'));
+  const loop = document.querySelector<HTMLVideoElement>('[data-hero-loop]');
+  const dialog = document.querySelector<HTMLDialogElement>('[data-hero-dialog]');
+  const full = document.querySelector<HTMLVideoElement>('[data-hero-full]');
+  const close = document.querySelector<HTMLButtonElement>('[data-hero-close]');
+
+  if (openers.length && loop && dialog && full && close && typeof dialog.showModal === 'function') {
+    function show() {
+      loop.pause();
+      dialog.showModal();
+      full.currentTime = 0;
+      full.muted = false;
+      full.play().catch(() => {
+        // Unmuted autoplay can be refused; fall back to muted so it still runs.
+        full.muted = true;
+        full.play().catch(() => {});
+      });
+    }
+    function hide() {
+      if (dialog.open) dialog.close();
+    }
+
+    openers.forEach((b) => b.addEventListener('click', show));
+    close.addEventListener('click', hide);
+    // Clicking the backdrop (outside the frame) closes.
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) hide();
+    });
+    dialog.addEventListener('close', () => {
+      full.pause();
+      loop.play().catch(() => {});
+    });
+
+    const milestones = [25, 50, 75, 100];
+    let reached = new Set<number>();
+    full.addEventListener('play', () => {
+      if (full.currentTime < 1) reached = new Set();
+    });
+    full.addEventListener('timeupdate', () => {
+      if (!Number.isFinite(full.duration) || full.duration === 0) return;
+      const pct = (full.currentTime / full.duration) * 100;
+      for (const m of milestones) {
+        if (pct >= m && !reached.has(m)) {
+          reached.add(m);
+          track('video_progress', { video: 'home-walkthrough', percent: m });
+        }
+      }
+    });
+    full.addEventListener('ended', () => {
+      if (!reached.has(100)) {
+        reached.add(100);
+        track('video_progress', { video: 'home-walkthrough', percent: 100 });
+      }
+    });
+  }
+</script>
