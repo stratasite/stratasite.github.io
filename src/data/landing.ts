@@ -34,7 +34,7 @@ const priceFaq = {
 };
 const dataFaq = {
   q: 'Where does my data go?',
-  a: 'It stays in your warehouse. Strata is hosted and connects to your warehouse from two fixed IP addresses you allowlist. It runs the queries it plans and returns the results.',
+  a: 'It stays in your warehouse. Strata is hosted and connects to your warehouse from two fixed IP addresses you allowlist. It runs the queries it plans and returns the results, caching them on our servers for up to 24 hours for performance.',
 };
 const setupFaq = {
   q: 'How long does setup take?',

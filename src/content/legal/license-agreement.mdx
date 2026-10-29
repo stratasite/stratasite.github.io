@@ -114,15 +114,15 @@ As between the parties, you own all right, title, and interest in and to Custome
 
 ### Your Warehouse
 
-You control your Customer Warehouse and the credentials used to connect to it. You will grant the Service or Software only the access it needs, and you may revoke that access at any time. For a Hosted Deployment, the Service connects to your Customer Warehouse from fixed IP addresses published in the Documentation, which you may allowlist. The Company does not copy your Customer Warehouse. The Service and Software run the queries they plan against your Customer Warehouse and return the results to you.
+You control your Customer Warehouse and the credentials used to connect to it. You will grant the Service or Software only the access it needs, and you may revoke that access at any time. For a Hosted Deployment, the Service connects to your Customer Warehouse from fixed IP addresses published in the Documentation, which you may allowlist. The Company does not copy your Customer Warehouse. The Service and Software run the queries they plan against your Customer Warehouse and return the results to you, subject to the result cache described in [Section 6.3](#section-6-3) for a Hosted Deployment.
 
 ### Processing in a Hosted Deployment
 
-In a Hosted Deployment, the Company will host, process, and transmit Customer Data solely to provide, secure, support, and improve the Service for you, as instructed by you through the Service, and as required by law. This includes storing semantic models, reports, dashboards, schedules, and agent conversations, and transiently processing and caching query results to serve them to you. The Company will not sell Customer Data, will not use Customer Data to train machine learning models that serve other customers, and will not disclose Customer Data to third parties except to subprocessors acting on the Company's behalf under written confidentiality and security obligations, or as required by law after notice to you where lawful.
+In a Hosted Deployment, the Company will host, process, and transmit Customer Data solely to provide, secure, support, and improve the Service for you, as instructed by you through the Service, and as required by law. This includes storing semantic models, reports, dashboards, schedules, and agent conversations. For performance, the Service also caches query results on the Company's servers for up to twenty-four (24) hours after a query runs, after which they are discarded; cached results are scoped to your account, encrypted at rest, and used only to answer your own requests. The Company will not sell Customer Data, will not use Customer Data to train machine learning models that serve other customers, and will not disclose Customer Data to third parties except to subprocessors acting on the Company's behalf under written confidentiality and security obligations, or as required by law after notice to you where lawful.
 
 ### Self-Hosted Deployment
 
-In a Self-Hosted Deployment, Customer Data remains on your infrastructure and the Company does not receive it, except Customer Data you choose to send the Company for support.
+In a Self-Hosted Deployment, Customer Data remains on your infrastructure, including any result cache the Software keeps, and the Company does not receive it, except Customer Data you choose to send the Company for support.
 
 ### Usage Data
 
@@ -138,7 +138,7 @@ The Company will maintain administrative, physical, and technical safeguards app
 
 ### Retrieval and Deletion
 
-For thirty (30) days after expiration or termination of a Hosted Deployment, the Company will make your semantic models, reports, and dashboards available to you for export through the Service or the `strata` command line tool. After that period the Company may delete Customer Data in its possession, and will do so within ninety (90) days except for backups that expire in the ordinary course and copies the Company must keep by law.
+For thirty (30) days after expiration or termination of a Hosted Deployment, the Company will make your semantic models, reports, and dashboards available to you for export through the Service or the `strata` command line tool. After that period the Company may delete Customer Data in its possession, and will do so within ninety (90) days except for backups that expire in the ordinary course and copies the Company must keep by law. Cached query results expire under [Section 6.3](#section-6-3) regardless.
 
 ## Fees and Payment
 
