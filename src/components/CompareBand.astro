@@ -1,0 +1,105 @@
+---
+/**
+ * A promotional band for feature pages: the rows of the semantic layer matrix
+ * that this feature is about, Strata against Cube, MetricFlow and Snowflake
+ * semantic views, with a link to the full page. Rows are picked by key from
+ * src/data/semantic-layer-matrix.ts (a feature's `compare` frontmatter).
+ * Sized for the article column, so each row is a small grid rather than a
+ * wide table: Strata first and set apart, the others after it.
+ */
+import { pick, all, verified } from '../data/semantic-layer-matrix';
+
+interface Props {
+  keys: string[];
+  class?: string;
+}
+const { keys, class: className = '' } = Astro.props;
+const rows = pick(keys);
+const dash = (v: string) => v.trim() === '—';
+const none = (v: string) => /^None\b/.test(v.trim());
+const others: Array<{ key: 'cube' | 'mf' | 'sf'; label: string }> = [
+  { key: 'cube', label: 'Cube' },
+  { key: 'mf', label: 'MetricFlow' },
+  { key: 'sf', label: 'Snowflake semantic views' },
+];
+---
+
+{rows.length > 0 && (
+  <aside class:list={['compare-band not-prose rounded-xl border border-border bg-surface p-6 sm:p-8', className]} aria-labelledby="compare-band-heading">
+    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Compared</p>
+    <h2 id="compare-band-heading" class="mt-2 font-display text-2xl font-bold tracking-tight">
+      How this stacks up
+    </h2>
+    <p class="mt-2 text-sm text-muted-foreground">
+      The same rows, against Cube, dbt MetricFlow and Snowflake semantic views, from their own documentation.
+    </p>
+
+    <div class="mt-6 divide-y divide-border">
+      {rows.map((r) => (
+        <div class="py-4 first:pt-0 last:pb-0">
+          <p class="text-sm font-semibold text-foreground">{r.feature}</p>
+          <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-md border border-primary/40 bg-primary/10 px-3 py-2">
+              <p class="text-[0.65rem] font-semibold uppercase tracking-wider text-primary">Strata</p>
+              <p class="mt-1 text-sm font-medium text-foreground">
+                {r.href && !dash(r.strata) ? (
+                  <a href={r.href} class="group inline-flex gap-1.5 no-underline">
+                    {!none(r.strata) && <span class="shrink-0 font-mono text-primary" aria-hidden="true">✓</span>}
+                    <span class="decoration-primary underline-offset-2 group-hover:underline">{r.strata}</span>
+                  </a>
+                ) : (
+                  <span class="inline-flex gap-1.5">
+                    {!none(r.strata) && !dash(r.strata) && <span class="shrink-0 font-mono text-primary" aria-hidden="true">✓</span>}
+                    <span>{r.strata}</span>
+                  </span>
+                )}
+              </p>
+            </div>
+            {others.map((o) => (
+              <div class="rounded-md border border-border bg-surface-2 px-3 py-2">
+                <p class="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">{o.label}</p>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  {dash(r[o.key]) ? <span aria-label="not documented">—</span> : r[o.key]}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div class="mt-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      <p class="text-xs text-muted-foreground">Competitor cells read on {verified}. A dash means no documented equivalent.</p>
+      <a href="/compare/semantic-layers/" class="compare-band-pill inline-flex shrink-0 items-center whitespace-nowrap gap-2 rounded-full px-4 py-2 font-display text-xs font-semibold uppercase tracking-wider transition-colors">
+        All {all.length} rows, side by side
+        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.17 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+      </a>
+    </div>
+  </aside>
+)}
+
+<style>
+  /* The article's prose link rule (.prose-strata a) reaches in here; the band
+     sets its own link colours. */
+  :global(.prose-strata) .compare-band a:not(.cta) {
+    color: inherit;
+    font-weight: inherit;
+    text-decoration: none;
+  }
+  :global(.prose-strata) .compare-band a:not(.cta):hover {
+    color: inherit;
+  }
+  :global(.prose-strata) .compare-band h2 {
+    margin-top: 0.5rem;
+  }
+  .compare-band-pill {
+    color: var(--foreground);
+    border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+  }
+  .compare-band-pill:hover,
+  .compare-band-pill:focus-visible {
+    background: var(--cta);
+    color: var(--cta-foreground);
+    border-color: transparent;
+  }
+</style>

@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Article from '../../layouts/Article.astro';
+import CompareBand from '../../components/CompareBand.astro';
 
 export async function getStaticPaths() {
   const features = await getCollection('features', ({ data }) => !data.draft);
@@ -23,4 +24,5 @@ const { Content } = await entry.render();
   image={entry.data.image}
 >
   <Content />
+  {entry.data.compare.length > 0 && <CompareBand keys={entry.data.compare} class="mt-16" />}
 </Article>

@@ -39,6 +39,8 @@
 //               docs.snowflake.com/en/user-guide/querying-persisted-results (24 hour result cache)
 
 export interface Row {
+  /** Stable id, used by feature pages to pick rows for their CompareBand. */
+  key: string;
   feature: string;
   /** Where Strata shows the mechanism. Omit for a cell with nothing to show. */
   href?: string;
@@ -64,6 +66,7 @@ const spec = '/docs/api/rest/query-spec/';
 
 export const querying: Row[] = [
   {
+    key: 'blending',
     feature: 'Automatic data blending across many domains',
     href: '/docs/advanced/universe-formation/',
     strata: 'Measures from many facts in one query. No fan-out.',
@@ -72,6 +75,7 @@ export const querying: Row[] = [
     sf: 'Relationships to primary or unique keys; granularity validation.',
   },
   {
+    key: 'aggregates',
     feature: 'Standard aggregates',
     href: '/docs/semantic-model/fields/measures/',
     strata: 'Any SQL aggregate.',
@@ -80,6 +84,7 @@ export const querying: Row[] = [
     sf: 'Any aggregate function.',
   },
   {
+    key: 'compound',
     feature: 'Compound measures across facts',
     href: '/docs/semantic-model/fields/measures/compound/',
     strata: 'Formulas over measures from different facts, auto-leveled.',
@@ -88,6 +93,7 @@ export const querying: Row[] = [
     sf: 'Derived metrics; a higher granularity needs explicit aggregation.',
   },
   {
+    key: 'snapshot',
     feature: 'Snapshot measures',
     href: '/docs/semantic-model/fields/measures/snapshot/',
     strata: 'Beginning or ending balance per period.',
@@ -96,6 +102,7 @@ export const querying: Row[] = [
     sf: 'NON ADDITIVE BY returns the last value per listed dimension.',
   },
   {
+    key: 'exclusion-lod',
     feature: 'Exclusion level of detail',
     href: '/docs/advanced/exclusions/',
     strata: 'Percent of total and fixed denominators, in the model.',
@@ -104,6 +111,7 @@ export const querying: Row[] = [
     sf: 'Window metrics with PARTITION BY EXCLUDING.',
   },
   {
+    key: 'inclusion-lod',
     feature: 'Inclusion level of detail',
     href: '/docs/advanced/inclusions/',
     strata: 'Aggregate per entity first, then re-aggregate.',
@@ -112,6 +120,7 @@ export const querying: Row[] = [
     sf: 'Nested aggregation, such as AVG(SUM(x)).',
   },
   {
+    key: 'ratios',
     feature: 'Ratios',
     href: `${spec}#calculations`,
     strata: 'A compound measure, or a formula in the request.',
@@ -120,6 +129,7 @@ export const querying: Row[] = [
     sf: 'A derived metric over two metrics.',
   },
   {
+    key: 'windows',
     feature: 'Running and moving windows',
     href: '/docs/advanced/decorators/window/',
     strata: 'A decorator in the request, or one click in the editor.',
@@ -128,6 +138,7 @@ export const querying: Row[] = [
     sf: 'Window metrics with ORDER BY and a frame, modeled.',
   },
   {
+    key: 'period-over-period',
     feature: 'Period over period',
     href: '/docs/advanced/decorators/temporal/',
     strata: 'A decorator in the request, or one click in the editor.',
@@ -136,6 +147,7 @@ export const querying: Row[] = [
     sf: '—',
   },
   {
+    key: 'top-n',
     feature: 'Top-n and ranking',
     href: `${spec}#filters`,
     strata: 'A filter in the request.',
@@ -144,6 +156,7 @@ export const querying: Row[] = [
     sf: 'ORDER BY and LIMIT over the view.',
   },
   {
+    key: 'conversion',
     feature: 'Conversion between events',
     href: `${spec}#segments`,
     strata: 'Cohort conversion through segments.',
@@ -152,6 +165,7 @@ export const querying: Row[] = [
     sf: '—',
   },
   {
+    key: 'formulas',
     feature: 'Formulas in the request',
     href: `${spec}#calculations`,
     strata: 'Formulas over any measures, at query time. No deploy.',
@@ -160,6 +174,7 @@ export const querying: Row[] = [
     sf: 'Scalar expressions over metrics, and ad-hoc aggregates.',
   },
   {
+    key: 'cohort',
     feature: 'Cohort beside baseline',
     href: `${spec}#segments`,
     strata: 'A segment on one measure or the view, with exclude mode.',
@@ -168,6 +183,7 @@ export const querying: Row[] = [
     sf: '—',
   },
   {
+    key: 'partition-routing',
     feature: 'Partition-aware routing',
     href: '/docs/semantic-model/partitions/',
     strata: 'Routes to the table whose partition holds the data.',
@@ -176,6 +192,7 @@ export const querying: Row[] = [
     sf: '—',
   },
   {
+    key: 'engine-routing',
     feature: 'Routing across compute engines',
     href: '/docs/advanced/semantic-routing/',
     strata: 'A hot engine for the partitions it holds, colder ones for the rest.',
@@ -184,6 +201,7 @@ export const querying: Row[] = [
     sf: '—',
   },
   {
+    key: 'aggregate-routing',
     feature: 'Aggregate-aware routing',
     href: '/docs/advanced/semantic-routing/',
     strata: 'The cheapest table you already own: tiers, costs, aggregates.',
@@ -192,6 +210,7 @@ export const querying: Row[] = [
     sf: 'Materializations; the planner picks the lowest-cost covering one. Preview.',
   },
   {
+    key: 'rls',
     feature: 'Row-level security and masks',
     href: '/docs/security/',
     strata: 'Policies become WHERE or CASE masks.',
@@ -200,6 +219,7 @@ export const querying: Row[] = [
     sf: 'Base-table row access and masking policies propagate.',
   },
   {
+    key: 'pinned-sql',
     feature: 'Pinned SQL, tested on deploy',
     href: '/docs/cli/tests/',
     strata: 'assert_sql fails the deploy.',
@@ -208,6 +228,7 @@ export const querying: Row[] = [
     sf: 'Cortex Analyst evaluations replay verified queries.',
   },
   {
+    key: 'agents',
     feature: 'Built for agents',
     href: '/docs/api/ai-agents/',
     strata: 'Agent API, MCP server, typed refusals, llms.txt.',
@@ -219,6 +240,7 @@ export const querying: Row[] = [
 
 export const architecture: Row[] = [
   {
+    key: 'returns',
     feature: 'What comes back',
     href: '/docs/api/rest/results/',
     strata: 'Rows, charts and dashboards. Strata runs the SQL on your warehouse.',
@@ -227,6 +249,7 @@ export const architecture: Row[] = [
     sf: 'Rows from SQL. Cortex Analyst returns SQL text.',
   },
   {
+    key: 'credentials',
     feature: 'Needs your warehouse credentials',
     href: '/docs/semantic-model/datasources/',
     strata: 'Yes. One connection per datasource, stored encrypted.',
@@ -235,6 +258,7 @@ export const architecture: Row[] = [
     sf: 'It is Snowflake. Runs inside your account.',
   },
   {
+    key: 'cache',
     feature: 'Holds results or a cache',
     href: '/legal/license-agreement/',
     strata: 'A 24 hour result cache, scoped to your account.',
@@ -243,6 +267,7 @@ export const architecture: Row[] = [
     sf: 'The Snowflake result cache: exact-match reuse for 24 hours.',
   },
   {
+    key: 'warehouses',
     feature: 'Warehouses',
     href: '/docs/semantic-model/adapters/',
     strata: '12 adapters, any mix in one project.',
@@ -251,6 +276,7 @@ export const architecture: Row[] = [
     sf: 'Snowflake only.',
   },
   {
+    key: 'pricing',
     feature: 'How you get it',
     href: '/pricing/',
     strata: 'Hosted. A 14 day trial, nothing to install. Self hosted on Enterprise.',
@@ -262,6 +288,7 @@ export const architecture: Row[] = [
 
 export const stack: Row[] = [
   {
+    key: 'self-service',
     feature: 'Self-service and dashboards',
     href: '/product/business-intelligence/',
     strata: 'Built in. Beautiful by default, validated per keystroke.',
@@ -270,6 +297,7 @@ export const stack: Row[] = [
     sf: 'CoWork chat answers with charts. No dashboard builder documented.',
   },
   {
+    key: 'spreadsheet',
     feature: 'Spreadsheet delivery',
     href: '/product/business-intelligence/',
     strata: 'Google Sheets add-on with Strata’s own retrieval UX. Results stay live.',
@@ -278,6 +306,7 @@ export const stack: Row[] = [
     sf: '—',
   },
   {
+    key: 'subscriptions',
     feature: 'Subscriptions and schedules',
     href: '/product/business-intelligence/',
     strata: 'Built in. Subscribe people to a report, run it on a schedule.',
@@ -286,6 +315,7 @@ export const stack: Row[] = [
     sf: 'CoWork Automations re-run a question and email the result.',
   },
   {
+    key: 'headless',
     feature: 'Headless access for other BI tools',
     href: '/product/semantic-layer/',
     strata: 'None, by design. Strata is the consumption layer, so its guarantees hold on every surface.',
@@ -294,3 +324,10 @@ export const stack: Row[] = [
     sf: 'Any SQL client; TDS export to Tableau, Preview.',
   },
 ];
+
+export const all: Row[] = [...querying, ...architecture, ...stack];
+
+/** Rows by key, in the order given. Unknown keys are dropped. */
+export function pick(keys: string[]): Row[] {
+  return keys.map((k) => all.find((r) => r.key === k)).filter((r): r is Row => Boolean(r));
+}

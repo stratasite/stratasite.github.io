@@ -33,6 +33,9 @@ const features = defineCollection({
     draft: z.boolean().default(false),
     // Right-side scroll-spy jump nav for the detail page.
     sections: z.array(section).default([]),
+    // Row keys from src/data/semantic-layer-matrix.ts to show in the
+    // CompareBand at the foot of the page. Empty: no band.
+    compare: z.array(z.string()).default([]),
   }),
 });
 
