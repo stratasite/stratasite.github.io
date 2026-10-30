@@ -17,8 +17,11 @@
  * a frame that still tells the story: every actor parked at its tool,
  * every error showing, the pile full.
  *
- * Tool names are the incumbents the buyer has. Their chat features are not
- * named, only drawn, so nothing here needs re-verifying per release.
+ * Tool names and marks are the incumbents the buyer has, drawn in one
+ * muted colour so they read as "the tools", not as a logo wall. Looker's
+ * mark is the simple-icons path (CC0); Power BI and Tableau are not in that
+ * set, so their marks are drawn here as plain geometry. Their chat features
+ * are not named, only drawn, so nothing here needs re-verifying per release.
  */
 interface Props {
   class?: string;
@@ -26,9 +29,9 @@ interface Props {
 const { class: className = '' } = Astro.props;
 
 const tools = [
-  { name: 'Power BI', cy: 96, ask: 'revenue by region, this quarter?', error: 'DAX error: wrong filter context' },
-  { name: 'Tableau', cy: 200, ask: 'tickets per customer, by plan?', error: 'No blend: Tickets to Customers' },
-  { name: 'Looker', cy: 304, ask: 'churn against last year?', error: 'Source missing: Subscriptions' },
+  { name: 'Power BI', mark: 'powerbi', cy: 96, ask: 'revenue by region, this quarter?', error: 'DAX error: wrong filter context' },
+  { name: 'Tableau', mark: 'tableau', cy: 200, ask: 'tickets per customer, by plan?', error: 'No blend: Tickets to Customers' },
+  { name: 'Looker', mark: 'looker', cy: 304, ask: 'churn against last year?', error: 'Source missing: Subscriptions' },
 ];
 
 // Stage geometry (viewBox units). Zones: users 0-250, tools 330-540,
@@ -59,29 +62,45 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
         <path d="M0 -6.5 5.6 -3.25V3.25L0 6.5 -5.6 3.25V-3.25Z" />
         <circle cx="0" cy="0" r="2.2" class="nut-hole" />
       </g>
+      <!-- The tools' marks, monochrome. -->
+      <symbol id="mark-powerbi" viewBox="0 0 24 24">
+        <rect x="2.5" y="13" width="5.5" height="10" rx="1.4" />
+        <rect x="9.25" y="7" width="5.5" height="16" rx="1.4" />
+        <rect x="16" y="1" width="5.5" height="22" rx="1.4" />
+      </symbol>
+      <symbol id="mark-tableau" viewBox="0 0 24 24">
+        <path d="M11 5h2v14h-2zM5 11h14v2H5z" />
+        <path d="M11.4 0h1.2v4.6h-1.2zM9.5 1.7h5v1.2h-5zM11.4 19.4h1.2V24h-1.2zM9.5 21.1h5v1.2h-5zM0 11.4h4.6v1.2H0zM1.7 9.5h1.2v5H1.7zM19.4 11.4H24v1.2h-4.6zM21.1 9.5h1.2v5h-1.2z" />
+        <path d="M4 3.2h.9v2.6H4zM3.15 4.05h2.6v.9h-2.6zM19.1 3.2h.9v2.6h-.9zM18.25 4.05h2.6v.9h-2.6zM4 18.2h.9v2.6H4zM3.15 19.05h2.6v.9h-2.6zM19.1 18.2h.9v2.6h-.9zM18.25 19.05h2.6v.9h-2.6z" />
+      </symbol>
+      <symbol id="mark-looker" viewBox="0 0 24 24">
+        <path d="M11.9475 0c-1.1598.0021-2.0982.944-2.096 2.1038a2.1 2.1 0 00.356 1.166l.895-.8959a.884.884 0 11.565.564l-.895.895c.9593.6478 2.2621.3953 2.91-.564.6478-.9593.3953-2.262-.564-2.91A2.096 2.096 0 0011.9475 0zm-.835 6.1128a3.2629 3.2629 0 00-.653-1.965l-1.164 1.162a1.667 1.667 0 01-.318 2.012l.632 1.5449a3.2819 3.2819 0 001.503-2.754zm-3.2499 1.666h-.03c-.9217.0009-1.6697-.7455-1.6707-1.6673-.001-.9217.7454-1.6697 1.6672-1.6707a1.669 1.669 0 01.9195.275l1.152-1.152c-1.4069-1.141-3.4724-.9257-4.6135.4811s-.9257 3.4723.481 4.6135a3.2799 3.2799 0 002.7275.6652l-.633-1.5439v-.001zm4.1279 1.3359c-.728 0-1.452.106-2.15.315l.922 2.2519c2.6872-.6819 5.4184.9438 6.1002 3.631.6818 2.6873-.9439 5.4184-3.6311 6.1002s-5.4184-.9439-6.1002-3.631c-.5682-2.2394.4655-4.5774 2.5041-5.6643l-.91-2.2449c-3.6908 1.808-5.2173 6.2657-3.4093 9.9567l.0005.001c1.808 3.6909 6.2657 5.2173 9.9567 3.4093l.001-.0005c3.6913-1.8071 5.2187-6.2645 3.4116-9.9558a7.4417 7.4417 0 00-6.6865-4.1696h-.008l-.001.001z" />
+      </symbol>
     </defs>
 
     <!-- 1. The queue -->
     <g class="scene-queue">
       {queue.map((x) => <use href="#person" x={x} y={start.y} class="person-muted" />)}
-      <text x="132" y={labelY} text-anchor="middle" class="scene-label">the business</text>
+      <text x="132" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">1</tspan>  the business</text>
     </g>
 
     <!-- 2. The tools, each with a chat bolted on -->
     {tools.map((tl) => (
       <g class="scene-tool">
         <rect x={box.x} y={tl.cy - box.h / 2} width={box.w} height={box.h} rx="10" class="tool-box" />
-        <text x={box.x + 18} y={tl.cy + 6} class="tool-name">{tl.name}</text>
+        <use href={`#mark-${tl.mark}`} x={box.x + 18} y={tl.cy - 13} width="26" height="26" class="tool-mark" />
+        <text x={box.x + 56} y={tl.cy + 7} class="tool-name">{tl.name}</text>
         <!-- the bolt-on chat: a tab hung off the box's right edge, nut on each corner -->
         <g>
-          <rect x={box.x + box.w - 84} y={tl.cy - box.h / 2 - 10} width="76" height="26" rx="7" class="chat-tab" />
-          <use href="#nut" x={box.x + box.w - 84 + 9} y={tl.cy - box.h / 2 - 10 + 13} class="nut" />
+          <rect x={box.x + box.w - 116} y={tl.cy - box.h / 2 - 10} width="108" height="26" rx="7" class="chat-tab" />
+          <use href="#nut" x={box.x + box.w - 116 + 9} y={tl.cy - box.h / 2 - 10 + 13} class="nut" />
           <use href="#nut" x={box.x + box.w - 8 - 9} y={tl.cy - box.h / 2 - 10 + 13} class="nut" />
-          <text x={box.x + box.w - 84 + 38} y={tl.cy - box.h / 2 + 7} text-anchor="middle" class="chat-label">chat</text>
+          <path d={`M${box.x + box.w - 116 + 24} ${tl.cy - box.h / 2 + 3} l1.6 4.4 4.4 1.6 -4.4 1.6 -1.6 4.4 -1.6 -4.4 -4.4 -1.6 4.4 -1.6z`} class="chat-spark" />
+          <text x={box.x + box.w - 116 + 62} y={tl.cy - box.h / 2 + 7} text-anchor="middle" class="chat-label">AI chat</text>
         </g>
       </g>
     ))}
-    <text x={box.x + box.w / 2} y={labelY} text-anchor="middle" class="scene-label">the BI tool you have, with a chat bolted on</text>
+    <text x={box.x + box.w / 2} y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">2</tspan>  the BI tool you have, with a chat bolted on</text>
 
     <!-- 3. The data team and the pile -->
     <g class="scene-team">
@@ -95,7 +114,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
       </g>
       {pile.map((top) => <rect x="850" y={top} width="96" height="16" rx="3" class="ticket" />)}
       {landing.map((top, i) => <rect x="850" y={top} width="96" height="16" rx="3" class={`ticket ticket-land ticket-land-${i}`} />)}
-      <text x="898" y={labelY} text-anchor="middle" class="scene-label">the data team</text>
+      <text x="898" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">3</tspan>  the data team</text>
       <g class="backlog">
         <rect x="834" y="30" width="128" height="26" rx="13" class="backlog-pill" />
         <text x="898" y="47" text-anchor="middle" class="backlog-text">backlog <tspan class="backlog-count" data-backlog>47</tspan></text>
@@ -121,7 +140,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     ))}
 
     <!-- The route bounced users take: tool to desk. -->
-    <path d="M560 200 C 700 200, 720 198, 812 200" class="route" />
+    <path d="M330 376 H 820" class="route" />
   </svg>
   <figcaption class="sr-only">
     Business users wait in a queue. Each walks up to Power BI, Tableau or Looker, asks a question in the chat
@@ -166,6 +185,9 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     stroke: var(--border);
     stroke-width: 1.5;
   }
+  .tool-mark {
+    fill: var(--muted-foreground);
+  }
   .tool-name {
     fill: var(--foreground);
     font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
@@ -184,6 +206,9 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     letter-spacing: 0.08em;
   }
   .nut {
+    fill: var(--muted-foreground);
+  }
+  .chat-spark {
     fill: var(--muted-foreground);
   }
   .nut-hole {
@@ -248,6 +273,10 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   }
   .backlog-count {
     fill: var(--foreground);
+    font-weight: 700;
+  }
+  .scene-num {
+    fill: var(--primary);
     font-weight: 700;
   }
   .scene-label {
@@ -322,8 +351,9 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     4%   { opacity: 1; }
     16%  { transform: translate(316px, var(--cy)); }
     40%  { transform: translate(316px, var(--cy)); }
-    58%  { transform: translate(808px, 200px); opacity: 1; }
-    62%  { transform: translate(840px, 216px); opacity: 0; }
+    45%  { transform: translate(316px, 372px); }
+    56%  { transform: translate(808px, 372px); opacity: 1; }
+    60%  { transform: translate(840px, 360px); opacity: 0; }
     100% { transform: translate(224px, 200px); opacity: 0; }
   }
   @keyframes ask {
