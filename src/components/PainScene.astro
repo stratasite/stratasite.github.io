@@ -6,15 +6,16 @@
  * sentences the page puts above it:
  *   1. a queue of business users, each with a question;
  *   2. the BI tools they already have, each with an AI chat bolted on the
- *      side. One user at a time walks up and asks. The chat answers inside
+ *      side, plus a generic coding agent writing its own SQL. One user at a time walks up and asks. The chat answers inside
  *      the tool, in its own voice, with the roadblock it really gives: it
  *      cannot get the formula right, it needs the blend keys and sources, no
- *      Explore covers the question. The reply sits in a red-bordered error
- *      bubble, and the user walks off grey;
+ *      Explore covers the question, and the coding agent gives a confident
+ *      wrong number. The reply sits in a red-bordered error bubble, and the
+ *      user walks off grey;
  *   3. the data team, where every bounced user ends up as a ticket on a pile
  *      that never gets shorter. The backlog counter only goes up.
  *
- * Three actors run the same loop out of phase, one per tool, so the stage
+ * Four actors run the same loop out of phase, one per tool, so the stage
  * is never still. Drawn in SVG with CSS keyframes and semantic tokens only,
  * so it holds on any theme. Under prefers-reduced-motion the loop stops on
  * a frame that still tells the story: every actor parked at its tool,
@@ -32,9 +33,11 @@ interface Props {
 const { class: className = '' } = Astro.props;
 
 const tools = [
-  { name: 'Power BI', mark: 'powerbi', cy: 84, ask: 'revenue by region, this quarter?', reply: 'My DAX filter context is wrong.' },
-  { name: 'Tableau', mark: 'tableau', cy: 196, ask: 'tickets per customer, by plan?', reply: 'Which sources? Which blend keys?' },
-  { name: 'Looker', mark: 'looker', cy: 308, ask: 'churn against last year?', reply: "There's no Explore for Subscriptions." },
+  { name: 'Power BI', mark: 'powerbi', cy: 66, ask: 'revenue by region, this quarter?', reply: 'My DAX filter context is wrong.' },
+  { name: 'Tableau', mark: 'tableau', cy: 150, ask: 'tickets per customer, by plan?', reply: 'Which sources? Which blend keys?' },
+  { name: 'Looker', mark: 'looker', cy: 234, ask: 'churn against last year?', reply: 'No Explore covers Subscriptions.' },
+  // The coding agent writes its own SQL and does not know what it got wrong.
+  { name: 'Code agent', mark: 'agent', cy: 318, ask: 'total revenue last quarter?', reply: 'Revenue is $4.2M. (It is $2.1M.)' },
 ];
 
 // Stage geometry (viewBox 1000 x 420). Three columns centred at 167, 500
@@ -50,14 +53,15 @@ const bubble = (cy: number) => {
 const tab = { w: 108, h: 26 };
 const queue = [75, 121, 167, 213, 259];
 const pile = [352, 332, 312, 292, 272, 252]; // static ticket tops, bottom up
-const landing = [232, 212, 192]; // where each actor's ticket lands
+const landing = [232, 212, 192, 172]; // where each actor's ticket lands
 const team = { cx: 833, deskX: 758, pileX: 785 };
 const labelY = 410;
 const floorY = 382;
-const loop = 10; // seconds per actor cycle; actors are spaced a third apart
+const loop = 10; // seconds per actor cycle; actors are spaced evenly through it
+const gap = loop / tools.length;
 ---
 
-<figure class={`pain-scene ${className}`} aria-label="Business users queue for Power BI, Tableau and Looker, ask the AI chat bolted onto each tool, get a roadblock back, and end up as tickets on an overloaded data team's pile">
+<figure class={`pain-scene ${className}`} aria-label="Business users queue for Power BI, Tableau, Looker and a coding agent, ask the AI chat bolted onto each tool, get a roadblock back, and end up as tickets on an overloaded data team's pile">
   <svg viewBox="0 0 1000 420" class="block h-auto w-full" role="img" aria-hidden="true">
     <defs>
       <!-- A person: head and shoulders, drawn once. -->
@@ -82,6 +86,10 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
         <path d="M11 5h2v14h-2zM5 11h14v2H5z" />
         <path d="M11.4 0h1.2v4.6h-1.2zM9.5 1.7h5v1.2h-5zM11.4 19.4h1.2V24h-1.2zM9.5 21.1h5v1.2h-5zM0 11.4h4.6v1.2H0zM1.7 9.5h1.2v5H1.7zM19.4 11.4H24v1.2h-4.6zM21.1 9.5h1.2v5h-1.2z" />
         <path d="M4 3.2h.9v2.6H4zM3.15 4.05h2.6v.9h-2.6zM19.1 3.2h.9v2.6h-.9zM18.25 4.05h2.6v.9h-2.6zM4 18.2h.9v2.6H4zM3.15 19.05h2.6v.9h-2.6zM19.1 18.2h.9v2.6h-.9zM18.25 19.05h2.6v.9h-2.6z" />
+      </symbol>
+      <symbol id="mark-agent" viewBox="0 0 24 24">
+        <path d="M3.5 5.6 5.7 3.4 12.3 10 5.7 16.6 3.5 14.4 7.9 10z" />
+        <rect x="12" y="16.5" width="8.5" height="2.6" rx="1.3" />
       </symbol>
       <symbol id="mark-looker" viewBox="0 0 24 24">
         <path d="M11.9475 0c-1.1598.0021-2.0982.944-2.096 2.1038a2.1 2.1 0 00.356 1.166l.895-.8959a.884.884 0 11.565.564l-.895.895c.9593.6478 2.2621.3953 2.91-.564.6478-.9593.3953-2.262-.564-2.91A2.096 2.096 0 0011.9475 0zm-.835 6.1128a3.2629 3.2629 0 00-.653-1.965l-1.164 1.162a1.667 1.667 0 01-.318 2.012l.632 1.5449a3.2819 3.2819 0 001.503-2.754zm-3.2499 1.666h-.03c-.9217.0009-1.6697-.7455-1.6707-1.6673-.001-.9217.7454-1.6697 1.6672-1.6707a1.669 1.669 0 01.9195.275l1.152-1.152c-1.4069-1.141-3.4724-.9257-4.6135.4811s-.9257 3.4723.481 4.6135a3.2799 3.2799 0 002.7275.6652l-.633-1.5439v-.001zm4.1279 1.3359c-.728 0-1.452.106-2.15.315l.922 2.2519c2.6872-.6819 5.4184.9438 6.1002 3.631.6818 2.6873-.9439 5.4184-3.6311 6.1002s-5.4184-.9439-6.1002-3.631c-.5682-2.2394.4655-4.5774 2.5041-5.6643l-.91-2.2449c-3.6908 1.808-5.2173 6.2657-3.4093 9.9567l.0005.001c1.808 3.6909 6.2657 5.2173 9.9567 3.4093l.001-.0005c3.6913-1.8071 5.2187-6.2645 3.4116-9.9558a7.4417 7.4417 0 00-6.6865-4.1696h-.008l-.001.001z" />
@@ -109,7 +117,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
           <text x={box.x + box.w - tab.w - 8 + 62} y={tl.cy - box.h / 2 + 7} text-anchor="middle" class="chat-label">AI chat</text>
         </g>
         <!-- the chat's reply: an error speech bubble over the card, tail to the tab -->
-        <g class={`reply reply-${i}`} style={`--delay: ${(i * loop) / 3}s`}>
+        <g class={`reply reply-${i}`} style={`--delay: ${i * gap}s`}>
           <path d={bubble(tl.cy)} class="reply-box" />
           <g class="reply-alert" transform={`translate(${box.x + 28} ${tl.cy + 18})`}>
             <circle r="6.5" />
@@ -145,7 +153,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
 
     <!-- The actors: one per tool, same loop, a third apart. -->
     {tools.map((tl, i) => (
-      <g class={`actor actor-${i}`} style={`--cy: ${tl.cy}px; --delay: ${(i * loop) / 3}s`}>
+      <g class={`actor actor-${i}`} style={`--cy: ${tl.cy}px; --delay: ${i * gap}s`}>
         <use href="#person" class="person-actor" />
         <!-- the question, held up while asking -->
         <g class="ask">
@@ -156,9 +164,9 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     ))}
   </svg>
   <figcaption class="sr-only">
-    Business users wait in a queue. Each walks up to Power BI, Tableau or Looker and asks the AI chat bolted onto
-    the tool. The chat replies that it cannot get the DAX filter context right, asks which sources and which blend keys,
-    or has no Explore for Subscriptions. The user walks off and ends up as a ticket on the data
+    Business users wait in a queue. Each walks up to Power BI, Tableau, Looker or a coding agent and asks the AI chat
+    bolted onto the tool. The chat replies that it cannot get the DAX filter context right, asks which sources and which
+    blend keys, has no Explore covering Subscriptions, or states a confident wrong number. The user walks off and ends up as a ticket on the data
     team's pile, and the backlog counter keeps climbing.
   </figcaption>
 </figure>
@@ -169,7 +177,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   const count = document.querySelector<SVGElement>('[data-backlog]');
   if (count && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     let n = 47;
-    const period = (10 / 3) * 1000; // one landing per third of the actor loop
+    const period = (10 / 4) * 1000; // one landing per quarter of the actor loop
     const tick = () => {
       if (document.hidden) return;
       n += 1;
@@ -307,8 +315,8 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
 
   /* Motion. Each actor: leave the queue, stand at its tool, ask, get the
      reply, walk off grey along the floor to the pile, become
-     a ticket, fade, and start over. All three run the same ten second loop
-     a third apart. */
+     a ticket, fade, and start over. All four run the same ten second loop
+     a quarter apart. */
   .actor,
   .actor .ask,
   .actor .person-actor,
@@ -349,6 +357,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   .ticket-land-0 { animation-name: land-0; }
   .ticket-land-1 { animation-name: land-1; }
   .ticket-land-2 { animation-name: land-2; }
+  .ticket-land-3 { animation-name: land-3; }
   .engineer {
     transform-box: fill-box;
     transform-origin: center bottom;
@@ -390,8 +399,8 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     0%, 38% { fill: var(--primary); }
     46%, 100% { fill: color-mix(in srgb, var(--muted-foreground) 55%, var(--surface-2)); }
   }
-  /* Actor 0 lands at 60%, actor 1 at 93.3%, actor 2 at 26.7% (its cycle
-     wraps); everything clears at 58%. */
+  /* Actors land at 60%, 85%, 10% and 35% of the shared clock (the last
+     two wrap); everything clears at 58%, just before the first lands again. */
   @keyframes land-0 {
     0%, 57% { opacity: 1; transform: none; }
     58%, 59% { opacity: 0; transform: translateY(-14px) scale(1.05); }
@@ -399,12 +408,17 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   }
   @keyframes land-1 {
     0%, 57% { opacity: 1; transform: none; }
-    58%, 92% { opacity: 0; transform: translateY(-14px) scale(1.05); }
-    94%, 100% { opacity: 1; transform: none; }
+    58%, 84% { opacity: 0; transform: translateY(-14px) scale(1.05); }
+    86%, 100% { opacity: 1; transform: none; }
   }
   @keyframes land-2 {
-    0%, 25% { opacity: 0; transform: translateY(-14px) scale(1.05); }
-    27%, 57% { opacity: 1; transform: none; }
+    0%, 9% { opacity: 0; transform: translateY(-14px) scale(1.05); }
+    11%, 57% { opacity: 1; transform: none; }
+    58%, 100% { opacity: 0; transform: translateY(-14px) scale(1.05); }
+  }
+  @keyframes land-3 {
+    0%, 34% { opacity: 0; transform: translateY(-14px) scale(1.05); }
+    36%, 57% { opacity: 1; transform: none; }
     58%, 100% { opacity: 0; transform: translateY(-14px) scale(1.05); }
   }
   @keyframes fret {
