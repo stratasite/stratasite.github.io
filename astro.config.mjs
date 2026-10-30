@@ -47,7 +47,9 @@ export default defineConfig({
     tailwind({ applyBaseStyles: false }),
     mdx(),
     // sitemap-index.xml + sitemap-0.xml at the site root; linked from robots.txt.
-    sitemap(),
+    // The beta license stays published for the app but is superseded by the
+    // License and Subscription Agreement, so it is kept out of the sitemap.
+    sitemap({ filter: (page) => !page.includes('/legal/beta-license/') }),
     // Static search index for /docs/ (pages marked data-pagefind-body), built
     // into dist/pagefind/ after every build. See src/components/docs/SearchPanel.astro.
     pagefind(),
