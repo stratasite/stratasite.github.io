@@ -1,0 +1,64 @@
+---
+/**
+ * One block of the semantic layer matrix (/compare/semantic-layers/): feature
+ * rows against Cube, MetricFlow and Snowflake semantic views, with the Strata
+ * column set apart. A Strata cell links to the page that shows the mechanism;
+ * a cell of "—" in any column renders as a plain dash, no check, no link.
+ * Rows come from src/data/semantic-layer-matrix.ts.
+ */
+import type { Row } from '../data/semantic-layer-matrix';
+
+interface Props {
+  /** Anchor for deep links, e.g. /compare/semantic-layers/#querying. */
+  id?: string;
+  title: string;
+  rows: Row[];
+  class?: string;
+}
+const { id, title, rows, class: className = '' } = Astro.props;
+const dash = (v: string) => v.trim() === '—';
+// A Strata cell that starts "None" is a deliberate absence: no check mark.
+const none = (v: string) => /^None\b/.test(v.trim());
+const others: Array<{ key: 'cube' | 'mf' | 'sf'; label: string }> = [
+  { key: 'cube', label: 'Cube' },
+  { key: 'mf', label: 'MetricFlow' },
+  { key: 'sf', label: 'Snowflake semantic views' },
+];
+---
+
+<div id={id} class:list={['scroll-mt-24 overflow-x-auto rounded-xl border border-border', className]}>
+  <table class="w-full min-w-[64rem] border-collapse text-sm">
+    <caption class="sr-only">{title}</caption>
+    <thead>
+      <tr class="border-b border-border font-display text-xs uppercase tracking-wider">
+        <th scope="col" class="w-[22%] px-4 py-3 text-left font-semibold text-muted-foreground">{title}</th>
+        <th scope="col" class="w-[24%] border-x border-border bg-surface px-4 py-3 text-left font-bold text-primary">Strata</th>
+        {others.map((o) => (
+          <th scope="col" class="w-[18%] px-4 py-3 text-left font-semibold text-muted-foreground">{o.label}</th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr class="border-b border-border align-top last:border-b-0">
+          <th scope="row" class="px-4 py-2.5 text-left font-medium text-foreground">{r.feature}</th>
+          <td class="border-x border-border bg-surface px-4 py-2.5 font-medium text-foreground">
+            {dash(r.strata) ? (
+              <span class="text-muted-foreground" aria-label="not available">—</span>
+            ) : r.href ? (
+              <a href={r.href} class="group inline-flex gap-2 no-underline">
+                {!none(r.strata) && <span class="shrink-0 font-mono text-primary" aria-hidden="true">✓</span>}
+                <span class="decoration-primary underline-offset-2 group-hover:underline">{r.strata}</span>
+              </a>
+            ) : (
+              <span class="inline-flex gap-2"><span class="shrink-0 font-mono text-primary" aria-hidden="true">✓</span><span>{r.strata}</span></span>
+            )}
+          </td>
+          {others.map((o) => (
+            <td class="px-4 py-2.5 text-muted-foreground">{dash(r[o.key]) ? <span aria-label="not documented">—</span> : r[o.key]}</td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

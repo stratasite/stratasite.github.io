@@ -2,8 +2,8 @@
 // "How we stack up" — a tabbed, conversion-focused comparison. Strata spans two
 // categories (STRATA.md §5), so visitors self-select their frame and see the
 // sharpest "them -> Strata" contrast for it. Deep-dive links are pulled from the
-// `compare` collection by `category`. The exhaustive matrix lives on those
-// detail pages, not here.
+// `compare` collection by `category`. The exhaustive matrix lives at
+// /compare/semantic-layers/ and on the detail pages, not here.
 import type { CollectionEntry } from 'astro:content';
 import CtaButton from './CtaButton.astro';
 import TrialNote from './TrialNote.astro';
@@ -22,6 +22,7 @@ const tabs = [
       { label: 'Cube', slug: 'strata-vs-cube' },
       { label: 'Snowflake Semantic Views', slug: 'strata-vs-semantic-views' },
     ],
+    matrix: { label: 'every capability side by side', href: '/compare/semantic-layers/' },
     lineThem: 'They hand you a model.',
     lineStrata: 'Strata hands you answers.',
     rows: [
@@ -99,7 +100,14 @@ const slugSet = new Set(comparisons.map((c) => c.slug));
               </a>
             ))}
           </div>
-          <p class="mt-3 text-center text-xs text-muted-foreground">Click a tool to see the full head-to-head with Strata.</p>
+          <p class="mt-3 text-center text-xs text-muted-foreground">
+            Click a tool to see the full head-to-head with Strata.
+            {t.matrix && (
+              <>
+                {' '}Or see <a href={t.matrix.href} class="font-semibold text-primary hover:underline">{t.matrix.label}</a>.
+              </>
+            )}
+          </p>
         </>
       )}
 

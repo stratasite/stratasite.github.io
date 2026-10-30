@@ -1,0 +1,111 @@
+---
+/**
+ * /compare/semantic-layers/ — the capability matrix. Strata's semantic layer
+ * against Cube, dbt MetricFlow and Snowflake semantic views, row by row, then
+ * the architecture, then the rest of the stack that a headless layer does not
+ * ship. The per-competitor pages under /compare/ argue the case; this page
+ * is for the evaluator who wants to check a row. Rows and the verification
+ * date live in src/data/semantic-layer-matrix.ts.
+ */
+import Base from '../../layouts/Base.astro';
+import CompareMatrix from '../../components/CompareMatrix.astro';
+import CtaButton from '../../components/CtaButton.astro';
+import TrialNote from '../../components/TrialNote.astro';
+import { querying, architecture, stack, verified, sources } from '../../data/semantic-layer-matrix';
+import { site } from '../../config/site';
+
+const title = 'Strata vs Cube, MetricFlow and Snowflake semantic views';
+const description =
+  'Every capability of a semantic layer, side by side: blending, measure types, routing, security and agents. Then the rest of the stack that only Strata ships.';
+
+const blocks = [
+  { id: 'querying', label: 'Querying and modeling' },
+  { id: 'architecture', label: 'Architecture' },
+  { id: 'stack', label: 'The rest of the stack' },
+];
+
+const headToHeads = [
+  { label: 'Strata vs Cube', href: '/compare/strata-vs-cube/' },
+  { label: 'Strata vs MetricFlow', href: '/compare/strata-vs-metricflow/' },
+  { label: 'Strata vs Snowflake semantic views', href: '/compare/strata-vs-semantic-views/' },
+];
+---
+
+<Base title={`${title} | Strata`} description={description}>
+  <!-- HEADER -->
+  <section>
+    <div class="mx-auto max-w-3xl px-4 pb-4 pt-20 text-center sm:px-6 lg:px-8">
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Compared · semantic layers</p>
+      <h1 class="mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">
+        Everything a semantic layer should do. <span class="text-primary">And the rest of the stack.</span>
+      </h1>
+      <p class="mx-auto mt-5 max-w-2xl text-muted-foreground">
+        Strata's semantic layer, side by side with Cube, dbt MetricFlow and Snowflake semantic views,
+        from their own documentation. Every Strata cell links to the page that shows the mechanism.
+        The last block is what a headless layer leaves to another tool, and Strata ships.
+      </p>
+      <nav aria-label="Sections" class="mt-6 flex flex-wrap justify-center gap-2">
+        {blocks.map((b) => (
+          <a href={`#${b.id}`} class="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">{b.label}</a>
+        ))}
+      </nav>
+    </div>
+  </section>
+
+  <!-- THE MATRIX -->
+  <section>
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <h2 id="querying-heading" class="font-display text-2xl font-bold tracking-tight">Querying and modeling</h2>
+      <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+        What a caller can ask for, and how much of it has to be modeled first. Strata derives what is legal from the registry; most of these rows are a request away, not a deploy away.
+      </p>
+      <CompareMatrix id="querying" class="mt-6" title="Querying and modeling" rows={querying} />
+
+      <h2 class="mt-16 font-display text-2xl font-bold tracking-tight">Architecture</h2>
+      <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+        Where the SQL runs, what is held, and how you get it. Strata executes against your warehouse and keeps a short result cache; the model stays in your repository.
+      </p>
+      <CompareMatrix id="architecture" class="mt-6" title="Architecture" rows={architecture} />
+
+      <h2 class="mt-16 font-display text-2xl font-bold tracking-tight">The rest of the stack</h2>
+      <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+        A headless layer hands you a model and leaves the consumption to a BI tool, where the guarantees stop. Strata is the consumption layer too: dashboards, Sheets, subscriptions and agents, with the same validation on every surface.
+      </p>
+      <CompareMatrix id="stack" class="mt-6" title="The rest of the stack" rows={stack} />
+
+      <p class="mt-6 text-xs text-muted-foreground">
+        Competitor cells were read from each product's public documentation on {verified}. A dash means no documented equivalent was found.
+        Cube, dbt, MetricFlow and Snowflake are trademarks of their owners. Spotted a mistake?
+        <a class="text-primary underline" href={`mailto:${site.salesEmail}?subject=Semantic%20layer%20comparison`}>Tell us</a> and we will fix it.
+      </p>
+      <details class="mt-3 text-xs text-muted-foreground">
+        <summary class="cursor-pointer font-medium hover:text-foreground">Sources</summary>
+        <ul class="mt-2 list-disc space-y-1 pl-5">
+          {sources.map((s) => (
+            <li><a class="hover:text-foreground hover:underline" href={s.href} rel="nofollow noopener">{s.label}</a></li>
+          ))}
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- HEAD TO HEADS + CTA -->
+  <section class="band-rust border-t border-border bg-background">
+    <div class="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+      <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Read the head to heads</h2>
+      <p class="mt-4 text-muted-foreground">
+        One page per competitor, by theme, with where they are the better choice.
+      </p>
+      <div class="mt-6 flex flex-wrap justify-center gap-2">
+        {headToHeads.map((h) => (
+          <a href={h.href} class="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary">{h.label}</a>
+        ))}
+      </div>
+      <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <CtaButton location="compare-matrix" />
+        <CtaButton action="pricing" location="compare-matrix" />
+      </div>
+      <TrialNote class="mt-4" />
+    </div>
+  </section>
+</Base>

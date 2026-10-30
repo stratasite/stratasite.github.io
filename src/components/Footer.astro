@@ -44,6 +44,7 @@ const year = new Date().getFullYear();
     <div>
       <h3 class="text-sm font-semibold text-foreground">Compare</h3>
       <ul class="mt-3 space-y-2 text-sm">
+        <li><a class="text-muted-foreground hover:text-foreground" href="/compare/semantic-layers/">Semantic layers, side by side</a></li>
         {comparisons.map((c) => (
           <li><a class="text-muted-foreground hover:text-foreground" href={`/compare/${c.slug}/`}>{c.data.title}</a></li>
         ))}
