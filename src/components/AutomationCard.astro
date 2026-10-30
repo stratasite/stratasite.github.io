@@ -1,0 +1,273 @@
+---
+/**
+ * The fifth beat of the showcase, for a feature that has not shipped:
+ * data-driven automations. Labelled "Coming soon" on the card and on its
+ * beat, which is what the brief requires before naming anything unshipped.
+ *
+ * One picture, eight seconds: a governed measure is watched against a
+ * threshold; the line draws, crosses it, the crossing pulses, the rule
+ * lights up, and three actions fire in turn. It is drawn in SVG with CSS
+ * keyframes on semantic tokens, sized 16:9 to sit where the clips sit.
+ *
+ * Playback is driven by the parent: adding `is-playing` (re)starts the
+ * keyframes, removing it resets them. Under prefers-reduced-motion the card
+ * shows its final state.
+ */
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+
+const measure = 'Account Login contacts';
+const grain = 'hourly';
+const rule = '> baseline +40% for 2 hours';
+const actions = [
+  { label: 'Message #cs-ops with the chart', at: 4.3 },
+  { label: 'Email the on-call lead', at: 5.0 },
+  { label: 'Webhook to your ticketing system', at: 5.7 },
+];
+
+// Chart geometry (viewBox 640 x 360). The line is hourly contacts for a
+// day; it crosses the threshold at the 15th point.
+const W = 640;
+const chart = { x: 36, y: 64, w: 272, h: 180 };
+const points = [52, 50, 55, 53, 58, 56, 60, 57, 62, 59, 64, 61, 66, 70, 84, 96, 108, 114, 112, 109];
+const threshold = 82;
+const cross = 14;
+const lo = 40;
+const hi = 120;
+const px = (i: number) => chart.x + (i * chart.w) / (points.length - 1);
+const py = (v: number) => chart.y + chart.h - ((v - lo) / (hi - lo)) * chart.h;
+const path = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${px(i).toFixed(1)} ${py(v).toFixed(1)}`).join(' ');
+const tx = chart.x + chart.w + 26; // the rule and actions column, 300 wide
+---
+
+<div class={`automation-card ${className}`}>
+  <svg viewBox={`0 0 ${W} 360`} class="block h-auto w-full" role="img" aria-label={`A chart of ${measure} crosses its threshold; the rule fires and three actions run`}>
+    <!-- header -->
+    <text x={chart.x} y="34" class="ac-title">{measure} <tspan class="ac-dim">· {grain}</tspan></text>
+    <g class="ac-soon">
+      <rect x={W - 136} y="18" width="100" height="24" rx="12" class="ac-soon-pill" />
+      <text x={W - 86} y="34" text-anchor="middle" class="ac-soon-text">coming soon</text>
+    </g>
+
+    <!-- chart -->
+    <g class="ac-chart">
+      <line x1={chart.x} y1={chart.y + chart.h} x2={chart.x + chart.w} y2={chart.y + chart.h} class="ac-axis" />
+      <line x1={chart.x} y1={py(threshold)} x2={chart.x + chart.w} y2={py(threshold)} class="ac-threshold" />
+      <text x={chart.x} y={py(threshold) - 6} class="ac-threshold-label">baseline +40%</text>
+      <path d={path} class="ac-line" pathLength="1" />
+      <g class="ac-cross" style={`transform-origin: ${px(cross).toFixed(1)}px ${py(points[cross]).toFixed(1)}px`}>
+        <circle cx={px(cross)} cy={py(points[cross])} r="14" class="ac-cross-halo" />
+        <circle cx={px(cross)} cy={py(points[cross])} r="5" class="ac-cross-dot" />
+      </g>
+      <text x={px(cross)} y={py(points[cross]) - 22} text-anchor="middle" class="ac-cross-label">crossed at 14:00</text>
+      <text x={chart.x} y={chart.y + chart.h + 22} class="ac-axis-label">00:00</text>
+      <text x={chart.x + chart.w} y={chart.y + chart.h + 22} text-anchor="end" class="ac-axis-label">now</text>
+    </g>
+
+    <!-- rule -->
+    <g class="ac-rule">
+      <rect x={tx} y={chart.y} width={W - tx - 36} height="58" rx="10" class="ac-rule-box" />
+      <text x={tx + 16} y={chart.y + 24} class="ac-label">rule · {measure.split(' ').slice(0, 2).join(' ')}</text>
+      <text x={tx + 16} y={chart.y + 44} class="ac-rule-text">{rule}</text>
+    </g>
+
+    <!-- actions -->
+    <g class="ac-actions">
+      <text x={tx + 16} y={chart.y + 92} class="ac-label">then</text>
+      {actions.map((a, i) => (
+        <g class="ac-action" style={`--at: ${a.at}s`}>
+          <rect x={tx} y={chart.y + 104 + i * 44} width={W - tx - 36} height="36" rx="9" class="ac-action-box" />
+          <circle cx={tx + 18} cy={chart.y + 122 + i * 44} r="7" class="ac-tick-dot" />
+          <path d={`M${tx + 14.5} ${chart.y + 122 + i * 44} l2.5 2.5 4.5 -5`} class="ac-tick" />
+          <text x={tx + 34} y={chart.y + 126 + i * 44} class="ac-action-text">{a.label}</text>
+        </g>
+      ))}
+    </g>
+
+    <!-- footer -->
+    <text x={chart.x} y="330" class="ac-foot">One governed measure, one rule, no one watching a dashboard.</text>
+  </svg>
+</div>
+
+<style>
+  .automation-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .ac-title {
+    fill: var(--foreground);
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .ac-dim {
+    fill: var(--muted-foreground);
+    font-weight: 500;
+  }
+  .ac-soon-pill {
+    fill: color-mix(in srgb, var(--primary) 14%, transparent);
+    stroke: color-mix(in srgb, var(--primary) 60%, transparent);
+    stroke-width: 1;
+  }
+  .ac-soon-text {
+    fill: var(--primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .ac-axis {
+    stroke: color-mix(in srgb, var(--foreground) 14%, transparent);
+    stroke-width: 1;
+  }
+  .ac-axis-label,
+  .ac-threshold-label,
+  .ac-cross-label,
+  .ac-label {
+    fill: var(--muted-foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+  }
+  .ac-label {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .ac-threshold {
+    stroke: var(--primary);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 5;
+    opacity: 0.8;
+  }
+  .ac-line {
+    fill: none;
+    stroke: var(--chart-3);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .ac-cross-halo {
+    fill: var(--primary);
+    opacity: 0.25;
+  }
+  .ac-cross-dot {
+    fill: var(--primary);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+  .ac-cross-label {
+    fill: var(--foreground);
+    font-weight: 600;
+  }
+  .ac-rule-box {
+    fill: var(--surface-2);
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+  .ac-rule-text {
+    fill: var(--foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+  }
+  .ac-action-box {
+    fill: var(--surface-2);
+    stroke: var(--border);
+    stroke-width: 1.2;
+  }
+  .ac-action-text {
+    fill: var(--foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+  }
+  .ac-tick-dot {
+    fill: var(--primary);
+  }
+  .ac-tick {
+    fill: none;
+    stroke: var(--background);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ac-foot {
+    fill: var(--muted-foreground);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+  }
+
+  /* Resting state: nothing has happened yet. */
+  .ac-cross,
+  .ac-cross-label,
+  .ac-action {
+    opacity: 0;
+  }
+  .ac-cross {
+    transform: scale(0.4);
+  }
+  .ac-action {
+    transform: translateY(6px);
+  }
+
+  /* Playing: the line draws over three seconds, crosses, the rule lights,
+     the actions land one after another. */
+  @keyframes ac-draw {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes ac-pop {
+    0% { opacity: 0; transform: scale(0.4); }
+    60% { opacity: 1; transform: scale(1.15); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes ac-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes ac-light {
+    from { stroke: var(--border); }
+    to { stroke: var(--primary); }
+  }
+  .is-playing .ac-line {
+    animation: ac-draw 3s linear 0.4s both;
+  }
+  .is-playing .ac-cross {
+    animation: ac-pop 0.5s cubic-bezier(0.2, 0.7, 0.2, 1.3) 3s both;
+  }
+  .is-playing .ac-cross-label {
+    animation: ac-in 0.35s ease-out 3.2s both;
+  }
+  .is-playing .ac-rule-box {
+    animation: ac-light 0.4s ease-out 3.6s both;
+  }
+  .is-playing .ac-action {
+    animation: ac-in 0.4s ease-out var(--at) both;
+  }
+
+  /* No motion: the finished picture. */
+  @media (prefers-reduced-motion: reduce) {
+    .ac-line { stroke-dashoffset: 0; }
+    .ac-cross,
+    .ac-cross-label,
+    .ac-action {
+      opacity: 1;
+      transform: none;
+    }
+    .ac-rule-box {
+      stroke: var(--primary);
+    }
+    .is-playing .ac-line,
+    .is-playing .ac-cross,
+    .is-playing .ac-cross-label,
+    .is-playing .ac-rule-box,
+    .is-playing .ac-action {
+      animation: none;
+    }
+  }
+</style>

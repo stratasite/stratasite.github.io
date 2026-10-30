@@ -1,9 +1,13 @@
 ---
 /**
- * The product doing the job, in four beats: one real clip each, one line each.
- * Click a beat or let the clip run; when it ends the next one starts. Rendered
- * as a rust band, so use it as the page's one rust surface.
+ * The product doing the job, in five beats: one real clip each, one line each,
+ * and a fifth beat that is an animated card for a feature that has not shipped
+ * (data-driven automations, labelled "Coming soon"). Click a beat or let it
+ * run; when a clip ends, or the card's run is over, the next beat starts.
+ * Rendered as a rust band, so use it as the page's one rust surface.
  */
+import AutomationCard from './AutomationCard.astro';
+
 interface Props {
   heading?: string;
   /** The accented tail of the heading. */
@@ -43,6 +47,15 @@ const showcase = [
     video: '/exports_and_schedules.mp4',
     alt: 'Exporting a report to Google Sheets and scheduling it',
   },
+  {
+    label: 'Automate',
+    claim: 'Watch a measure. When it crosses the line, Strata acts: a message, an email, a webhook.',
+    // No clip: an animated card, run for a fixed time, and labelled as unshipped.
+    panel: true,
+    duration: 8000,
+    soon: true,
+    alt: 'A watched measure crosses its threshold and three actions fire',
+  },
 ];
 ---
 
@@ -73,6 +86,9 @@ const showcase = [
               <span class="flex items-baseline gap-3">
                 <span class="font-display text-sm font-bold tabular-nums text-primary">{String(i + 1).padStart(2, '0')}</span>
                 <span class="font-display text-xl font-bold tracking-tight text-foreground">{b.label}</span>
+                {'soon' in b && b.soon && (
+                  <span class="beat-soon ml-auto rounded-full px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-primary">Coming soon</span>
+                )}
               </span>
               <span class="mt-2 block text-sm leading-relaxed text-muted-foreground">{b.claim}</span>
               <span class="beat-bar mt-4 block h-0.5 w-full overflow-hidden rounded-full bg-border" aria-hidden="true">
@@ -85,21 +101,36 @@ const showcase = [
 
       <!-- stage -->
       <div class="showcase-media">
-        {showcase.map((b, i) => (
-          <video
-            id={`clip-${i}`}
-            role="tabpanel"
-            aria-labelledby={`beat-${i}`}
-            data-clip={i}
-            class="w-full rounded-xl"
-            src={b.video}
-            muted
-            playsinline
-            preload={i === 0 ? 'auto' : 'metadata'}
-            aria-label={b.alt}
-            hidden={i !== 0}
-          ></video>
-        ))}
+        {showcase.map((b, i) =>
+          'panel' in b && b.panel ? (
+            <div
+              id={`clip-${i}`}
+              role="tabpanel"
+              aria-labelledby={`beat-${i}`}
+              data-clip={i}
+              data-duration={b.duration}
+              class="showcase-panel w-full rounded-xl"
+              aria-label={b.alt}
+              hidden={i !== 0}
+            >
+              <AutomationCard />
+            </div>
+          ) : (
+            <video
+              id={`clip-${i}`}
+              role="tabpanel"
+              aria-labelledby={`beat-${i}`}
+              data-clip={i}
+              class="w-full rounded-xl"
+              src={b.video}
+              muted
+              playsinline
+              preload={i === 0 ? 'auto' : 'metadata'}
+              aria-label={b.alt}
+              hidden={i !== 0}
+            ></video>
+          )
+        )}
       </div>
     </div>
   </div>
@@ -110,8 +141,17 @@ const showcase = [
     display: block;
     box-shadow: var(--media-shadow);
   }
-  .showcase-media video[hidden] {
+  .showcase-media video[hidden],
+  .showcase-media .showcase-panel[hidden] {
     display: none;
+  }
+  .showcase-media .showcase-panel {
+    display: block;
+    box-shadow: var(--media-shadow);
+  }
+  .beat-soon {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent);
   }
   .beat {
     background: color-mix(in srgb, var(--surface) 60%, transparent);
@@ -129,44 +169,83 @@ const showcase = [
 </style>
 
 <script>
-  // One clip plays at a time; the active beat's bar tracks it, and the next
-  // beat starts when the clip ends. Clicking a beat jumps to it.
+  // One beat plays at a time; the active beat's bar tracks it, and the next
+  // beat starts when it ends. A beat is a clip, or a timed panel whose CSS
+  // animations (re)start when it is shown. Clicking a beat jumps to it.
   const root = document.querySelector<HTMLElement>('[data-showcase]');
   if (root) {
     const beats = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-beat]'));
-    const clips = Array.from(root.querySelectorAll<HTMLVideoElement>('[data-clip]'));
+    const clips = Array.from(root.querySelectorAll<HTMLElement>('[data-clip]'));
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let current = 0;
+    let panelTimer = 0;
+    let panelRaf = 0;
+
+    function setFill(i: number, ratio: number) {
+      const fill = beats[i].querySelector<HTMLElement>('.beat-fill');
+      if (fill) fill.style.width = `${Math.min(1, Math.max(0, ratio)) * 100}%`;
+    }
+
+    function stopPanel() {
+      window.clearTimeout(panelTimer);
+      window.cancelAnimationFrame(panelRaf);
+    }
+
+    function runPanel(el: HTMLElement, i: number) {
+      const card = el.firstElementChild as HTMLElement | null;
+      const duration = Number(el.dataset.duration) || 8000;
+      if (card) {
+        // Restart the keyframes from the top.
+        card.classList.remove('is-playing');
+        void card.offsetWidth;
+        card.classList.add('is-playing');
+      }
+      if (reduced) return;
+      const started = performance.now();
+      const tick = (now: number) => {
+        if (i !== current) return;
+        setFill(i, (now - started) / duration);
+        panelRaf = window.requestAnimationFrame(tick);
+      };
+      panelRaf = window.requestAnimationFrame(tick);
+      panelTimer = window.setTimeout(() => {
+        if (i === current) show((current + 1) % clips.length);
+      }, duration);
+    }
 
     function show(i: number, focus = false) {
       current = i;
+      stopPanel();
       beats.forEach((b, idx) => {
         const on = idx === i;
         b.setAttribute('aria-selected', String(on));
         b.tabIndex = on ? 0 : -1;
-        const fill = b.querySelector<HTMLElement>('.beat-fill');
-        if (fill && !on) fill.style.width = '0';
+        if (!on) setFill(idx, 0);
         if (on && focus) b.focus();
       });
-      clips.forEach((v, idx) => {
+      clips.forEach((el, idx) => {
         const on = idx === i;
-        v.hidden = !on;
-        if (on) {
-          v.currentTime = 0;
-          if (!reduced) v.play().catch(() => {});
-        } else {
-          v.pause();
+        el.hidden = !on;
+        if (el instanceof HTMLVideoElement) {
+          if (on) {
+            el.currentTime = 0;
+            if (!reduced) el.play().catch(() => {});
+          } else {
+            el.pause();
+          }
+        } else if (on) {
+          runPanel(el, idx);
         }
       });
     }
 
-    clips.forEach((v, i) => {
-      v.addEventListener('timeupdate', () => {
-        if (i !== current || !Number.isFinite(v.duration) || v.duration === 0) return;
-        const fill = beats[i].querySelector<HTMLElement>('.beat-fill');
-        if (fill) fill.style.width = `${(v.currentTime / v.duration) * 100}%`;
+    clips.forEach((el, i) => {
+      if (!(el instanceof HTMLVideoElement)) return;
+      el.addEventListener('timeupdate', () => {
+        if (i !== current || !Number.isFinite(el.duration) || el.duration === 0) return;
+        setFill(i, el.currentTime / el.duration);
       });
-      v.addEventListener('ended', () => {
+      el.addEventListener('ended', () => {
         if (i === current) show((current + 1) % clips.length);
       });
     });
