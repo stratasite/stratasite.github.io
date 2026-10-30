@@ -110,7 +110,7 @@ const engines = [
         <div class="v2-media">
           <!-- The loop, as one picture. The 2 minute demo opens from the button below. -->
           <HeroStory />
-          <button type="button" class="hero-play-pill mx-auto mt-4 flex items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider transition-colors" data-hero-open data-track="video_open" data-track-cta-location="home-hero-button">
+          <button type="button" class="hero-play-pill mx-auto mt-4 flex items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider transition-colors" data-hero-open data-track="demo_video_play" data-track-video="home-demo" data-track-cta-location="home-hero-button">
             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 3.6A1 1 0 0 0 4.8 4.5v11a1 1 0 0 0 1.5.9l9.5-5.5a1 1 0 0 0 0-1.8z" /></svg>
             Watch the 2 minute demo
           </button>
@@ -186,6 +186,10 @@ const engines = [
         ))}
       </ol>
       <DifferenceScene class="mx-auto mt-6 max-w-5xl" />
+      <button type="button" class="hero-play-pill mx-auto mt-8 flex items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider transition-colors" data-hero-open data-track="demo_video_play" data-track-video="home-demo" data-track-cta-location="home-different-button">
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 3.6A1 1 0 0 0 4.8 4.5v11a1 1 0 0 0 1.5.9l9.5-5.5a1 1 0 0 0 0-1.8z" /></svg>
+        Watch the 2 minute demo
+      </button>
     </div>
   </section>
 
@@ -363,8 +367,9 @@ const engines = [
 
   // Hero lightbox: the 2 minute demo video, opened from the button under
   // the hero graphic, with controls.
-  // Opens are tracked by the delegated [data-track] listener; watch depth is
-  // sent from here as video_progress at 25/50/75/100 percent.
+  // Plays are tracked by the delegated [data-track] listener (demo_video_play);
+  // watch depth is sent from here as demo_video_progress at 25/50/75 percent
+  // and demo_video_complete at the end.
   const openers = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-hero-open]'));
   const dialog = document.querySelector<HTMLDialogElement>('[data-hero-dialog]');
   const full = document.querySelector<HTMLVideoElement>('[data-hero-full]');
@@ -395,6 +400,7 @@ const engines = [
       full.pause();
     });
 
+    const VIDEO = 'home-demo';
     const milestones = [25, 50, 75, 100];
     let reached = new Set<number>();
     full.addEventListener('play', () => {
@@ -406,14 +412,15 @@ const engines = [
       for (const m of milestones) {
         if (pct >= m && !reached.has(m)) {
           reached.add(m);
-          track('video_progress', { video: 'home-walkthrough', percent: m });
+          if (m === 100) track('demo_video_complete', { video: VIDEO });
+          else track('demo_video_progress', { video: VIDEO, percent: m });
         }
       }
     });
     full.addEventListener('ended', () => {
       if (!reached.has(100)) {
         reached.add(100);
-        track('video_progress', { video: 'home-walkthrough', percent: 100 });
+        track('demo_video_complete', { video: VIDEO });
       }
     });
   }

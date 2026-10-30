@@ -13,10 +13,16 @@
  *   pricing_plan_select  An edition card chosen on /pricing/. {plan}
  *   zerosql_click        Outbound click to 0sql.io (site, docs or repository),
  *                        the open source server.      {cta_location, target}
- *   video_open           The 2 minute demo lightbox opened from the home
- *                        hero (clip or button).        {cta_location}
- *   video_progress       Watch depth on the walkthrough, once per milestone
- *                        per play.                     {video, percent}
+ *   demo_video_play      "Watch the 2 minute demo" clicked on the home hero;
+ *                        the lightbox opens and the video starts.
+ *                        Mark it a key event in GA4.    {cta_location, video}
+ *   demo_video_progress  Watch depth, once per milestone per play.
+ *                                                      {video, percent: 25|50|75}
+ *   demo_video_complete  The demo watched to the end.   {video}
+ *
+ * The three demo_video_* events share video="home-demo" so they line up in
+ * GA4 Explore. Register cta_location, video and percent as custom dimensions
+ * (event scope) in GA4 Admin so they show as columns.
  */
 
 type Params = Record<string, string | number | boolean>;
