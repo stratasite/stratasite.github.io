@@ -26,6 +26,7 @@ module.exports = {
       foreground: 'var(--accent-foreground)',
     },
     ring: 'var(--ring)',
+    destructive: 'var(--destructive)',
     cta: {
       DEFAULT: 'var(--cta)',
       foreground: 'var(--cta-foreground)',

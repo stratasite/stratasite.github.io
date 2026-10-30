@@ -8,9 +8,9 @@
  *   2. the BI tools they already have, each with an AI chat bolted on the
  *      side. One user at a time walks up and asks. The chat answers inside
  *      the tool, in its own voice, with the roadblock it really gives: it
- *      cannot get the formula right, the blend does not exist, the source
- *      was never connected. The user is marked with a cross and walks off
- *      grey;
+ *      cannot get the formula right, it needs the blend keys and sources, no
+ *      Explore covers the question. The reply sits in a red-bordered error
+ *      bubble, and the user walks off grey;
  *   3. the data team, where every bounced user ends up as a ticket on a pile
  *      that never gets shorter. The backlog counter only goes up.
  *
@@ -33,8 +33,8 @@ const { class: className = '' } = Astro.props;
 
 const tools = [
   { name: 'Power BI', mark: 'powerbi', cy: 84, ask: 'revenue by region, this quarter?', reply: 'My DAX filter context is wrong.' },
-  { name: 'Tableau', mark: 'tableau', cy: 196, ask: 'tickets per customer, by plan?', reply: "I can't blend Tickets to Customers." },
-  { name: 'Looker', mark: 'looker', cy: 308, ask: 'churn against last year?', reply: "I don't have a Subscriptions source." },
+  { name: 'Tableau', mark: 'tableau', cy: 196, ask: 'tickets per customer, by plan?', reply: 'Which sources? Which blend keys?' },
+  { name: 'Looker', mark: 'looker', cy: 308, ask: 'churn against last year?', reply: "There's no Explore for Subscriptions." },
 ];
 
 // Stage geometry (viewBox 1000 x 420). Three columns centred at 167, 500
@@ -103,8 +103,9 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
         </g>
         <!-- the chat's reply, in its own voice, where a chat reply sits -->
         <g class={`reply reply-${i}`} style={`--delay: ${(i * loop) / 3}s`}>
-          <use href="#spark" x={box.x + 24} y={tl.cy + 18} class="reply-spark" />
-          <text x={box.x + 40} y={tl.cy + 22} class="reply-text">{tl.reply}</text>
+          <rect x={box.x + 12} y={tl.cy + 4} width={box.w - 24} height="30" rx="8" class="reply-box" />
+          <use href="#spark" x={box.x + 26} y={tl.cy + 19} class="reply-spark" />
+          <text x={box.x + 40} y={tl.cy + 23} class="reply-text">{tl.reply}</text>
         </g>
       </g>
     ))}
@@ -141,18 +142,13 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
           <rect x="-254" y="-60" width="236" height="26" rx="8" class="ask-box" />
           <text x="-136" y="-43" text-anchor="middle" class="ask-text">{tl.ask}</text>
         </g>
-        <!-- the cross: bounced -->
-        <g class="fail">
-          <circle cx="13" cy="-27" r="7.5" class="fail-dot" />
-          <path d="M10 -30 l6 6 M16 -30 l-6 6" class="fail-x" />
-        </g>
       </g>
     ))}
   </svg>
   <figcaption class="sr-only">
     Business users wait in a queue. Each walks up to Power BI, Tableau or Looker and asks the AI chat bolted onto
-    the tool. The chat replies that it cannot get the DAX filter context right, cannot blend Tickets to Customers,
-    or has no Subscriptions source. The user is marked with a cross, walks off, and ends up as a ticket on the data
+    the tool. The chat replies that it cannot get the DAX filter context right, asks which sources and which blend keys,
+    or has no Explore for Subscriptions. The user walks off and ends up as a ticket on the data
     team's pile, and the backlog counter keeps climbing.
   </figcaption>
 </figure>
@@ -231,25 +227,18 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11.5px;
   }
+  .reply-box {
+    fill: color-mix(in srgb, var(--destructive) 10%, var(--surface-2));
+    stroke: var(--destructive);
+    stroke-width: 1.5;
+  }
   .reply-spark {
-    fill: var(--primary);
+    fill: var(--destructive);
   }
   .reply-text {
     fill: var(--foreground);
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11px;
-  }
-
-  /* The cross on a bounced user */
-  .fail-dot {
-    fill: var(--surface-2);
-    stroke: var(--primary);
-    stroke-width: 1.5;
-  }
-  .fail-x {
-    stroke: var(--primary);
-    stroke-width: 1.8;
-    stroke-linecap: round;
   }
 
   /* The data team */
@@ -304,12 +293,11 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   }
 
   /* Motion. Each actor: leave the queue, stand at its tool, ask, get the
-     reply, take the cross, walk off grey along the floor to the pile, become
+     reply, walk off grey along the floor to the pile, become
      a ticket, fade, and start over. All three run the same ten second loop
      a third apart. */
   .actor,
   .actor .ask,
-  .actor .fail,
   .actor .person-actor,
   .reply {
     animation-duration: 10s;
@@ -324,12 +312,6 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   .actor .ask {
     animation-name: ask;
     opacity: 0;
-  }
-  .actor .fail {
-    animation-name: fail;
-    opacity: 0;
-    transform-box: fill-box;
-    transform-origin: center;
   }
   .actor .person-actor {
     animation-name: grey-out;
@@ -391,12 +373,6 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     47% { opacity: 1; }
     51%, 100% { opacity: 0; }
   }
-  @keyframes fail {
-    0%, 32% { opacity: 0; transform: scale(0.4); }
-    35% { opacity: 1; transform: scale(1.15); }
-    37%, 58% { opacity: 1; transform: scale(1); }
-    61%, 100% { opacity: 0; transform: scale(1); }
-  }
   @keyframes grey-out {
     0%, 38% { fill: var(--primary); }
     46%, 100% { fill: color-mix(in srgb, var(--muted-foreground) 55%, var(--surface-2)); }
@@ -431,7 +407,6 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   @media (prefers-reduced-motion: reduce) {
     .actor,
     .actor .ask,
-    .actor .fail,
     .actor .person-actor,
     .reply,
     .ticket-land,
@@ -444,7 +419,6 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
       opacity: 1;
     }
     .actor .ask,
-    .actor .fail,
     .reply,
     .ticket-land {
       opacity: 1;
