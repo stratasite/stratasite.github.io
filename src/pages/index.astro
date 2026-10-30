@@ -14,6 +14,7 @@ import CtaButton from '../components/CtaButton.astro';
 import TrialNote from '../components/TrialNote.astro';
 import ShowcaseBand from '../components/ShowcaseBand.astro';
 import HeroStory from '../components/HeroStory.astro';
+import PainScene from '../components/PainScene.astro';
 import { site } from '../config/site';
 import { editions } from '../data/pricing';
 
@@ -55,21 +56,6 @@ const features = order
   .map((slug) => all.find((f) => f.slug === slug))
   .filter((f): f is NonNullable<typeof f> => Boolean(f))
   .map((f) => ({ ...f, data: { ...f.data, blurb: blurbs[f.slug] } }));
-
-const pains = [
-  {
-    title: 'One person can drive the tool.',
-    body: 'DAX, LookML, a Tableau workbook, or the analyst with the SQL. Every new measure and every fix waits for them.',
-  },
-  {
-    title: 'Two dashboards, two totals.',
-    body: 'Each report carries its own model. Nobody is sure which revenue number is the right one.',
-  },
-  {
-    title: 'Every new question is a ticket, or a spreadsheet.',
-    body: 'The people who run the business get the data last, or rebuild it by hand from an export.',
-  },
-];
 
 const engines = [
   'SQL Server and Azure SQL',
@@ -150,14 +136,7 @@ const engines = [
       <div class="mx-auto max-w-3xl text-center">
         <h2 class="font-display text-3xl font-bold tracking-tight sm:text-4xl">Sound familiar?</h2>
       </div>
-      <ul class="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
-        {pains.map((p) => (
-          <li class="rounded-xl border border-border bg-surface p-6">
-            <h3 class="font-display text-xl font-bold tracking-tight text-foreground">{p.title}</h3>
-            <p class="mt-2 leading-relaxed text-muted-foreground">{p.body}</p>
-          </li>
-        ))}
-      </ul>
+      <PainScene class="mx-auto mt-14 max-w-5xl" />
       <p class="mx-auto mt-14 max-w-3xl text-center font-display text-xl font-bold tracking-tight sm:text-2xl">
         <span class="text-muted-foreground">Strata puts the operator at the controls, on one governed model.</span>
         <span class="text-primary">They build it themselves, in minutes, and a wrong number is not possible.</span>
