@@ -2,12 +2,15 @@
 /**
  * "Sound familiar?" as one moving picture instead of three cards.
  *
- * A stage read left to right:
+ * A stage in three equal columns, so it lines up under the three numbered
+ * sentences the page puts above it:
  *   1. a queue of business users, each with a question;
- *   2. the BI tools they already have, each with a chat bolted on the side.
- *      One user at a time walks up, asks, and gets bounced with the error
- *      the bolt-on really gives: the source is not connected, the formula
- *      is wrong, the blend does not exist;
+ *   2. the BI tools they already have, each with an AI chat bolted on the
+ *      side. One user at a time walks up and asks. The chat answers inside
+ *      the tool, in its own voice, with the roadblock it really gives: it
+ *      cannot get the formula right, the blend does not exist, the source
+ *      was never connected. The user is marked with a cross and walks off
+ *      grey;
  *   3. the data team, where every bounced user ends up as a ticket on a pile
  *      that never gets shorter. The backlog counter only goes up.
  *
@@ -15,7 +18,7 @@
  * is never still. Drawn in SVG with CSS keyframes and semantic tokens only,
  * so it holds on any theme. Under prefers-reduced-motion the loop stops on
  * a frame that still tells the story: every actor parked at its tool,
- * every error showing, the pile full.
+ * every reply showing, the pile full.
  *
  * Tool names and marks are the incumbents the buyer has, drawn in one
  * muted colour so they read as "the tools", not as a logo wall. Looker's
@@ -29,28 +32,26 @@ interface Props {
 const { class: className = '' } = Astro.props;
 
 const tools = [
-  { name: 'Power BI', mark: 'powerbi', cy: 96, ask: 'revenue by region, this quarter?', error: 'DAX error: wrong filter context' },
-  { name: 'Tableau', mark: 'tableau', cy: 200, ask: 'tickets per customer, by plan?', error: 'No blend: Tickets to Customers' },
-  { name: 'Looker', mark: 'looker', cy: 304, ask: 'churn against last year?', error: 'Source missing: Subscriptions' },
+  { name: 'Power BI', mark: 'powerbi', cy: 84, ask: 'revenue by region, this quarter?', reply: 'My DAX filter context is wrong.' },
+  { name: 'Tableau', mark: 'tableau', cy: 196, ask: 'tickets per customer, by plan?', reply: "I can't blend Tickets to Customers." },
+  { name: 'Looker', mark: 'looker', cy: 308, ask: 'churn against last year?', reply: "I don't have a Subscriptions source." },
 ];
 
-// Stage geometry (viewBox units). Zones: users 0-250, tools 330-540,
-// errors 552-792, data team 820-980.
-const box = { x: 330, w: 210, h: 72 };
-const toast = { x: 548, w: 262, h: 40 };
-const queue = [40, 86, 132, 178, 224];
+// Stage geometry (viewBox 1000 x 420). Three columns centred at 167, 500
+// and 833, matching a three column grid above.
+const box = { x: 360, w: 280, h: 80 };
+const tab = { w: 108, h: 26 };
+const queue = [75, 121, 167, 213, 259];
 const pile = [352, 332, 312, 292, 272, 252]; // static ticket tops, bottom up
 const landing = [232, 212, 192]; // where each actor's ticket lands
-
-const start = { x: 224, y: 200 };
-const standX = box.x - 14; // an actor stands just left of its tool
-const desk = { x: 820, y: 170 };
-const labelY = 392; // one baseline for the three zone labels
+const team = { cx: 833, deskX: 758, pileX: 785 };
+const labelY = 410;
+const floorY = 382;
 const loop = 10; // seconds per actor cycle; actors are spaced a third apart
 ---
 
-<figure class={`pain-scene ${className}`} aria-label="Business users queue for Power BI, Tableau and Looker, get bounced by each tool's bolt-on chat with an error, and end up as tickets on an overloaded data team's pile">
-  <svg viewBox="0 0 1000 400" class="block h-auto w-full" role="img" aria-hidden="true">
+<figure class={`pain-scene ${className}`} aria-label="Business users queue for Power BI, Tableau and Looker, ask the AI chat bolted onto each tool, get a roadblock back, and end up as tickets on an overloaded data team's pile">
+  <svg viewBox="0 0 1000 420" class="block h-auto w-full" role="img" aria-hidden="true">
     <defs>
       <!-- A person: head and shoulders, drawn once. -->
       <g id="person">
@@ -62,6 +63,8 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
         <path d="M0 -6.5 5.6 -3.25V3.25L0 6.5 -5.6 3.25V-3.25Z" />
         <circle cx="0" cy="0" r="2.2" class="nut-hole" />
       </g>
+      <!-- The chat's sparkle. -->
+      <path id="spark" d="M0 -6 l1.6 4.4 4.4 1.6 -4.4 1.6 -1.6 4.4 -1.6 -4.4 -4.4 -1.6 4.4 -1.6z" />
       <!-- The tools' marks, monochrome. -->
       <symbol id="mark-powerbi" viewBox="0 0 24 24">
         <rect x="2.5" y="13" width="5.5" height="10" rx="1.4" />
@@ -80,73 +83,77 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
 
     <!-- 1. The queue -->
     <g class="scene-queue">
-      {queue.map((x) => <use href="#person" x={x} y={start.y} class="person-muted" />)}
-      <text x="132" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">1</tspan>  the business</text>
+      {queue.map((x) => <use href="#person" x={x} y="200" class="person-muted" />)}
+      <text x="167" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">1</tspan>  the business</text>
     </g>
 
-    <!-- 2. The tools, each with a chat bolted on -->
-    {tools.map((tl) => (
+    <!-- 2. The tools, each with an AI chat bolted on, answering inside the box -->
+    {tools.map((tl, i) => (
       <g class="scene-tool">
         <rect x={box.x} y={tl.cy - box.h / 2} width={box.w} height={box.h} rx="10" class="tool-box" />
-        <use href={`#mark-${tl.mark}`} x={box.x + 18} y={tl.cy - 13} width="26" height="26" class="tool-mark" />
-        <text x={box.x + 56} y={tl.cy + 7} class="tool-name">{tl.name}</text>
-        <!-- the bolt-on chat: a tab hung off the box's right edge, nut on each corner -->
+        <use href={`#mark-${tl.mark}`} x={box.x + 18} y={tl.cy - 28} width="24" height="24" class="tool-mark" />
+        <text x={box.x + 52} y={tl.cy - 9} class="tool-name">{tl.name}</text>
+        <!-- the bolt-on: a tab hung off the box's top right, a nut at each end -->
         <g>
-          <rect x={box.x + box.w - 116} y={tl.cy - box.h / 2 - 10} width="108" height="26" rx="7" class="chat-tab" />
-          <use href="#nut" x={box.x + box.w - 116 + 9} y={tl.cy - box.h / 2 - 10 + 13} class="nut" />
-          <use href="#nut" x={box.x + box.w - 8 - 9} y={tl.cy - box.h / 2 - 10 + 13} class="nut" />
-          <path d={`M${box.x + box.w - 116 + 24} ${tl.cy - box.h / 2 + 3} l1.6 4.4 4.4 1.6 -4.4 1.6 -1.6 4.4 -1.6 -4.4 -4.4 -1.6 4.4 -1.6z`} class="chat-spark" />
-          <text x={box.x + box.w - 116 + 62} y={tl.cy - box.h / 2 + 7} text-anchor="middle" class="chat-label">AI chat</text>
+          <rect x={box.x + box.w - tab.w - 8} y={tl.cy - box.h / 2 - 10} width={tab.w} height={tab.h} rx="7" class="chat-tab" />
+          <use href="#nut" x={box.x + box.w - tab.w - 8 + 9} y={tl.cy - box.h / 2 + 3} class="nut" />
+          <use href="#nut" x={box.x + box.w - 8 - 9} y={tl.cy - box.h / 2 + 3} class="nut" />
+          <use href="#spark" x={box.x + box.w - tab.w - 8 + 24} y={tl.cy - box.h / 2 + 3} class="chat-spark" />
+          <text x={box.x + box.w - tab.w - 8 + 62} y={tl.cy - box.h / 2 + 7} text-anchor="middle" class="chat-label">AI chat</text>
+        </g>
+        <!-- the chat's reply, in its own voice, where a chat reply sits -->
+        <g class={`reply reply-${i}`} style={`--delay: ${(i * loop) / 3}s`}>
+          <use href="#spark" x={box.x + 24} y={tl.cy + 18} class="reply-spark" />
+          <text x={box.x + 40} y={tl.cy + 22} class="reply-text">{tl.reply}</text>
         </g>
       </g>
     ))}
-    <text x={box.x + box.w / 2} y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">2</tspan>  the BI tool you have, with a chat bolted on</text>
+    <text x="500" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">2</tspan>  the BI tool you have, with an AI chat bolted on</text>
 
     <!-- 3. The data team and the pile -->
     <g class="scene-team">
-      <g transform="translate(868 140)"><g class="engineer engineer-a"><use href="#person" class="person-muted" /></g></g>
-      <g transform="translate(922 140)"><g class="engineer engineer-b"><use href="#person" class="person-muted" /></g></g>
-      <rect x={desk.x + 10} y={desk.y - 20} width="150" height="8" rx="4" class="desk" />
+      <g transform={`translate(${team.cx - 27} 140)`}><g class="engineer engineer-a"><use href="#person" class="person-muted" /></g></g>
+      <g transform={`translate(${team.cx + 27} 140)`}><g class="engineer engineer-b"><use href="#person" class="person-muted" /></g></g>
+      <rect x={team.deskX} y="150" width="150" height="8" rx="4" class="desk" />
       <!-- the alarm over their heads -->
       <g class="alarm">
-        <circle cx="895" cy="96" r="10" class="alarm-dot" />
-        <text x="895" y="101" text-anchor="middle" class="alarm-mark">!</text>
+        <circle cx={team.cx} cy="96" r="10" class="alarm-dot" />
+        <text x={team.cx} y="101" text-anchor="middle" class="alarm-mark">!</text>
       </g>
-      {pile.map((top) => <rect x="850" y={top} width="96" height="16" rx="3" class="ticket" />)}
-      {landing.map((top, i) => <rect x="850" y={top} width="96" height="16" rx="3" class={`ticket ticket-land ticket-land-${i}`} />)}
-      <text x="898" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">3</tspan>  the data team</text>
+      {pile.map((top) => <rect x={team.pileX} y={top} width="96" height="16" rx="3" class="ticket" />)}
+      {landing.map((top, i) => <rect x={team.pileX} y={top} width="96" height="16" rx="3" class={`ticket ticket-land ticket-land-${i}`} />)}
+      <text x={team.cx} y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">3</tspan>  the data team</text>
       <g class="backlog">
-        <rect x="834" y="30" width="128" height="26" rx="13" class="backlog-pill" />
-        <text x="898" y="47" text-anchor="middle" class="backlog-text">backlog <tspan class="backlog-count" data-backlog>47</tspan></text>
+        <rect x={team.cx - 64} y="30" width="128" height="26" rx="13" class="backlog-pill" />
+        <text x={team.cx} y="47" text-anchor="middle" class="backlog-text">backlog <tspan class="backlog-count" data-backlog>47</tspan></text>
       </g>
     </g>
 
+    <!-- The floor the bounced users take to the pile. -->
+    <path d={`M${box.x + 20} ${floorY} H ${team.deskX}`} class="route" />
+
     <!-- The actors: one per tool, same loop, a third apart. -->
     {tools.map((tl, i) => (
-      <>
-        <g class={`actor actor-${i}`} style={`--cy: ${tl.cy}px; --delay: ${(i * loop) / 3}s`}>
-          <use href="#person" class="person-actor" />
-          <g class="ask">
-            <rect x="-254" y="-60" width="236" height="26" rx="8" class="ask-box" />
-            <text x="-136" y="-43" text-anchor="middle" class="ask-text">{tl.ask}</text>
-          </g>
+      <g class={`actor actor-${i}`} style={`--cy: ${tl.cy}px; --delay: ${(i * loop) / 3}s`}>
+        <use href="#person" class="person-actor" />
+        <!-- the question, held up while asking -->
+        <g class="ask">
+          <rect x="-254" y="-60" width="236" height="26" rx="8" class="ask-box" />
+          <text x="-136" y="-43" text-anchor="middle" class="ask-text">{tl.ask}</text>
         </g>
-        <g class={`toast toast-${i}`} style={`--delay: ${(i * loop) / 3}s`}>
-          <rect x={toast.x} y={tl.cy - toast.h / 2} width={toast.w} height={toast.h} rx="8" class="toast-box" />
-          <text x={toast.x + 14} y={tl.cy + 5} class="toast-x">✕</text>
-          <text x={toast.x + 32} y={tl.cy + 5} class="toast-text">{tl.error}</text>
+        <!-- the cross: bounced -->
+        <g class="fail">
+          <circle cx="13" cy="-27" r="7.5" class="fail-dot" />
+          <path d="M10 -30 l6 6 M16 -30 l-6 6" class="fail-x" />
         </g>
-      </>
+      </g>
     ))}
-
-    <!-- The route bounced users take: tool to desk. -->
-    <path d="M330 376 H 820" class="route" />
   </svg>
   <figcaption class="sr-only">
-    Business users wait in a queue. Each walks up to Power BI, Tableau or Looker, asks a question in the chat
-    bolted onto the tool, and is bounced with an error: the DAX filter context is wrong, the blend does not
-    exist, the data source is not connected. Each one ends up as a ticket on the data team's pile, and the
-    backlog counter keeps climbing.
+    Business users wait in a queue. Each walks up to Power BI, Tableau or Looker and asks the AI chat bolted onto
+    the tool. The chat replies that it cannot get the DAX filter context right, cannot blend Tickets to Customers,
+    or has no Subscriptions source. The user is marked with a cross, walks off, and ends up as a ticket on the data
+    team's pile, and the backlog counter keeps climbing.
   </figcaption>
 </figure>
 
@@ -192,7 +199,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     fill: var(--foreground);
     font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
-    font-size: 20px;
+    font-size: 19px;
   }
   .chat-tab {
     fill: var(--surface-2);
@@ -205,9 +212,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     font-size: 11px;
     letter-spacing: 0.08em;
   }
-  .nut {
-    fill: var(--muted-foreground);
-  }
+  .nut,
   .chat-spark {
     fill: var(--muted-foreground);
   }
@@ -215,7 +220,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     fill: var(--surface-2);
   }
 
-  /* Questions and errors */
+  /* The question, and the chat's reply */
   .ask-box {
     fill: var(--surface-2);
     stroke: color-mix(in srgb, var(--primary) 55%, var(--border));
@@ -226,20 +231,25 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11.5px;
   }
-  .toast-box {
+  .reply-spark {
+    fill: var(--primary);
+  }
+  .reply-text {
+    fill: var(--foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+  }
+
+  /* The cross on a bounced user */
+  .fail-dot {
     fill: var(--surface-2);
     stroke: var(--primary);
     stroke-width: 1.5;
   }
-  .toast-x {
-    fill: var(--primary);
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .toast-text {
-    fill: var(--foreground);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 11px;
+  .fail-x {
+    stroke: var(--primary);
+    stroke-width: 1.8;
+    stroke-linecap: round;
   }
 
   /* The data team */
@@ -294,10 +304,14 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   }
 
   /* Motion. Each actor: leave the queue, stand at its tool, ask, get the
-     error, cross to the desk, become a ticket, fade, and start over. All
-     three run the same ten second loop a third apart. */
+     reply, take the cross, walk off grey along the floor to the pile, become
+     a ticket, fade, and start over. All three run the same ten second loop
+     a third apart. */
   .actor,
-  .toast {
+  .actor .ask,
+  .actor .fail,
+  .actor .person-actor,
+  .reply {
     animation-duration: 10s;
     animation-iteration-count: infinite;
     animation-timing-function: ease-in-out;
@@ -305,15 +319,23 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   }
   .actor {
     animation-name: walk;
-    transform: translate(224px, 200px);
+    transform: translate(259px, 200px);
   }
   .actor .ask {
-    animation: ask 10s infinite;
-    animation-delay: var(--delay);
+    animation-name: ask;
     opacity: 0;
   }
-  .toast {
-    animation-name: bounce;
+  .actor .fail {
+    animation-name: fail;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .actor .person-actor {
+    animation-name: grey-out;
+  }
+  .reply {
+    animation-name: reply;
     opacity: 0;
     transform-box: fill-box;
     transform-origin: left center;
@@ -347,27 +369,37 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   }
 
   @keyframes walk {
-    0%   { transform: translate(224px, 200px); opacity: 0; }
+    0%   { transform: translate(259px, 200px); opacity: 0; }
     4%   { opacity: 1; }
-    16%  { transform: translate(316px, var(--cy)); }
-    40%  { transform: translate(316px, var(--cy)); }
-    45%  { transform: translate(316px, 372px); }
-    56%  { transform: translate(808px, 372px); opacity: 1; }
-    60%  { transform: translate(840px, 360px); opacity: 0; }
-    100% { transform: translate(224px, 200px); opacity: 0; }
+    16%  { transform: translate(346px, var(--cy)); }
+    40%  { transform: translate(346px, var(--cy)); }
+    45%  { transform: translate(346px, 376px); }
+    56%  { transform: translate(745px, 376px); opacity: 1; }
+    60%  { transform: translate(775px, 364px); opacity: 0; }
+    100% { transform: translate(259px, 200px); opacity: 0; }
   }
   @keyframes ask {
     0%, 17% { opacity: 0; }
     20%, 29% { opacity: 1; }
     32%, 100% { opacity: 0; }
   }
-  @keyframes bounce {
+  @keyframes reply {
     0%, 29% { opacity: 0; transform: translateX(-6px); }
     31% { opacity: 1; transform: translateX(3px); }
     33% { transform: translateX(-2px); }
     35% { transform: translateX(0); }
-    43% { opacity: 1; }
-    47%, 100% { opacity: 0; }
+    47% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+  @keyframes fail {
+    0%, 32% { opacity: 0; transform: scale(0.4); }
+    35% { opacity: 1; transform: scale(1.15); }
+    37%, 58% { opacity: 1; transform: scale(1); }
+    61%, 100% { opacity: 0; transform: scale(1); }
+  }
+  @keyframes grey-out {
+    0%, 38% { fill: var(--primary); }
+    46%, 100% { fill: color-mix(in srgb, var(--muted-foreground) 55%, var(--surface-2)); }
   }
   /* Actor 0 lands at 60%, actor 1 at 93.3%, actor 2 at 26.7% (its cycle
      wraps); everything clears at 58%. */
@@ -399,18 +431,21 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
   @media (prefers-reduced-motion: reduce) {
     .actor,
     .actor .ask,
-    .toast,
+    .actor .fail,
+    .actor .person-actor,
+    .reply,
     .ticket-land,
     .engineer,
     .alarm {
       animation: none;
     }
     .actor {
-      transform: translate(316px, var(--cy));
+      transform: translate(346px, var(--cy));
       opacity: 1;
     }
     .actor .ask,
-    .toast,
+    .actor .fail,
+    .reply,
     .ticket-land {
       opacity: 1;
       transform: none;
