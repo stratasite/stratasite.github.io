@@ -50,10 +50,10 @@ const analysis = {
 
 // Chart geometry (viewBox units): a wide, short panel so the card stays low.
 const W = 320;
-const H = 60;
-const padX = 14;
-const base = 50;
-const top = 8;
+const H = 84;
+const padX = 16;
+const base = 68;
+const top = 14;
 const lo = 300;
 const hi = 720;
 const x = (i: number) => padX + (i * (W - padX * 2)) / (weeks.length - 1);
@@ -64,8 +64,11 @@ const path = (vals: number[]) => vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i
 // line draw and the spike marker can be sequenced between the entrances.
 const t = { tray: 100, q1: 450, type1: 600, plan1: 1800, chart: 2200, draw: 2450, spike: 3250, q2: 3600, type2: 3750, plan2: 4800, analysis: 5200 };
 
-const card = 'story-card flex items-start gap-3 rounded-xl bg-surface px-4 py-2 font-mono text-xs sm:text-[0.8rem]';
-const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py-2.5 font-mono text-[0.95rem] text-foreground';
+const card = 'story-card flex items-start gap-3 rounded-xl bg-surface px-4 py-3 font-mono text-xs sm:text-[0.8rem]';
+// The planner's own step reads quieter than what it returns: no fill, no
+// shadow, muted text, so the eye lands on the chart and the analysis.
+const think = 'story-think flex items-start gap-3 rounded-xl px-4 py-2.5 font-mono text-xs text-muted-foreground sm:text-[0.8rem]';
+const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py-3 font-mono text-[0.95rem] text-foreground';
 ---
 
 <figure
@@ -74,11 +77,10 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
 >
   <!-- 1. Access modes. Strata does not care which. -->
   <div class="story-step" style={`--d: ${t.tray}ms`}>
-    <div class="story-tray mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-x-5 gap-y-1 rounded-xl px-4 py-2 sm:gap-x-6">
-      <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">any access mode</p>
-      <ul class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 sm:gap-x-5" role="list">
+    <div class="story-tray mx-auto w-fit max-w-full rounded-xl px-5 py-2.5">
+      <ul class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:gap-x-7" role="list" aria-label="Access modes">
         {modes.map((m) => (
-          <li class="flex items-center gap-1.5 text-muted-foreground">
+          <li class="flex items-center gap-1.5 text-foreground">
             <svg viewBox="0 0 24 24" class="h-[16px] w-[16px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               {m.icon === 'user' && <><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" /></>}
               {m.icon === 'agent' && <><path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6L4.5 11l5.6-1.9Z" /><path d="M19 17.5v3M17.5 19h3" stroke-opacity=".6" /></>}
@@ -86,7 +88,7 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
               {m.icon === 'api' && <><path d="M8.5 4C6.5 4 6 5 6 7v2.5c0 1.2-.8 2-2 2.5 1.2.5 2 1.3 2 2.5V17c0 2 .5 3 2.5 3" /><path d="M15.5 4c2 0 2.5 1 2.5 3v2.5c0 1.2.8 2 2 2.5-1.2.5-2 1.3-2 2.5V17c0 2-.5 3-2.5 3" /></>}
               {m.icon === 'sheets' && <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M4 10h16M4 15h16M10 4v16" stroke-opacity=".7" /></>}
             </svg>
-            <span class="font-mono text-[0.72rem] tracking-wide">{m.label}</span>
+            <span class="font-mono text-[0.75rem] font-bold tracking-wide">{m.label}</span>
           </li>
         ))}
       </ul>
@@ -94,20 +96,20 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
   </div>
 
   <!-- 2. The first question, typed into the input. -->
-  <div class={`story-step mt-3 ${input}`} style={`--d: ${t.q1}ms`}>
+  <div class={`story-step mt-4 ${input}`} style={`--d: ${t.q1}ms`}>
     <span class="story-typed min-w-0 flex-1" style={`--chars: ${q1.length}; --d: ${t.type1}ms`}>{q1}</span>
     <kbd class="story-key shrink-0 rounded-md border border-border px-1.5 py-0.5 font-mono text-[0.7rem] leading-none text-muted-foreground" aria-hidden="true">&crarr;</kbd>
   </div>
 
   <!-- 3. What the question set off, hanging off it as a tree. -->
-  <div class="story-tree mt-2.5 pl-7">
-    <ol class="space-y-2.5" role="list">
+  <div class="story-tree mt-3 pl-7">
+    <ol class="space-y-3" role="list">
       <!-- plan -->
-      <li class={`story-step story-branch ${card}`} style={`--d: ${t.plan1}ms`}>
-        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="mt-px h-[18px] w-auto shrink-0" />
+      <li class={`story-step story-branch ${think}`} style={`--d: ${t.plan1}ms`}>
+        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="story-think-mark mt-px h-[18px] w-auto shrink-0" />
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-3">
-            <code class="text-foreground">plan query</code>
+            <code>plan query</code>
             <span class="ml-auto flex shrink-0 items-center gap-1.5 tabular-nums text-muted-foreground">
               <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
               {plan1.result}
@@ -128,7 +130,7 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
               <span class="flex items-center gap-1"><span class="story-ly-swatch inline-block h-0.5 w-3 rounded-full"></span>Last year</span>
             </span>
           </div>
-          <svg viewBox={`0 0 ${W} ${H}`} class="story-chart mt-1.5 block w-full" role="img" aria-label="Weekly contacts this year against last year over eight weeks; week six is 70 percent above last year">
+          <svg viewBox={`0 0 ${W} ${H}`} class="story-chart mt-3 block w-full" role="img" aria-label="Weekly contacts this year against last year over eight weeks; week six is 70 percent above last year">
             <line x1="0" y1={base} x2={W} y2={base} class="story-axis" stroke-width="1" />
             <path d={path(lastYear)} class="story-line story-line-ly" pathLength="1" style={`--d: ${t.draw}ms`} />
             <path d={path(thisYear)} class="story-line story-line-ty" pathLength="1" style={`--d: ${t.draw + 150}ms`} />
@@ -150,11 +152,11 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
       </li>
 
       <!-- plan -->
-      <li class={`story-step story-branch ${card}`} style={`--d: ${t.plan2}ms`}>
-        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="mt-px h-[18px] w-auto shrink-0" />
+      <li class={`story-step story-branch ${think}`} style={`--d: ${t.plan2}ms`}>
+        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="story-think-mark mt-px h-[18px] w-auto shrink-0" />
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-3">
-            <code class="text-foreground">plan query</code>
+            <code>plan query</code>
             <span class="ml-auto flex shrink-0 items-center gap-1.5 tabular-nums text-muted-foreground">
               <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
               {plan2.result}
@@ -213,6 +215,13 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
     background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
     border: 1px solid var(--border);
   }
+  .story-think {
+    background: color-mix(in srgb, var(--surface) 35%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--border) 80%, var(--muted-foreground));
+  }
+  .story-think-mark {
+    opacity: 0.6;
+  }
   .story-key {
     background: var(--surface-2);
   }
@@ -226,9 +235,9 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
     content: '';
     position: absolute;
     left: -1.3rem;
-    top: -0.65rem;
+    top: -0.75rem;
     width: 1.3rem;
-    height: calc(0.65rem + 1.1rem);
+    height: calc(0.75rem + 1.2rem);
     border-left: 2px solid var(--rail);
     border-bottom: 2px solid var(--rail);
     border-bottom-left-radius: 0.65rem;
@@ -238,8 +247,8 @@ const input = 'story-input flex items-center gap-3 rounded-xl bg-surface px-4 py
     content: '';
     position: absolute;
     left: -1.3rem;
-    top: 1.1rem;
-    bottom: -0.75rem;
+    top: 1.2rem;
+    bottom: -0.85rem;
     border-left: 2px solid var(--rail);
     pointer-events: none;
   }
