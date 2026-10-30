@@ -1,0 +1,337 @@
+---
+/**
+ * The home hero's picture: the product's loop, read top to bottom, on a
+ * quiet field as floating cards.
+ *
+ *   1. the access modes, centred and evenly weighted, so the strip reads
+ *      "however you come in";
+ *   2. a question in English, in the input it was sent from;
+ *   3. hanging off it as a process tree: the plan (measures resolved, grain
+ *      checked), the chart that came back, a drill-down question, its plan,
+ *      and the table that came back.
+ *
+ * The tree is the direction: a trunk drops from the input and an elbow turns
+ * into each card, so the eye reads "the question caused these". Everything is
+ * drawn from semantic tokens, so it holds on ink, on a light surface, and
+ * inside a rust band. It animates once on first load (each step settles in,
+ * the questions type themselves, the bars grow, the rows land) and is static
+ * under prefers-reduced-motion.
+ *
+ * The numbers are the TPC-DS demo project's, trimmed to read as a picture.
+ */
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+
+const modes = [
+  { label: 'User', icon: 'user' },
+  { label: 'Agent', icon: 'agent' },
+  { label: 'MCP', icon: 'mcp' },
+  { label: 'API', icon: 'api' },
+  { label: 'Sheets', icon: 'sheets' },
+] as const;
+
+const q1 = 'net paid by channel, last 28 days';
+const plan1 = { args: 'Store Net Paid, Catalog Net Paid · by Week · Date ≥ 28d', result: '2 facts · grain safe' };
+const weeks = ['W1', 'W2', 'W3', 'W4'];
+const series = [
+  { name: 'Store', values: [52, 61, 58, 70], color: 'var(--chart-1)' },
+  { name: 'Catalog', values: [34, 41, 45, 57], color: 'var(--chart-3)' },
+];
+const q2 = 'break catalog down by brand';
+const plan2 = { args: 'Catalog Net Paid · by Item Brand · Channel = Catalog', result: 'aggregate table · 70 ms' };
+const rows = [
+  ['amalgimporto #2', '27,091.65'],
+  ['importoimporto #2', '17,785.58'],
+  ['exportiimporto #1', '15,792.89'],
+  ['amalgimporto #1', '13,027.04'],
+];
+
+// Chart geometry (viewBox units). Four weeks, two bars each, baseline at 72.
+const max = 70;
+const base = 72;
+const plot = 60;
+const group = 60;
+const barW = 18;
+
+// Timeline, in ms from load. Each card has its own delay so typing and bar
+// growth can be sequenced between the card entrances.
+const t = { tray: 100, q1: 450, type1: 600, plan1: 1900, chart: 2300, q2: 3300, type2: 3450, plan2: 4500, table: 4900 };
+
+const card = 'story-card flex items-start gap-3 rounded-xl bg-surface px-4 py-2.5 font-mono text-xs sm:text-[0.8rem]';
+---
+
+<figure
+  class={`hero-story relative overflow-hidden rounded-2xl border border-border p-5 sm:p-6 ${className}`}
+  aria-label="A question in English becomes a planned query and a chart; a follow-up question becomes a planned query and a table"
+>
+  <!-- 1. Access modes. Strata does not care which. -->
+  <div class="story-step" style={`--d: ${t.tray}ms`}>
+    <div class="story-tray mx-auto w-fit max-w-full rounded-xl px-4 py-2.5 text-center">
+      <p class="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">any access mode</p>
+      <ul class="mt-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:gap-x-6" role="list">
+        {modes.map((m) => (
+          <li class="flex items-center gap-1.5 text-muted-foreground">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              {m.icon === 'user' && <><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" /></>}
+              {m.icon === 'agent' && <><path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6L4.5 11l5.6-1.9Z" /><path d="M19 17.5v3M17.5 19h3" stroke-opacity=".6" /></>}
+              {m.icon === 'mcp' && <><path d="M9 3v5M15 3v5" /><path d="M6 8h12v2.5a6 6 0 0 1-12 0Z" /><path d="M12 16.5V21" /></>}
+              {m.icon === 'api' && <><path d="M8.5 4C6.5 4 6 5 6 7v2.5c0 1.2-.8 2-2 2.5 1.2.5 2 1.3 2 2.5V17c0 2 .5 3 2.5 3" /><path d="M15.5 4c2 0 2.5 1 2.5 3v2.5c0 1.2.8 2 2 2.5-1.2.5-2 1.3-2 2.5V17c0 2-.5 3-2.5 3" /></>}
+              {m.icon === 'sheets' && <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M4 10h16M4 15h16M10 4v16" stroke-opacity=".7" /></>}
+            </svg>
+            <span class="font-mono text-[0.72rem] tracking-wide">{m.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+
+  <!-- 2. The first question, typed into the input. -->
+  <div class="story-step story-input mt-4 flex items-center gap-3 rounded-xl bg-surface px-4 py-3 font-mono text-[0.95rem] text-foreground" style={`--d: ${t.q1}ms`}>
+    <span class="story-typed min-w-0 flex-1" style={`--chars: ${q1.length}; --d: ${t.type1}ms`}>{q1}</span>
+    <kbd class="story-key shrink-0 rounded-md border border-border px-1.5 py-0.5 font-mono text-[0.7rem] leading-none text-muted-foreground" aria-hidden="true">&crarr;</kbd>
+  </div>
+
+  <!-- 3. What the question set off, hanging off it as a tree. -->
+  <div class="story-tree mt-3 pl-7">
+    <ol class="space-y-3" role="list">
+      <!-- plan -->
+      <li class={`story-step story-branch ${card}`} style={`--d: ${t.plan1}ms`}>
+        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="mt-px h-[18px] w-auto shrink-0" />
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-3">
+            <code class="text-foreground">plan query</code>
+            <span class="ml-auto flex shrink-0 items-center gap-1.5 tabular-nums text-muted-foreground">
+              <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+              {plan1.result}
+            </span>
+          </div>
+          <code class="mt-0.5 block truncate text-[0.7rem] text-muted-foreground sm:text-xs">{plan1.args}</code>
+        </div>
+      </li>
+
+      <!-- chart -->
+      <li class={`story-step story-branch ${card}`} style={`--d: ${t.chart}ms`}>
+        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="mt-px h-[18px] w-auto shrink-0" />
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-3">
+            <code class="text-foreground">chart</code>
+            <span class="ml-auto flex shrink-0 items-center gap-3 text-[0.7rem] text-muted-foreground">
+              {series.map((s) => (
+                <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm" style={`background: ${s.color}`}></span>{s.name}</span>
+              ))}
+            </span>
+          </div>
+          <svg viewBox={`0 0 ${group * weeks.length} 86`} class="story-chart mt-2 block w-full" role="img" aria-label="Net paid by week, store beside catalog, four weeks">
+            <line x1="0" y1={base} x2={group * weeks.length} y2={base} class="story-axis" stroke-width="1" />
+            {weeks.map((w, g) => (
+              <>
+                {series.map((s, k) => {
+                  const h = Math.round((s.values[g] / max) * plot);
+                  const x = g * group + 10 + k * (barW + 4);
+                  return (
+                    <rect
+                      x={x}
+                      y={base - h}
+                      width={barW}
+                      height={h}
+                      rx="2"
+                      fill={s.color}
+                      class="story-bar"
+                      style={`--d: ${t.chart + 250 + (g * 2 + k) * 70}ms; transform-origin: ${x + barW / 2}px ${base}px`}
+                    />
+                  );
+                })}
+                <text x={g * group + group / 2} y="83" text-anchor="middle" class="story-label" font-size="9">{w}</text>
+              </>
+            ))}
+          </svg>
+        </div>
+      </li>
+
+      <!-- drill-down question -->
+      <li class="story-step story-branch story-input flex items-center gap-3 rounded-xl bg-surface px-4 py-3 font-mono text-[0.95rem] text-foreground" style={`--d: ${t.q2}ms`}>
+        <span class="story-typed min-w-0 flex-1" style={`--chars: ${q2.length}; --d: ${t.type2}ms`}>{q2}</span>
+        <kbd class="story-key shrink-0 rounded-md border border-border px-1.5 py-0.5 font-mono text-[0.7rem] leading-none text-muted-foreground" aria-hidden="true">&crarr;</kbd>
+      </li>
+
+      <!-- plan -->
+      <li class={`story-step story-branch ${card}`} style={`--d: ${t.plan2}ms`}>
+        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="mt-px h-[18px] w-auto shrink-0" />
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-3">
+            <code class="text-foreground">plan query</code>
+            <span class="ml-auto flex shrink-0 items-center gap-1.5 tabular-nums text-muted-foreground">
+              <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+              {plan2.result}
+            </span>
+          </div>
+          <code class="mt-0.5 block truncate text-[0.7rem] text-muted-foreground sm:text-xs">{plan2.args}</code>
+        </div>
+      </li>
+
+      <!-- table -->
+      <li class={`story-step story-branch story-end ${card}`} style={`--d: ${t.table}ms`}>
+        <img src="/brand/assets/strata_mark_dark.svg" alt="" class="mt-px h-[18px] w-auto shrink-0" />
+        <div class="min-w-0 flex-1">
+          <code class="text-foreground">table</code>
+          <table class="story-table mt-1.5 w-full text-[0.7rem] sm:text-xs">
+            <thead>
+              <tr class="text-muted-foreground">
+                <th scope="col" class="text-left font-normal">Item Brand</th>
+                <th scope="col" class="text-right font-normal">Catalog Net Paid</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr class="story-row text-foreground" style={`--d: ${t.table + 300 + i * 110}ms`}>
+                  <td class="truncate">{r[0]}</td>
+                  <td class="text-right tabular-nums">{r[1]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <figcaption class="sr-only">
+    A person, an agent, an MCP client, an API call, or the Google Sheets add-on asks "{q1}". Strata plans the query
+    against the governed model, aggregating two facts to a common grain, and returns a chart. The follow-up "{q2}"
+    is planned the same way, served from an aggregate table, and returned as a table of brands.
+  </figcaption>
+</figure>
+
+<style>
+  /* The stage: a quiet field, a touch darker at the top, so the cards read
+     as objects on it. Every colour is a semantic token, so the same markup
+     holds on ink, on cream, and inside a rust band. */
+  .hero-story {
+    --rail: var(--primary);
+    --shade: color-mix(in srgb, var(--foreground) 12%, transparent);
+    background: linear-gradient(180deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 55%, var(--background)));
+  }
+  .story-card,
+  .story-input {
+    border: 1px solid var(--border);
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--background) 40%, transparent),
+      0 10px 24px -14px color-mix(in srgb, var(--background) 80%, transparent);
+  }
+  /* The inputs are focused: the question was just sent from them. */
+  .story-input {
+    border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent),
+      0 10px 24px -14px color-mix(in srgb, var(--background) 80%, transparent);
+  }
+  .story-tray {
+    background: color-mix(in srgb, var(--surface-2) 60%, var(--surface));
+    border: 1px solid var(--border);
+  }
+  .story-key {
+    background: var(--surface-2);
+  }
+
+  /* The tree. A trunk drops from under the input, and each card gets an
+     elbow off it. Cards that are not last carry the trunk on to the next. */
+  .story-branch {
+    position: relative;
+  }
+  .story-branch::before {
+    content: '';
+    position: absolute;
+    left: -1.3rem;
+    top: -0.75rem;
+    width: 1.3rem;
+    height: calc(0.75rem + 1.15rem);
+    border-left: 2px solid var(--rail);
+    border-bottom: 2px solid var(--rail);
+    border-bottom-left-radius: 0.65rem;
+    pointer-events: none;
+  }
+  .story-branch:not(.story-end)::after {
+    content: '';
+    position: absolute;
+    left: -1.3rem;
+    top: 1.15rem;
+    bottom: -0.85rem;
+    border-left: 2px solid var(--rail);
+    pointer-events: none;
+  }
+
+  /* Chart and table chrome, on the neutral ramp. */
+  .story-axis {
+    stroke: var(--shade);
+  }
+  .story-label {
+    fill: var(--muted-foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .story-table th {
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--shade);
+  }
+  .story-table td {
+    padding: 0.2rem 0;
+  }
+  .story-table tbody tr + tr td {
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 6%, transparent);
+  }
+
+  /* First load: each step settles in on its own delay; the questions type
+     themselves; the bars grow; the rows land. Runs once. */
+  @keyframes story-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes story-type {
+    from { width: 0; }
+    to { width: calc(var(--chars) * 1ch); }
+  }
+  @keyframes story-caret {
+    0%, 100% { border-color: transparent; }
+    50% { border-color: var(--primary); }
+  }
+  @keyframes story-grow {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+  .story-step {
+    animation: story-in 0.5s ease-out both;
+    animation-delay: var(--d);
+  }
+  .story-typed {
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 100%;
+    border-right: 2px solid transparent;
+    animation:
+      story-type calc(var(--chars) * 32ms) steps(var(--chars)) both,
+      story-caret 0.7s step-end 4;
+    animation-delay: var(--d), var(--d);
+  }
+  .story-bar {
+    animation: story-grow 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--d);
+  }
+  .story-row {
+    animation: story-in 0.35s ease-out both;
+    animation-delay: var(--d);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .story-step,
+    .story-typed,
+    .story-bar,
+    .story-row {
+      animation: none;
+    }
+    .story-typed {
+      width: auto;
+      white-space: normal;
+    }
+  }
+</style>

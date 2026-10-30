@@ -13,6 +13,7 @@ import FeatureRows from '../components/FeatureRows.astro';
 import CtaButton from '../components/CtaButton.astro';
 import TrialNote from '../components/TrialNote.astro';
 import ShowcaseBand from '../components/ShowcaseBand.astro';
+import HeroStory from '../components/HeroStory.astro';
 import { site } from '../config/site';
 import { editions } from '../data/pricing';
 
@@ -114,20 +115,8 @@ const engines = [
           </p>
         </div>
         <div class="v2-media">
-          <!-- The loop is a teaser; clicking it opens the full walkthrough in a lightbox. -->
-          <button type="button" class="hero-play group relative block w-full rounded-xl" data-hero-open data-track="video_open" data-track-cta-location="home-hero-clip" aria-label="Watch the full walkthrough">
-            <video
-              class="w-full rounded-xl"
-              src="/hero_v2_short.mp4"
-              autoplay
-              loop
-              muted
-              playsinline
-              preload="metadata"
-              aria-hidden="true"
-              data-hero-loop
-            ></video>
-          </button>
+          <!-- The loop, as one picture. The full walkthrough video opens from the button below. -->
+          <HeroStory />
           <button type="button" class="hero-play-pill mx-auto mt-4 flex items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider transition-colors" data-hero-open data-track="video_open" data-track-cta-location="home-hero-button">
             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 3.6A1 1 0 0 0 4.8 4.5v11a1 1 0 0 0 1.5.9l9.5-5.5a1 1 0 0 0 0-1.8z" /></svg>
             Watch the full walkthrough · 2 min
@@ -299,20 +288,12 @@ const engines = [
     display: block;
     box-shadow: var(--media-shadow);
   }
-  .hero-play {
-    cursor: pointer;
-  }
-  .hero-play:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 4px;
-  }
   .hero-play-pill {
     color: var(--foreground);
     border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
   }
   .hero-play-pill:hover,
-  .hero-play-pill:focus-visible,
-  .v2-media:has(.hero-play:hover) .hero-play-pill {
+  .hero-play-pill:focus-visible {
     background: var(--cta);
     color: var(--cta-foreground);
     border-color: transparent;
@@ -361,19 +342,17 @@ const engines = [
 <script>
   import { track } from '../scripts/track';
 
-  // Hero lightbox: the short loop is the teaser; clicking it opens the full
-  // walkthrough with controls. The loop pauses while the lightbox is open.
+  // Hero lightbox: the full walkthrough video, opened from the button under
+  // the hero graphic, with controls.
   // Opens are tracked by the delegated [data-track] listener; watch depth is
   // sent from here as video_progress at 25/50/75/100 percent.
   const openers = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-hero-open]'));
-  const loop = document.querySelector<HTMLVideoElement>('[data-hero-loop]');
   const dialog = document.querySelector<HTMLDialogElement>('[data-hero-dialog]');
   const full = document.querySelector<HTMLVideoElement>('[data-hero-full]');
   const close = document.querySelector<HTMLButtonElement>('[data-hero-close]');
 
-  if (openers.length && loop && dialog && full && close && typeof dialog.showModal === 'function') {
+  if (openers.length && dialog && full && close && typeof dialog.showModal === 'function') {
     function show() {
-      loop.pause();
       dialog.showModal();
       full.currentTime = 0;
       full.muted = false;
@@ -395,7 +374,6 @@ const engines = [
     });
     dialog.addEventListener('close', () => {
       full.pause();
-      loop.play().catch(() => {});
     });
 
     const milestones = [25, 50, 75, 100];
