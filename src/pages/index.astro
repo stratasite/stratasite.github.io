@@ -108,11 +108,11 @@ const engines = [
           <TrialNote class="mt-4" />
         </div>
         <div class="v2-media">
-          <!-- The loop, as one picture. The full walkthrough video opens from the button below. -->
+          <!-- The loop, as one picture. The 2 minute demo opens from the button below. -->
           <HeroStory />
           <button type="button" class="hero-play-pill mx-auto mt-4 flex items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider transition-colors" data-hero-open data-track="video_open" data-track-cta-location="home-hero-button">
             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 3.6A1 1 0 0 0 4.8 4.5v11a1 1 0 0 0 1.5.9l9.5-5.5a1 1 0 0 0 0-1.8z" /></svg>
-            Watch the full walkthrough · 2 min
+            Watch the 2 minute demo
           </button>
         </div>
       </div>
@@ -282,7 +282,7 @@ const engines = [
   </section>
 
   <!-- FULL WALKTHROUGH: opened from the hero loop -->
-  <dialog class="hero-lightbox" data-hero-dialog aria-label="Strata walkthrough">
+  <dialog class="hero-lightbox" data-hero-dialog aria-label="Strata demo">
     <div class="hero-lightbox-frame">
       <button type="button" class="hero-lightbox-close" data-hero-close aria-label="Close">
         <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
@@ -295,7 +295,7 @@ const engines = [
         muted
         playsinline
         preload="none"
-        aria-label="Full walkthrough: asking the Strata agent for a dashboard, subscribing the team with a PDF, and exporting to Google Sheets"
+        aria-label="Demo: asking the Strata agent for a dashboard, subscribing the team with a PDF, and exporting to Google Sheets"
       ></video>
     </div>
   </dialog>
@@ -361,7 +361,7 @@ const engines = [
 <script>
   import { track } from '../scripts/track';
 
-  // Hero lightbox: the full walkthrough video, opened from the button under
+  // Hero lightbox: the 2 minute demo video, opened from the button under
   // the hero graphic, with controls.
   // Opens are tracked by the delegated [data-track] listener; watch depth is
   // sent from here as video_progress at 25/50/75/100 percent.
