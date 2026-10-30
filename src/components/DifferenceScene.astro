@@ -1,0 +1,429 @@
+---
+/**
+ * The answer to "Sound familiar?": the same stage, with Strata in the
+ * middle. Same queue of business users, same three columns under the same
+ * kind of numbered sentences, so the eye reads it as the before and after.
+ *
+ *   1. the business, asking broad questions in plain English;
+ *   2. the Strata semantic layer, built for the people asking: the fields
+ *      a question touches light up, the layer pulses once, and the answer
+ *      pops with its time in milliseconds. The user walks off carrying it;
+ *   3. the data team, calm, with the model they wrote once (YAML, in Git,
+ *      deployed). The counter on their side is answers, not tickets.
+ *
+ * Four actors run the same eight second loop two seconds apart, so there is
+ * always a question in flight and the stage never stalls. SVG with CSS
+ * keyframes on semantic tokens only, so it holds on any theme; static under
+ * prefers-reduced-motion on a frame that still tells the story.
+ */
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+
+// The fields the layer knows, laid out as chips inside the block.
+const chips = [
+  { name: 'Revenue', x: 378, y: 140, w: 60 },
+  { name: 'Tickets', x: 446, y: 140, w: 60 },
+  { name: 'Churn', x: 514, y: 140, w: 47 },
+  { name: 'Margin', x: 569, y: 140, w: 54 },
+  { name: 'Region', x: 378, y: 172, w: 54 },
+  { name: 'Plan', x: 440, y: 172, w: 40 },
+  { name: 'Date', x: 488, y: 172, w: 40 },
+  { name: 'Rep', x: 536, y: 172, w: 34 },
+];
+const chipAt = (n: string) => chips.find((c) => c.name === n)!;
+
+// One question per actor: broad, across domains, and the fields it touches.
+const asks = [
+  { ask: 'revenue by region vs tickets', hits: ['Revenue', 'Region', 'Tickets'], ms: 182, bars: [34, 48, 28, 52] },
+  { ask: 'churn by plan, against last year', hits: ['Churn', 'Plan', 'Date'], ms: 240, bars: [40, 36, 30, 22] },
+  { ask: 'margin per rep, this quarter', hits: ['Margin', 'Rep', 'Date'], ms: 96, bars: [26, 44, 50, 38] },
+  { ask: 'tickets per 1,000 orders, weekly', hits: ['Tickets', 'Revenue', 'Date'], ms: 310, bars: [30, 32, 46, 24] },
+];
+
+const engines = ['Snowflake', 'ClickHouse', 'Postgres'];
+
+// Stage geometry (viewBox 1000 x 420), three columns centred at 167, 500, 833.
+const queue = [75, 121, 167, 213, 259];
+const block = { x: 360, y: 60, w: 280, h: 240 };
+const stand = { x: 346, y: 180 };
+const team = { cx: 833, deskX: 758 };
+const labelY = 410;
+const loop = 8;
+const gap = loop / asks.length;
+---
+
+<figure class={`difference-scene ${className}`} aria-label="Business users ask broad questions of the Strata semantic layer and walk away with correct answers in milliseconds, while the data team that modelled the business once sits calm">
+  <svg viewBox="0 0 1000 420" class="block h-auto w-full" role="img" aria-hidden="true">
+    <defs>
+      <g id="person2">
+        <circle cx="0" cy="-18" r="9" />
+        <rect x="-11" y="-6" width="22" height="28" rx="9" />
+      </g>
+    </defs>
+
+    <!-- 1. The queue -->
+    <g>
+      {queue.map((x) => <use href="#person2" x={x} y="200" class="person-muted" />)}
+      <text x="167" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">1</tspan>  the business</text>
+    </g>
+
+    <!-- 2. The semantic layer -->
+    <g class="layer">
+      <rect x={block.x} y={block.y} width={block.w} height={block.h} rx="14" class="layer-box" />
+      {asks.map((a, i) => (
+        <rect x={block.x} y={block.y} width={block.w} height={block.h} rx="14" class="layer-pulse" style={`--delay: ${i * gap}s`} />
+      ))}
+      <image href="/brand/assets/strata_mark_dark.svg" x={block.x + 18} y={block.y + 18} width="26" height="26" />
+      <text x={block.x + 54} y={block.y + 37} class="layer-title">Strata <tspan class="layer-title-dim">semantic layer</tspan></text>
+      <text x={block.x + 18} y={block.y + 64} class="layer-sub">built for the people asking</text>
+
+      {chips.map((c) => (
+        <g>
+          <rect x={c.x} y={c.y} width={c.w} height="24" rx="6" class="chip" />
+          <text x={c.x + c.w / 2} y={c.y + 16} text-anchor="middle" class="chip-text">{c.name}</text>
+        </g>
+      ))}
+      <!-- the fields each question touches, lit while it is answered -->
+      {asks.map((a, i) => (
+        <g class="hit" style={`--delay: ${i * gap}s`}>
+          {a.hits.map((h) => {
+            const c = chipAt(h);
+            return <rect x={c.x} y={c.y} width={c.w} height="24" rx="6" class="chip-hit" />;
+          })}
+        </g>
+      ))}
+
+      <text x={block.x + 18} y={block.y + 166} class="layer-sub">routes to the fastest engine</text>
+      {engines.map((e, i) => (
+        <text x={block.x + 18 + i * 92} y={block.y + 188} class="engine">{e}</text>
+      ))}
+      <path d={`M${block.x + 18} ${block.y + 214} l3.5 3.5 7 -7`} class="layer-tick" />
+      <text x={block.x + 36} y={block.y + 218} class="layer-guarantee">no path to a wrong number</text>
+
+      <text x="500" y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">2</tspan>  the Strata semantic layer</text>
+    </g>
+
+    <!-- 3. The data team, calm, and the model they wrote once -->
+    <g>
+      <use href="#person2" x={team.cx - 27} y="140" class="person-muted" />
+      <use href="#person2" x={team.cx + 27} y="140" class="person-muted" />
+      <rect x={team.deskX} y="150" width="150" height="8" rx="4" class="desk" />
+      <g class="model">
+        <rect x={team.cx - 48} y="196" width="96" height="104" rx="8" class="model-doc" />
+        <text x={team.cx - 36} y="214" class="model-name">model.yml</text>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <rect x={team.cx - 36 + (i % 2) * 10} y={226 + i * 12} width={[56, 40, 48, 34, 52][i]} height="5" rx="2.5" class="model-line" />
+        ))}
+        <path d={`M${team.cx - 36} 292 l3.5 3.5 7 -7`} class="layer-tick" />
+        <text x={team.cx - 20} y="295" class="model-deployed">deployed</text>
+      </g>
+      <text x={team.cx} y={labelY} text-anchor="middle" class="scene-label"><tspan class="scene-num">3</tspan>  the data team</text>
+      <g>
+        <rect x={team.cx - 90} y="30" width="180" height="26" rx="13" class="count-pill" />
+        <text x={team.cx} y="47" text-anchor="middle" class="count-text"><tspan class="count-num" data-answered>1,284</tspan> answered · <tspan class="count-num">0</tspan> tickets</text>
+      </g>
+    </g>
+
+    <!-- The floor the answered users take, under the layer, to the right. -->
+    <path d={`M${block.x + 20} 364 H ${team.deskX}`} class="route" />
+
+    <!-- The actors: one per question, same loop, two seconds apart. -->
+    {asks.map((a, i) => (
+      <g class="actor" style={`--delay: ${i * gap}s`}>
+        <use href="#person2" class="person-actor" />
+        <g class="ask">
+          <rect x="-254" y="-60" width="236" height="26" rx="8" class="ask-box" />
+          <text x="-136" y="-43" text-anchor="middle" class="ask-text">{a.ask}</text>
+        </g>
+        <!-- the answer: a small chart, and how long it took -->
+        <g class="answer">
+          <rect x="-190" y="-118" width="172" height="78" rx="9" class="answer-box" />
+          {a.bars.map((h, k) => (
+            <rect x={-176 + k * 20} y={-62 - h} width="14" height={h} rx="2" class={`answer-bar answer-bar-${k % 2}`} />
+          ))}
+          <text x="-88" y="-96" class="answer-ms">{a.ms} ms</text>
+          <path d="M-88 -78 l3.5 3.5 7 -7" class="layer-tick" />
+          <text x="-72" y="-75" class="answer-ok">correct</text>
+          <path d="M-88 -60 l3.5 3.5 7 -7" class="layer-tick" />
+          <text x="-72" y="-57" class="answer-ok">grain safe</text>
+        </g>
+      </g>
+    ))}
+  </svg>
+  <figcaption class="sr-only">
+    Business users ask broad questions in plain English: revenue by region against tickets, churn by plan against
+    last year, margin per rep this quarter, tickets per thousand orders by week. The Strata semantic layer, built for
+    the people asking, lights up the fields each question touches, routes to the fastest engine, and returns a
+    correct answer in milliseconds. The data team modelled the business once in YAML, deployed it, and sits calm; the
+    counter on their side is answers, not tickets.
+  </figcaption>
+</figure>
+
+<script>
+  // The answered counter ticks once per actor landing. Decorative, so it
+  // stops while the page is hidden.
+  const count = document.querySelector<SVGElement>('[data-answered]');
+  if (count && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let n = 1284;
+    const period = 2000; // one landing per actor, two seconds apart
+    const tick = () => {
+      if (document.hidden) return;
+      n += 1;
+      count.textContent = n.toLocaleString('en-US');
+    };
+    window.setTimeout(() => {
+      tick();
+      window.setInterval(tick, period);
+    }, 0.48 * 8 * 1000);
+  }
+</script>
+
+<style>
+  .person-muted {
+    fill: color-mix(in srgb, var(--muted-foreground) 55%, var(--surface-2));
+  }
+  .person-actor {
+    fill: var(--primary);
+  }
+  .desk {
+    fill: var(--border);
+  }
+  .route {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 6;
+  }
+
+  /* The layer */
+  .layer-box {
+    fill: var(--surface);
+    stroke: color-mix(in srgb, var(--primary) 55%, var(--border));
+    stroke-width: 1.5;
+  }
+  .layer-pulse {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .layer-title {
+    fill: var(--foreground);
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+  }
+  .layer-title-dim {
+    fill: var(--muted-foreground);
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .layer-sub,
+  .engine,
+  .scene-label,
+  .model-name,
+  .model-deployed,
+  .count-text {
+    fill: var(--muted-foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+  .scene-label {
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .scene-num {
+    fill: var(--primary);
+    font-weight: 700;
+  }
+  .engine {
+    fill: var(--foreground);
+  }
+  .chip {
+    fill: var(--surface-2);
+    stroke: var(--border);
+    stroke-width: 1.2;
+  }
+  .chip-text {
+    fill: var(--foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+  }
+  .chip-hit {
+    fill: color-mix(in srgb, var(--primary) 18%, transparent);
+    stroke: var(--primary);
+    stroke-width: 1.5;
+  }
+  .hit {
+    opacity: 0;
+  }
+  .layer-tick {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .layer-guarantee {
+    fill: var(--primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  /* The question and the answer */
+  .ask-box {
+    fill: var(--surface-2);
+    stroke: color-mix(in srgb, var(--primary) 55%, var(--border));
+    stroke-width: 1.2;
+  }
+  .ask-text {
+    fill: var(--foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+  }
+  .answer-box {
+    fill: var(--surface);
+    stroke: var(--primary);
+    stroke-width: 1.5;
+  }
+  .answer-bar-0 {
+    fill: var(--chart-1);
+  }
+  .answer-bar-1 {
+    fill: var(--chart-3);
+  }
+  .answer-ms {
+    fill: var(--foreground);
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .answer-ok {
+    fill: var(--primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* The model */
+  .model-doc {
+    fill: var(--surface);
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+  .model-name {
+    fill: var(--foreground);
+  }
+  .model-line {
+    fill: color-mix(in srgb, var(--muted-foreground) 45%, var(--surface-2));
+  }
+  .count-pill {
+    fill: var(--surface);
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+  .count-text {
+    font-size: 12px;
+  }
+  .count-num {
+    fill: var(--foreground);
+    font-weight: 700;
+  }
+
+  /* Motion. Each actor: leave the queue, stand at the layer, ask, the fields
+     light and the layer pulses, the answer pops, walk off with it to the
+     right, fade. Four actors, eight seconds, two seconds apart. */
+  .actor,
+  .actor .ask,
+  .actor .answer,
+  .hit,
+  .layer-pulse {
+    animation-duration: 8s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    animation-delay: var(--delay);
+  }
+  .actor {
+    animation-name: walk;
+    transform: translate(259px, 200px);
+  }
+  .actor .ask {
+    animation-name: ask;
+    opacity: 0;
+  }
+  .actor .answer {
+    animation-name: answer;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center bottom;
+  }
+  .hit {
+    animation-name: hit;
+  }
+  .layer-pulse {
+    animation-name: pulse;
+  }
+
+  @keyframes walk {
+    0%   { transform: translate(259px, 200px); opacity: 0; }
+    4%   { opacity: 1; }
+    12%  { transform: translate(346px, 180px); }
+    32%  { transform: translate(346px, 180px); }
+    37%  { transform: translate(346px, 352px); }
+    48%  { transform: translate(745px, 352px); opacity: 1; }
+    52%  { transform: translate(775px, 340px); opacity: 0; }
+    100% { transform: translate(259px, 200px); opacity: 0; }
+  }
+  @keyframes ask {
+    0%, 13% { opacity: 0; }
+    15%, 23% { opacity: 1; }
+    25%, 100% { opacity: 0; }
+  }
+  @keyframes hit {
+    0%, 22% { opacity: 0; }
+    24%, 34% { opacity: 1; }
+    37%, 100% { opacity: 0; }
+  }
+  @keyframes pulse {
+    0%, 23% { opacity: 0; transform: scale(1); }
+    24% { opacity: 0.9; transform: scale(1); }
+    31%, 100% { opacity: 0; transform: scale(1.06); }
+  }
+  /* Pops at full size beside the layer, then shrinks to a card in hand
+     for the walk. */
+  @keyframes answer {
+    0%, 25% { opacity: 0; transform: scale(0.6); }
+    28% { opacity: 1; transform: scale(1.06); }
+    30%, 32% { opacity: 1; transform: scale(1); }
+    36%, 48% { opacity: 1; transform: translate(60px, 40px) scale(0.42); }
+    52%, 100% { opacity: 0; transform: translate(60px, 40px) scale(0.42); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .actor,
+    .actor .ask,
+    .actor .answer,
+    .hit,
+    .layer-pulse {
+      animation: none;
+    }
+    .actor {
+      transform: translate(346px, 180px);
+      opacity: 1;
+    }
+    .actor:not(:first-of-type) {
+      opacity: 0;
+    }
+    .actor .answer,
+    .hit:first-of-type {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

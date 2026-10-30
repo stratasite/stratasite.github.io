@@ -15,6 +15,7 @@ import TrialNote from '../components/TrialNote.astro';
 import ShowcaseBand from '../components/ShowcaseBand.astro';
 import HeroStory from '../components/HeroStory.astro';
 import PainScene from '../components/PainScene.astro';
+import DifferenceScene from '../components/DifferenceScene.astro';
 import { site } from '../config/site';
 import { editions } from '../data/pricing';
 
@@ -62,6 +63,13 @@ const steps = [
   { lead: 'Business users line up with questions.', rest: 'Revenue by region, tickets per customer, churn against last year.' },
   { lead: 'The BI tool and its bolt-on chat answer with a roadblock.', rest: 'The formula is wrong, the blend does not exist, the source was never connected.' },
   { lead: 'Every question becomes a ticket.', rest: 'The data team is already behind, and the backlog only grows.' },
+];
+
+// The same three columns, with Strata in the middle: the after to the above.
+const diffSteps = [
+  { lead: 'The same people ask the same questions.', rest: 'Broad ones, across domains, in plain English. No formula, no table to pick, no ticket.' },
+  { lead: 'A semantic layer built for the people asking.', rest: 'It knows the measures, the grain and the joins, lights up what a question touches, routes to the fastest engine, and answers in milliseconds. A wrong number is not possible.' },
+  { lead: 'The data team models once.', rest: 'YAML in Git, deployed to the hosted app. Every question after that answers itself, so the backlog is answers, not tickets.' },
 ];
 
 const engines = [
@@ -153,10 +161,31 @@ const engines = [
         ))}
       </ol>
       <PainScene class="mx-auto mt-6 max-w-5xl" />
-      <p class="mx-auto mt-14 max-w-3xl text-center font-display text-xl font-bold tracking-tight sm:text-2xl">
-        <span class="text-muted-foreground">Strata puts the operator at the controls, on one governed model.</span>
-        <span class="text-primary">They build it themselves, in minutes, and a wrong number is not possible.</span>
-      </p>
+    </div>
+  </section>
+
+  <!-- HOW STRATA IS DIFFERENT: the same stage, with Strata in the middle -->
+  <section id="different" class="scroll-mt-20 border-t border-border bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">How Strata is different</p>
+        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          Power use, for people who are not power users.
+        </h2>
+        <p class="mt-4 text-muted-foreground">
+          A semantic layer built for the people asking, not for the people modeling. Model the business once;
+          every question after that comes back in milliseconds, for anyone, with no path to a wrong number.
+        </p>
+      </div>
+      <ol class="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-3">
+        {diffSteps.map((st, i) => (
+          <li class="flex flex-col items-center px-2 text-center">
+            <span class="font-display text-2xl font-bold leading-none text-primary">{i + 1}</span>
+            <p class="mt-2 text-sm leading-relaxed text-muted-foreground"><span class="font-semibold text-foreground">{st.lead}</span> {st.rest}</p>
+          </li>
+        ))}
+      </ol>
+      <DifferenceScene class="mx-auto mt-6 max-w-5xl" />
     </div>
   </section>
 
