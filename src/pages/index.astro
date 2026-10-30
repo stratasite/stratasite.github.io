@@ -105,9 +105,6 @@ const engines = [
             <CtaButton action="pricing" location="home-hero" />
           </div>
           <TrialNote class="mt-4" />
-          <p class="mt-6 text-sm text-muted-foreground">
-            ${entry.price} a month for {entry.users.included} users, then <span class="font-semibold text-foreground">${perUser} a user</span>. Alongside the BI tool you have, or as your first.
-          </p>
         </div>
         <div class="v2-media">
           <!-- The loop, as one picture. The full walkthrough video opens from the button below. -->
@@ -128,6 +125,7 @@ const engines = [
         <div class="shrink-0 rounded-xl bg-primary/10 px-8 py-5 text-center">
           <p class="font-display text-5xl font-bold tabular-nums text-primary sm:text-6xl">${perUser}</p>
           <p class="mt-1 text-sm font-semibold text-foreground">per user, per month</p>
+          <p class="mt-1 text-xs text-muted-foreground">Entry starts at ${entry.price} a month for {entry.users.included} users.</p>
         </div>
         <div>
           <h2 class="font-display text-2xl font-bold tracking-tight sm:text-3xl">
