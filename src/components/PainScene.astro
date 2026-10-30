@@ -39,7 +39,14 @@ const tools = [
 
 // Stage geometry (viewBox 1000 x 420). Three columns centred at 167, 500
 // and 833, matching a three column grid above.
-const box = { x: 360, w: 280, h: 80 };
+const box = { x: 360, w: 280, h: 60 };
+// The reply is a speech bubble laid over the lower half of the card, its
+// tail pointing up at the AI chat tab: the chat said this.
+const bubble = (cy: number) => {
+  const x = box.x + 10, y = cy + 2, w = box.w - 20, h = 32, r = 8;
+  const tx = box.x + box.w - tab.w - 8 + tab.w / 2; // under the tab's centre
+  return `M${x + r} ${y} H${tx - 7} L${tx} ${y - 10} L${tx + 7} ${y} H${x + w - r} A${r} ${r} 0 0 1 ${x + w} ${y + r} V${y + h - r} A${r} ${r} 0 0 1 ${x + w - r} ${y + h} H${x + r} A${r} ${r} 0 0 1 ${x} ${y + h - r} V${y + r} A${r} ${r} 0 0 1 ${x + r} ${y} Z`;
+};
 const tab = { w: 108, h: 26 };
 const queue = [75, 121, 167, 213, 259];
 const pile = [352, 332, 312, 292, 272, 252]; // static ticket tops, bottom up
@@ -91,8 +98,8 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     {tools.map((tl, i) => (
       <g class="scene-tool">
         <rect x={box.x} y={tl.cy - box.h / 2} width={box.w} height={box.h} rx="10" class="tool-box" />
-        <use href={`#mark-${tl.mark}`} x={box.x + 18} y={tl.cy - 28} width="24" height="24" class="tool-mark" />
-        <text x={box.x + 52} y={tl.cy - 9} class="tool-name">{tl.name}</text>
+        <use href={`#mark-${tl.mark}`} x={box.x + 18} y={tl.cy - 24} width="22" height="22" class="tool-mark" />
+        <text x={box.x + 50} y={tl.cy - 6} class="tool-name">{tl.name}</text>
         <!-- the bolt-on: a tab hung off the box's top right, a nut at each end -->
         <g>
           <rect x={box.x + box.w - tab.w - 8} y={tl.cy - box.h / 2 - 10} width={tab.w} height={tab.h} rx="7" class="chat-tab" />
@@ -101,11 +108,14 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
           <use href="#spark" x={box.x + box.w - tab.w - 8 + 24} y={tl.cy - box.h / 2 + 3} class="chat-spark" />
           <text x={box.x + box.w - tab.w - 8 + 62} y={tl.cy - box.h / 2 + 7} text-anchor="middle" class="chat-label">AI chat</text>
         </g>
-        <!-- the chat's reply, in its own voice, where a chat reply sits -->
+        <!-- the chat's reply: an error speech bubble over the card, tail to the tab -->
         <g class={`reply reply-${i}`} style={`--delay: ${(i * loop) / 3}s`}>
-          <rect x={box.x + 12} y={tl.cy + 4} width={box.w - 24} height="30" rx="8" class="reply-box" />
-          <use href="#spark" x={box.x + 26} y={tl.cy + 19} class="reply-spark" />
-          <text x={box.x + 40} y={tl.cy + 23} class="reply-text">{tl.reply}</text>
+          <path d={bubble(tl.cy)} class="reply-box" />
+          <g class="reply-alert" transform={`translate(${box.x + 28} ${tl.cy + 18})`}>
+            <circle r="6.5" />
+            <path d="M0 -3.4 V0.6 M0 3.4 v0.01" />
+          </g>
+          <text x={box.x + 42} y={tl.cy + 22} class="reply-text">{tl.reply}</text>
         </g>
       </g>
     ))}
@@ -232,8 +242,11 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     stroke: var(--destructive);
     stroke-width: 1.5;
   }
-  .reply-spark {
-    fill: var(--destructive);
+  .reply-alert {
+    fill: none;
+    stroke: var(--destructive);
+    stroke-width: 1.6;
+    stroke-linecap: round;
   }
   .reply-text {
     fill: var(--foreground);
@@ -320,7 +333,7 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     animation-name: reply;
     opacity: 0;
     transform-box: fill-box;
-    transform-origin: left center;
+    transform-origin: center bottom;
   }
   /* The three landing slots stack up over the loop (one lands per actor)
      and clear together just before the first lands again, so the pile is
@@ -366,10 +379,10 @@ const loop = 10; // seconds per actor cycle; actors are spaced a third apart
     32%, 100% { opacity: 0; }
   }
   @keyframes reply {
-    0%, 29% { opacity: 0; transform: translateX(-6px); }
-    31% { opacity: 1; transform: translateX(3px); }
-    33% { transform: translateX(-2px); }
-    35% { transform: translateX(0); }
+    0%, 29% { opacity: 0; transform: translateY(6px) scale(0.96); }
+    31% { opacity: 1; transform: translateY(-2px) scale(1.02); }
+    33% { transform: translateY(1px) scale(1); }
+    35% { transform: none; }
     47% { opacity: 1; }
     51%, 100% { opacity: 0; }
   }
