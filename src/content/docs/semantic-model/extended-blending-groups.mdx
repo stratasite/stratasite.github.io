@@ -130,34 +130,64 @@ When a query asks for measures from multiple facts that share a blend group:
 2. For each fact/universe, the planner builds a node in a query graph that aggregates that fact **to the lowest common dimensionality** (for example, by the blended date and any other shared dimensions).
 3. The planner then adds a final **merge node** that joins these aggregate nodes on the blended dimensions.
 
-The generated SQL typically uses Common Table Expressions (CTEs) to represent this graph:
+The generated SQL is one Common Table Expression (CTE) per node and a final `SELECT` for the merge. This is the planner's output for `Net Paid` (store sales) and `Web Net Paid` (web sales) by `Category`, with node and column aliases shown readably; the planner emits hashed ones:
 
 ```sql
-WITH
-  store_sales_agg AS (
-    SELECT activity_date, SUM(store_amount) AS store_revenue
-    FROM store_sales
-    GROUP BY activity_date
-  ),
-  web_sales_agg AS (
-    SELECT activity_date, SUM(web_amount) AS web_revenue
-    FROM web_sales
-    GROUP BY activity_date
-  ),
-  final AS (
-    SELECT
-      COALESCE(s.activity_date, w.activity_date) AS activity_date,
-      store_revenue,
-      web_revenue
-    FROM store_sales_agg s
-    FULL OUTER JOIN web_sales_agg w
-      ON s.activity_date = w.activity_date
-  )
-SELECT *
-FROM final;
+WITH store AS (
+  SELECT
+    T1."i_category" AS category,
+    sum(T0."ss_net_paid") AS net_paid
+  FROM store_sales T0
+  JOIN item T1 ON T0.ss_item_sk = T1.i_item_sk
+  GROUP BY T1."i_category"
+), web AS (
+  SELECT
+    sum(T0."ws_net_paid") AS web_net_paid,
+    T1."i_category" AS category
+  FROM web_sales T0
+  JOIN item T1 ON T0.ws_item_sk = T1.i_item_sk
+  GROUP BY T1."i_category"
+)
+SELECT
+  A0.web_net_paid AS "Web Net Paid",
+  COALESCE(A1.category, A0.category) AS "Category",
+  A1.net_paid AS "Net Paid"
+FROM web A0
+FULL OUTER JOIN store A1
+  ON A1.category = A0.category
 ```
 
 You do not need to write this SQL yourself—the semantic model (relationships, grains, and `extended_blend_group` values) gives the planner enough information to construct it automatically.
+
+### The merge: full outer join and COALESCE
+
+The merge is **always a `FULL OUTER JOIN` on the shared dimensions, and every shared dimension is projected through `COALESCE`** across the nodes that carry it. Both halves of that rule matter:
+
+- **Full outer** keeps every key from every fact. A category with store sales and no web sales keeps its row, with `Web Net Paid` as `NULL`. Nothing a fact knows about is dropped because another fact is silent on it, so each measure's total over the result equals its total on its own.
+- **`COALESCE`** on the keys fills the dimension column from whichever side has the row. Without it, a key present only on the right side of the join would show as `NULL` in the dimension column while its measure had a value.
+
+The merge joins on the dimensions the nodes have in common. A node with no dimension in common with the others (a grand total, or a component [leveled](/docs/semantic-model/fields/measures/compound/#auto-leveled-compound-measures) all the way down) is brought in with a `CROSS JOIN` instead. Measure filters are applied inside each node as a `HAVING` and, by default, again in the merge's `WHERE`.
+
+### Changing the merge join type
+
+The join type of the merge is a **datasource setting**, `final_pass_measure_join_type`. The default is `full`. The one adapter that differs is MySQL, which has no `FULL OUTER JOIN`; its default is `left`. You can set it per datasource, under `settings` in `datasources.yml`:
+
+```yaml
+# datasources.yml
+warehouse:
+  adapter: snowflake
+  tier: hot
+  settings:
+    final_pass_measure_join_type: left   # full (default), left or inner
+```
+
+| Value | Rows kept | When you would want it |
+|---|---|---|
+| `full` | Every key from every node | The default. Each measure stays complete; a side with no data shows `NULL`. Use it unless you have a reason not to. |
+| `left` | Every key of the first node; the others contribute where they match | One fact is the anchor and the rest are enrichment: order revenue by customer with a support measure beside it, where customers without tickets must still appear and tickets for unknown customers must not. Also the fallback on engines without full outer joins. |
+| `inner` | Only keys present in every node | A row is meaningful only when every fact has it: a conversion rate that should not show a product with sessions and no orders, or a reconciliation that should list only matched keys. |
+
+The first node under `left` is the one with the most dimensions, then the most projected columns, then the lowest cost, with the node alias as the final tie-break; the others join to it in that order. The setting is for the datasource, so it applies to every blended query and every compound measure that runs there. `left` and `inner` change the answer, not just the shape: keys on the other sides disappear instead of showing `NULL`, and totals over the result shrink with them. The setting is not part of the REST query spec.
 
 ## Relation to Relationships and Paths
 

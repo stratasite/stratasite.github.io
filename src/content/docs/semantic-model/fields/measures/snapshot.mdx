@@ -81,6 +81,36 @@ This means that:
 - Grouping by a period (day/week/month/etc.) yields “as of end of period” or “as of start of period” values.
 - Grouping by non-time dimensions (for example, `Product` or `Store`) still respects the snapshot semantics as long as the query includes a time filter or grain.
 
+## Generated SQL
+
+`Inventory on Hand` (`snapshot: ending`) by `Category` and `Month(Date)`, filtered to dates on or after 2026-01-01. Node and column aliases are shown readably; the planner emits hashed ones.
+
+```sql
+WITH period_end AS (
+  SELECT
+    DATE_TRUNC('month', T1."d_date")::DATE AS month,
+    MAX(T1."d_date") AS snapshot_date
+  FROM inventory T0
+  JOIN date_dim T1 ON T0.inv_date_sk = T1.d_date_sk
+  WHERE T1."d_date" >= '2026-01-01'::DATE
+  GROUP BY DATE_TRUNC('month', T1."d_date")::DATE
+)
+SELECT
+  T2."i_category" AS "Category",
+  DATE_TRUNC('month', T1."d_date")::DATE AS "Month(Date)",
+  sum(T0."inv_quantity_on_hand") AS "Inventory on Hand"
+FROM inventory T0
+JOIN date_dim T1 ON T0.inv_date_sk = T1.d_date_sk
+JOIN item T2 ON T0.inv_item_sk = T2.i_item_sk
+INNER JOIN period_end A3 ON T1."d_date" = A3.snapshot_date
+WHERE T1."d_date" >= '2026-01-01'::DATE
+GROUP BY
+  T2."i_category",
+  DATE_TRUNC('month', T1."d_date")::DATE
+```
+
+The first node finds the boundary date of each bucket on the snapshot table: `MAX` of the snapshot dimension for `ending`, `MIN` for `beginning`, grouped by the query's date grain and constrained by the query's date filters. The measure's own node then inner-joins the fact to those dates, so only the rows on the boundary snapshot are aggregated. Without a date on the query, the bucket is the whole filtered range and the first node returns a single date. Measures from other facts on the same query are planned as their own nodes and merged on the shared dimensions as usual.
+
 ## Use Cases
 
 ### Inventory Analysis

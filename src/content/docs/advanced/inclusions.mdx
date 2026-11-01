@@ -110,6 +110,30 @@ The `@exp` placeholder in the `aggregation` field is replaced with the result of
 | Inner | Target dims + Included dims | Base expression (`sql`) |
 | Outer | Target dims only | Outer aggregation (`aggregation`) |
 
+### Generated SQL
+
+`Median Store Order Size` (`sum(ss_net_paid)` per order, `percentile_cont(0.5) within group (order by @exp)` across orders, `inclusions: [Order Number]`) by `Date`, filtered to orders with a positive order number. Node and column aliases are shown readably; the planner emits hashed ones.
+
+```sql
+WITH per_order AS (
+  SELECT
+    T1."d_date" AS date,
+    T0."ss_ticket_number" AS order_number,
+    sum(T0."ss_net_paid") AS order_size
+  FROM store_sales T0
+  JOIN date_dim T1 ON T0.ss_sold_date_sk = T1.d_date_sk
+  WHERE T0."ss_ticket_number" > 0
+  GROUP BY T1."d_date", T0."ss_ticket_number"
+)
+SELECT
+  A0.date AS "Date",
+  percentile_cont(0.5) WITHIN GROUP (ORDER BY A0.order_size) AS "Median Store Order Size"
+FROM per_order A0
+GROUP BY A0.date
+```
+
+The inner step is a node grouped by the query's dimensions plus the included ones, with the query's filters applied. The outer step is the merge: `@exp` is replaced by the inner node's column and the `aggregation` runs grouped by the query's dimensions only. When other measures sit beside an inclusion measure, each gets its own node at the query grain, and the merge joins them on the shared dimensions while re-aggregating the inclusion column. The merge's join type and the `COALESCE` on the keys are described under [automatic data blending](/docs/semantic-model/extended-blending-groups/#the-merge-full-outer-join-and-coalesce).
+
 ## Industry Context
 
 If you're familiar with other BI or semantic layer tools, Strata's inclusion measures are similar to:

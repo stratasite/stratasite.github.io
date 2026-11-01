@@ -228,6 +228,39 @@ filter: apply
 
 **Key insight**: an exclusion changes the **aggregation level**, not whether the dimension is displayed. When the excluded dimension is in the report you still see it as rows, but the measure **ignores it for grouping**. This is how "% of total" measures work: every row carries the same denominator, the grand total, so `[Category Revenue] / [Revenue (Excluding Category)]` gives each category's share.
 
+## Generated SQL
+
+Example 3, Case A: `Revenue` and `Revenue (Excluding Category)` by `Date` and `Product Category`. Node and column aliases are shown readably; the planner emits hashed ones.
+
+```sql
+WITH detail AS (
+  SELECT
+    T1."d_date" AS date,
+    T2."i_category" AS category,
+    sum(T0."ss_net_paid") AS revenue
+  FROM store_sales T0
+  JOIN date_dim T1 ON T0.ss_sold_date_sk = T1.d_date_sk
+  JOIN item T2 ON T0.ss_item_sk = T2.i_item_sk
+  GROUP BY T1."d_date", T2."i_category"
+), leveled AS (
+  SELECT
+    T1."d_date" AS date,
+    sum(T0."ss_net_paid") AS revenue_excluding_category
+  FROM store_sales T0
+  JOIN date_dim T1 ON T0.ss_sold_date_sk = T1.d_date_sk
+  GROUP BY T1."d_date"
+)
+SELECT
+  COALESCE(A0.date, A1.date) AS "Date",
+  A0.category AS "Product Category",
+  A0.revenue AS "Revenue",
+  A1.revenue_excluding_category AS "Revenue (Excluding Category)"
+FROM detail A0
+FULL OUTER JOIN leveled A1 ON A1.date = A0.date
+```
+
+An exclusion measure gets a node of its own at its reduced grain. The excluded dimension never enters that node's `GROUP BY`, and the `item` join it would need is not generated. With `filter: ignore` a filter on the excluded dimension stays out of that node's `WHERE` as well; with `apply` it is kept. The merge joins the leveled node on the dimensions the two have in common, so the leveled value repeats on every category row of a date. An `exclude_all` measure has no dimensions at all: its node has no `GROUP BY` and is brought in with a `CROSS JOIN`. The merge's join type and the `COALESCE` on the keys are described under [automatic data blending](/docs/semantic-model/extended-blending-groups/#the-merge-full-outer-join-and-coalesce).
+
 ## Best Practices
 
 1. **Use descriptive names**: "Revenue (Excluding Returns)", not just "Revenue".

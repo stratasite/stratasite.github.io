@@ -69,7 +69,24 @@ Getting cardinality and measure expansion right is what matters when you design 
 
 ## Universe Selection
 
-When a user creates a query with specific measures and dimensions, the planner selects which universe(s) can answer it: a universe must contain paths to **all** requested dimensions and **any** requested measures. When several universes qualify, the planner ranks them (e.g. by tier, cost, partition fit) and picks the best fit. Details are in [Semantic Routing](/docs/advanced/semantic-routing/).
+When a user creates a query with specific measures and dimensions, the planner selects which universe(s) can answer it: a universe must contain paths to **all** requested dimensions and **any** requested measures, and every measure must be available in one datasource. Several universes usually qualify. What you configure to influence the choice (tier, cost, partitions) is in [Semantic Routing](/docs/advanced/semantic-routing/); the order the planner applies it in is below.
+
+### Ranking order and tie-breaks
+
+The planner ranks every qualifying universe with one fixed, ordered comparison and takes the first. There is no randomness anywhere in the sequence: the same model and the same query always produce the same plan and the same SQL.
+
+1. **Hints.** A universe rooted at a table the query is hinted to comes first. Hints are rare; most queries carry none.
+2. **Dimension coverage.** More of the query's dimensions reachable. For an ordinary query every candidate reaches all of them, so this step only separates candidates in an [auto-leveled](/docs/semantic-model/fields/measures/compound/#auto-leveled-compound-measures) sub-plan, where a universe may reach only some.
+3. **Partition fit.** For each [partition](/docs/semantic-model/partitions/) on the root table, +1 when a query filter on the partition's dimension falls inside the partition's range, −1 when it falls outside, 0 when there is no partition or no filter on it. Higher wins.
+4. **Tier.** The datasource's tier: `hot` before `warm` before `cold`.
+5. **Measure coverage.** More of the query's measures available in the universe.
+6. **Cost.** The root table's `cost`, lower first.
+7. **Local fields.** More of the requested fields defined on the root table itself rather than reached through a join.
+8. **Name.** The root table's name, alphabetically, and within a universe the join path. Two candidates that tie on everything above always resolve the same way.
+
+The list is applied as a whole, so a step only matters when every step before it ties. Two tables in different tiers never reach the cost comparison; two tables in the same tier with the same partition fit are separated by cost.
+
+After ranking, the planner keeps the **minimum set** of universes: for each measure, the highest-ranked universe that serves it. One universe that serves every measure answers the query in a single `SELECT`; more than one means [automatic data blending](/docs/semantic-model/extended-blending-groups/#how-automatic-data-blending-works-developer-view), one node per universe and a merge on the shared dimensions.
 
 **Example:** For a query like *Total Revenue by Customer State*, the Store Sales universe is used because it has the measure (Total Revenue) and can reach the dimension (Customer State via Customer → Customer Address). The Customer universe is not used because it doesn’t contain that measure. If you see errors like "dimension not in universe," it means no single universe has a path to all requested fields—often a join or cardinality issue in your model.
 

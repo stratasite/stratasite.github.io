@@ -1,0 +1,173 @@
+---
+title: "Calculations"
+description: "Derived columns written at analysis time over the fields of the model: how they are referenced, classified, validated and planned."
+---
+Derived columns written at analysis time over the fields of the model: how they are referenced, classified, validated and planned.
+
+## Overview
+
+A **calculation** is a SQL formula added to a view or query as its own column. It is written over the fields of the semantic layer, never over warehouse columns, so it inherits every definition, join, grain rule and row policy the model already enforces. Calculations are the one formula surface that is **not modeled in YAML**: they are created at analysis time, by a person in the editor, by the AI assistant, by an external agent through the MCP `add_calculation` tool, or under the `calculations` key of a REST [query spec](/docs/api/rest/query-spec/#calculations). Nothing is deployed.
+
+```json
+{
+  "alias": "Sell Through Rate",
+  "sql": "sum([Store Quantity]@m) / nullif(sum([Store Quantity]@m) + sum([Inventory Quantity On Hand]@m), 0)",
+  "data_type": "decimal",
+  "axis": "y",
+  "format": { "type": "percent", "precision": 1 }
+}
+```
+
+The model stays the data team's. The last-mile math, a rate, a share, a margin, a difference, a bucket, belongs to the person asking the question. A calculation that everyone keeps rebuilding is the signal to promote it into a [compound measure](/docs/semantic-model/fields/measures/compound/).
+
+## Referencing fields
+
+A formula names fields in square brackets. A suffix says what kind of thing the name is:
+
+| Reference | Resolves to |
+|---|---|
+| `[Total Revenue]@m` | A measure of the model, by name |
+| `[Item Category]@d` | A dimension of the model, by name |
+| `[Margin]` | Another column of the same query, by its alias: a projected field or another calculation |
+
+An untyped reference is looked up among the query's own columns first, matched case-insensitively against each projection's alias. If no column has that alias, the calculation is refused with a hint to add `@m` or `@d`. The suffix is therefore only needed when the field is not already on the query, or when a dimension and a measure share a name.
+
+Whitespace inside brackets is ignored: `[ Total Revenue ]@m` is `[Total Revenue]@m`.
+
+## Measure and dimension calculations
+
+The formula decides what kind of column it produces. The only signal is whether it applies an **aggregate function**.
+
+**A measure calculation** aggregates. Every measure it reads must sit inside an aggregate, because the calculation re-aggregates the query's results:
+
+```sql
+sum([Store Quantity]@m) / nullif(sum([Store Quantity]@m) + sum([Inventory Quantity On Hand]@m), 0)
+```
+
+```sql
+count(distinct case when [Net Paid]@m > 0 then [Category]@d end)
+```
+
+**A dimension calculation** has no aggregate of its own. Two cases matter here, because the planner treats them differently:
+
+- A formula over **dimensions only** is a derived dimension, evaluated per row before grouping and then grouped by:
+
+  ```sql
+  case when [Order Total]@d >= 500 then 'Large' when [Order Total]@d >= 100 then 'Medium' else 'Small' end
+  ```
+
+  ```sql
+  [Category] || ' ' || [Product Name]
+  ```
+
+- A formula over **measures without an aggregate** is the common ratio or difference. It is evaluated over the aggregated results, one value per result row, with no re-grouping:
+
+  ```sql
+  [Net Paid]@m / nullif([Web Net Paid]@m, 0)
+  ```
+
+Cross-row math uses **window functions** over the query's own columns. A window never changes the grain of the result:
+
+```sql
+[Actives] / nullif(first_value([Actives]) over (order by [Category]@d), 0)
+```
+
+## What is validated
+
+A calculation is checked when it is saved, in the editor as you type and in the API before anything runs. A failing formula is refused with a structured error rather than planned.
+
+1. **Only semantic references.** A bare column or table name is rejected: `columns like amount are not permitted in calculations`. A formula is an expression, never a `SELECT` or a subquery.
+2. **Every reference must resolve.** `[Name]@m` must be a measure of the project, `[Name]@d` a dimension, and an untyped `[Name]` the alias of a column on the query.
+3. **One datasource.** Every measure the formula reads must be available in the same datasource, since one engine evaluates the formula.
+4. **Referenced dimensions must fit the query.** A `@d` reference adds a dimension to the query's constraints. It must be resolvable together with the query's other fields, at the grain of every fact universe the query spans. A dimension no universe of the query can reach is refused here.
+5. **Aggregating formulas keep dimensions inside the aggregate.** In a measure calculation, a dimension read outside an aggregate (`case when [Category]@d is null then null else sum(...) end`) would have to appear in the `GROUP BY`. That is only possible when the query also projects that dimension, so the formula is refused unless it does. Move the reference inside the aggregate, or project the dimension.
+
+Grain safety is unchanged by a calculation. Each measure it reads is planned as itself, in its own universe, with its own exclusions, snapshots and inclusions, and the formula runs over the results. There is no path by which a calculation reaches a measure at the wrong grain.
+
+## Properties
+
+| Key | Required | Description |
+|---|---|---|
+| `alias` | yes | The column name. Other calculations reference it as `[Alias]` |
+| `sql` | yes | The formula |
+| `data_type` | no | `string`, `integer`, `bigint`, `decimal` (default), `date`, `date_time`, `boolean`, `binary` |
+| `format` | no | Display format, as on a field: `percent` with a precision, `currency` with a unit, `number` with abbreviation. A 0.123 rate shows as 12.3% |
+| `axis` | no | `x` or `y`, as on a projection |
+| `order_by` | no | Accepted as on projections |
+
+## How the planner runs them
+
+Where a calculation is evaluated follows from its classification:
+
+- **Dimension calculations over dimensions are pushed down.** Each universe that can reach every referenced dimension evaluates the formula on the fields themselves and groups by it. The merge reads it as a column and joins on it, the same as any other dimension. A dimension calculation whose dimensions no single universe reaches together is refused: it would have nowhere to be computed.
+- **Anything standing on a measure stays at the merge.** A formula that reads a measure, directly or through the alias of a projected measure, forces the query through the merge path even when one universe could have answered it alone. Its measures are computed at their correct level in the child nodes and read as plain columns above, where the formula is applied. When the formula aggregates, the merge groups by the query's dimensions and re-aggregates; otherwise it is a one-to-one pass.
+- **Every field a merge-level formula references is materialized** in the child that can resolve it, projected or not, so the merge can read it.
+- **Segments cascade.** A [segment](/docs/getting-started/concepts/#segments) applied to a calculation that stands on measures constrains the measures the formula reads, so the ratio of two measures inside a cohort is the ratio of the cohort's values.
+
+## Generated SQL
+
+A query on `Product Name`, `Category`, `Net Paid` (store sales) and `Web Net Paid` (web sales), with two calculations: `[Net Paid] / [Web Net Paid]` as `Store to Web`, and `[Category] || ' ' || [Product Name]` as `Category Item`. The measures live on different facts, so the query blends. The dimension calculation is pushed into both children and joined on; the ratio is applied at the merge. Column and node aliases are shown readably; the planner emits hashed ones.
+
+```sql
+WITH store AS (
+  SELECT
+    T1."i_product_name" AS product_name,
+    T1."i_category" AS category,
+    sum(T0."ss_net_paid") AS net_paid,
+    T1."i_category" || ' ' || T1."i_product_name" AS category_item
+  FROM store_sales T0
+  JOIN item T1 ON T0.ss_item_sk = T1.i_item_sk
+  GROUP BY
+    T1."i_product_name",
+    T1."i_category",
+    T1."i_category" || ' ' || T1."i_product_name"
+), web AS (
+  SELECT
+    sum(T0."ws_net_paid") AS web_net_paid,
+    T1."i_product_name" AS product_name,
+    T1."i_category" AS category,
+    T1."i_category" || ' ' || T1."i_product_name" AS category_item
+  FROM web_sales T0
+  JOIN item T1 ON T0.ws_item_sk = T1.i_item_sk
+  GROUP BY
+    T1."i_product_name",
+    T1."i_category",
+    T1."i_category" || ' ' || T1."i_product_name"
+)
+SELECT
+  A1.web_net_paid AS "Web Net Paid",
+  COALESCE(A0.product_name, A1.product_name) AS "Product Name",
+  COALESCE(A0.category, A1.category) AS "Category",
+  A0.net_paid AS "Net Paid",
+  A0.net_paid / A1.web_net_paid AS "Store to Web",
+  COALESCE(A0.category_item, A1.category_item) AS "Category Item"
+FROM store A0
+FULL OUTER JOIN web A1
+  ON A1.product_name = A0.product_name
+  AND A1.category = A0.category
+  AND A1.category_item = A0.category_item
+```
+
+When the query resolves to one universe and no calculation reads a measure, there is no merge: the dimension calculation is a column of a single `SELECT`, grouped by with the rest. The merge's join type and the `COALESCE` on the keys are described under [automatic data blending](/docs/semantic-model/extended-blending-groups/#how-automatic-data-blending-works-developer-view).
+
+## Calculations and compound measures
+
+They look alike and sit at different layers.
+
+| | Calculation | Compound measure |
+|---|---|---|
+| Lives | On one view or query | In the model, on a table |
+| Written by | Business user, assistant, agent | Modeler, in YAML |
+| Deployed | No | With the project |
+| Available to | That view or query | Every report and query |
+| References | `[Name]@m`, `[Name]@d`, `[Alias]` | `[Name]`, resolved by the planner |
+| Grain | The query's | Set by the table it is defined on, components [auto-leveled](/docs/semantic-model/fields/measures/compound/#auto-leveled-compound-measures) |
+
+For the common transforms you need no formula at all: year-over-year and period comparisons, moving averages and percent of total are one-click [decorators](/docs/advanced/decorators/temporal/) on any measure.
+
+## Next Steps
+
+- [Query spec: calculations](/docs/api/rest/query-spec/#calculations)
+- [AI agents and MCP](/docs/api/ai-agents/)
+- [Compound measures](/docs/semantic-model/fields/measures/compound/)
+- [Core Concepts: segments and decorators](/docs/getting-started/concepts/#segments)

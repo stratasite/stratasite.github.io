@@ -165,6 +165,8 @@ Every calculation carries its own display format (`percent` for a fraction, `cur
 
 For the common transforms you don't need a formula at all: year-over-year and period comparisons, moving averages, and percent-to-total are one-click [decorators](/docs/advanced/decorators/temporal/) on any measure.
 
+The full reference, with every validation rule, how each kind is planned, and the generated SQL, is the [Calculations](/docs/semantic-model/calculations/) page.
+
 ### Decorated Runtime Measures
 
 A **decorator** is a one-click transform applied to a measure in a view or query, at analysis time, with no formula and no model change. Pick a measure, pick a transform, and Strata adds a new column computed from it: last year's value, its share of the total, its 7-period moving average. The decorated measure keeps the governance of the measure underneath. The definition, the joins, the grain rules, and the row-level security all come from the model; the decorator only changes how the aggregated result is transformed.

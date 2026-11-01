@@ -55,7 +55,7 @@ name: Store Sales Daily
 cost: 20
 ```
 
-When two tables define the same measure (e.g. "Store Sales Price"), the [one-name-one-concept rule](/docs/getting-started/concepts/#core-design-principles) makes them one measure with two sources. The planner first keeps the tables whose dimensions cover the query, then prefers the lower-cost one, so `cost` is how you break ties.
+When two tables define the same measure (e.g. "Store Sales Price"), the [one-name-one-concept rule](/docs/getting-started/concepts/#core-design-principles) makes them one measure with two sources. The planner first keeps the tables whose dimensions cover the query, then ranks them. Partition fit and tier are compared before cost, so `cost` decides between tables in the same tier with the same partition fit.
 
 ### Partition Constraints
 
@@ -69,6 +69,10 @@ partition:
   predicate: greater_than_or_equal_to
   filter_value: 2024-01-01
 ```
+
+## Ranking Order
+
+When more than one table qualifies, the planner applies one fixed order: hints, dimension coverage, partition fit, tier, measure coverage, cost, fields local to the root table, then table name as a final tie-break. The result is deterministic; the same query always routes the same way. Each step is explained under [Universe selection](/docs/advanced/universe-formation/#ranking-order-and-tie-breaks).
 
 ## Dimension and Measure Coverage
 

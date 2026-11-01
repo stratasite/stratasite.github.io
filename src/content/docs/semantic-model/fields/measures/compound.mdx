@@ -72,6 +72,23 @@ There is no requirement that the referenced measures share a table or a universe
 
 When a compound measure spans fact domains, the query's dimensions may not all be reachable from every component. Rather than refuse the query, Strata **auto-levels** the components that can't reach a dimension: that dimension is excluded from that component's aggregation, and the final blend joins only on the dimensions the components have in common.
 
+### The source table sets the grain
+
+A compound measure is defined on a table, and **that table dictates its dimensionality**. A query that projects the compound measure resolves to the universe of the table it is defined on, and that universe must reach every dimension the query groups by, exactly as for a standard measure on the same table. Components whose measures are in that universe are computed there, at the full query grain. Only a referenced measure the compound's own universe cannot see, one defined on a fact in another domain, is planned apart, in a sub-plan of its own.
+
+### How a component is leveled
+
+The sub-plan for an outside component carries the query's dimensions and filters, and resolves to the universe that reaches the **most of those dimensions** (the normal [ranking](/docs/advanced/universe-formation/#ranking-order-and-tie-breaks) applies after that). Dimensions and filters that universe cannot reach drop out of the sub-plan. The component aggregates by the dimensions it has in common with the query, and the merge joins it to the rest on those. It is an [exclusion](/docs/advanced/exclusions/) applied on purpose: the missing dimension is left out of that component's grouping, and its value repeats across every row of that dimension. A filter on a dimension the component cannot reach does not constrain it either; it constrains only the sides that can reach the dimension. A component that reaches none of the query's dimensions is a grand total and is cross-joined in.
+
+### When a referenced measure is defined on more than one table
+
+Following the [same-name rule](/docs/getting-started/concepts/#core-design-principles), a measure can have several sources. Which one a compound measure reads depends on the universe the query resolves to:
+
+- If the compound measure's own universe has the referenced measure, that source is used, at the full query grain. There is no sub-plan.
+- Otherwise the sub-plan chooses among every table that defines it, with the full query context: the dimensions it has to reach, the filters and partitions, tier, cost, down the same ranking as any query. If the plan already has an aggregation node that carries the measure (because the query also projects it plainly, say), that node is reused rather than planned again.
+
+So the same compound measure can read a referenced measure from one table in one query and another table in the next, and the choice is the same one the planner would make for that measure asked for on its own with those dimensions.
+
 Take `Tickets per 1000 Orders` from above, and a query grouped by `Month` and `Contact Channel`:
 
 - `[Support Tickets]` lives on the support fact, which reaches `Contact Channel`. It aggregates by `Month` and `Contact Channel`.
@@ -90,6 +107,38 @@ Two things to keep in mind:
 
 - **Auto-leveling applies to query-time grouping, not to dimensions written into the formula.** A dimension referenced inside the expression must be reachable from every component (the rule above).
 - **A leveled component is a total over the missing dimension, not a per-row value.** For a rate that is the intent. For a sum or difference across domains, groups are only meaningful on dimensions both sides reach, so be explicit in the measure's description about which dimensions it should be grouped by.
+
+## Generated SQL
+
+The query above, `Tickets per 1000 Orders` by `Month` and `Contact Channel`, with the compound measure defined on the support fact. Node and column aliases are shown readably; the planner emits hashed ones.
+
+```sql
+WITH support AS (
+  SELECT
+    DATE_TRUNC('month', T1."d_date")::DATE AS month,
+    T0."contact_channel" AS contact_channel,
+    count(*) AS support_tickets
+  FROM support_tickets T0
+  JOIN date_dim T1 ON T0.opened_date_sk = T1.d_date_sk
+  GROUP BY DATE_TRUNC('month', T1."d_date")::DATE, T0."contact_channel"
+), orders AS (
+  SELECT
+    DATE_TRUNC('month', T1."d_date")::DATE AS month,
+    count(distinct T0."order_id") AS order_count
+  FROM orders T0
+  JOIN date_dim T1 ON T0.order_date_sk = T1.d_date_sk
+  GROUP BY DATE_TRUNC('month', T1."d_date")::DATE
+)
+SELECT
+  COALESCE(A0.month, A1.month) AS "Month(Date)",
+  A0.contact_channel AS "Contact Channel",
+  1000.0 * A0.support_tickets / nullif(A1.order_count, 0) AS "Tickets per 1000 Orders"
+FROM support A0
+FULL OUTER JOIN orders A1
+  ON A1.month = A0.month
+```
+
+The compound measure's own node (`support`) groups by both dimensions. The leveled component (`orders`) reaches only `Month`, so it groups by `Month` alone and is joined on it; the formula is applied in the merge over the two columns. Had the orders fact reached neither dimension, the second node would have no `GROUP BY` and the join would be a `CROSS JOIN`. The merge's join type and the `COALESCE` on the keys are described under [automatic data blending](/docs/semantic-model/extended-blending-groups/#the-merge-full-outer-join-and-coalesce).
 
 ## Chaining
 
@@ -136,7 +185,7 @@ Bracketed references mix freely with SQL functions and constants:
 
 ## Where the formula lives
 
-Compound measures are the modeled, governed form of a formula: deployed with the project and available to every report. The same syntax is available at analysis time as a [calculation](/docs/getting-started/concepts/#calculations) on a single view, with `@m` and `@d` suffixes to disambiguate a name shared by a dimension and a measure. A calculation everyone keeps rebuilding is a candidate to promote here.
+Compound measures are the modeled, governed form of a formula: deployed with the project and available to every report. The same syntax is available at analysis time as a [calculation](/docs/semantic-model/calculations/) on a single view, with `@m` and `@d` suffixes to disambiguate a name shared by a dimension and a measure. A calculation everyone keeps rebuilding is a candidate to promote here.
 
 Decorators (year-over-year, moving average, percent of total) work on compound measures as they do on any other measure.
 

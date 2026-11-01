@@ -24,7 +24,7 @@ Five kinds of measure are modeled in YAML. They share every property below and d
 
 Three more things can change what a measure returns, none of them modeled in YAML. They are applied at analysis time on a view or query and are covered under Core Concepts:
 
-- **[Calculations](/docs/getting-started/concepts/#calculations)**: a formula a business user or agent writes over the query's measures, such as a rate or a share.
+- **[Calculations](/docs/semantic-model/calculations/)**: a formula a business user or agent writes over the query's measures, such as a rate or a share.
 - **[Decorated runtime measures](/docs/getting-started/concepts/#decorated-runtime-measures)**: one-click year-over-year, moving average, percent of total, and other transforms.
 - **[Segments](/docs/getting-started/concepts/#segments)**: restrict a single measure to a cohort so it sits beside its unrestricted baseline.
 
@@ -117,6 +117,43 @@ Conditional aggregation is plain SQL:
 **Share of total.** A measure that ignores the query's grouping for its denominator is an exclusion measure, not a ratio. See [exclusions](/docs/advanced/exclusions/). For an ad-hoc share on one view, the percent-of-total [decorator](/docs/advanced/decorators/contribution/) needs no modeling.
 
 **Balances and inventory.** Summing a daily balance across a month is wrong; use a [snapshot measure](/docs/semantic-model/fields/measures/snapshot/).
+
+## Generated SQL
+
+A standard measure is its aggregate, grouped by the query's dimensions, over the join path its universe provides. `Web Net Paid` by `Category`:
+
+```sql
+SELECT
+  T1."i_category" AS "Category",
+  sum(T0."ws_net_paid") AS "Web Net Paid"
+FROM web_sales T0
+JOIN item T1 ON T0.ws_item_sk = T1.i_item_sk
+GROUP BY T1."i_category"
+```
+
+Add a measure from another fact, `Net Paid` on store sales, and each fact becomes its own node, aggregated to the query grain, merged on the shared dimension. No row-level join between the facts is generated:
+
+```sql
+WITH store AS (
+  SELECT T1."i_category" AS category, sum(T0."ss_net_paid") AS net_paid
+  FROM store_sales T0
+  JOIN item T1 ON T0.ss_item_sk = T1.i_item_sk
+  GROUP BY T1."i_category"
+), web AS (
+  SELECT sum(T0."ws_net_paid") AS web_net_paid, T1."i_category" AS category
+  FROM web_sales T0
+  JOIN item T1 ON T0.ws_item_sk = T1.i_item_sk
+  GROUP BY T1."i_category"
+)
+SELECT
+  A0.web_net_paid AS "Web Net Paid",
+  COALESCE(A1.category, A0.category) AS "Category",
+  A1.net_paid AS "Net Paid"
+FROM web A0
+FULL OUTER JOIN store A1 ON A1.category = A0.category
+```
+
+Node and column aliases are shown readably; the planner emits hashed ones. The merge's join type, the `COALESCE` on the keys, and how to change the join type per datasource are described under [automatic data blending](/docs/semantic-model/extended-blending-groups/#the-merge-full-outer-join-and-coalesce). Each measure type below has its own generated SQL section.
 
 ## Guidelines
 

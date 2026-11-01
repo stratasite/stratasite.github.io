@@ -158,6 +158,30 @@ warehouse:
   # ... connection details
 ```
 
+## Adapter Settings
+
+Each adapter ships with settings that control how the planner writes SQL for that engine: how intermediate results are held, how blended measures are merged, where measure filters are applied. They have sensible defaults per engine, and you can override any of them for one datasource under `settings`:
+
+```yaml
+warehouse:
+  adapter: snowflake
+  tier: hot
+  settings:
+    final_pass_measure_join_type: full
+    temp_table_type: cte
+  # ... connection details
+```
+
+| Setting | Values | What it controls |
+|---|---|---|
+| `final_pass_measure_join_type` | `full` (default; `left` on MySQL), `left`, `inner` | The join type of the merge that combines measures from different facts. See [the merge](/docs/semantic-model/extended-blending-groups/#the-merge-full-outer-join-and-coalesce) before changing it: `left` and `inner` drop rows. |
+| `temp_table_type` | `cte` (default), `subquery`, `temp` | How each intermediate node is held |
+| `temp_table_prefix` | string | Prefix for intermediate node names, for engines that need them schema-qualified |
+| `cross_universe_measure_filtering_strategy` | `both` (default), `intermediate`, `final` | Whether a measure filter on a blended query is applied inside each node, in the merge, or both |
+| `greedy_apply_date_filters` | `true` (default), `false` | Whether a date filter is applied to every table in the join tree that carries the dimension, or only the first |
+
+Settings are read when the datasource is deployed. Leave them at their defaults unless an engine's SQL dialect or a business rule calls for a change.
+
 ## Best Practices
 
 1. **Use descriptive keys** — e.g. `warehouse`, not `db1`
