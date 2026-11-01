@@ -14,6 +14,7 @@ import Base from '../layouts/Base.astro';
 import CtaButton from '../components/CtaButton.astro';
 import TrialNote from '../components/TrialNote.astro';
 import ShowcaseBand from '../components/ShowcaseBand.astro';
+import EngineChips from '../components/EngineChips.astro';
 import { site } from '../config/site';
 import { editions } from '../data/pricing';
 import { landings } from '../data/landing';
@@ -40,10 +41,6 @@ const proof = [
   { value: `$${perSeat}`, label: 'a seat on Entry, hosted' },
 ];
 
-const engines = [
-  'SQL Server and Azure SQL', 'Snowflake', 'Databricks', 'Redshift', 'Athena', 'Postgres',
-  'MySQL', 'ClickHouse', 'Druid', 'Trino', 'DuckDB',
-];
 
 const loc = `landing-${l.slug}`;
 
@@ -188,11 +185,7 @@ const faqLd = JSON.stringify({
   <section class="border-t border-border bg-surface">
     <div class="mx-auto max-w-7xl px-4 py-12 text-center sm:px-6 lg:px-8">
       <p class="font-display text-sm font-semibold uppercase tracking-wider text-primary">Connects to</p>
-      <ul class="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-2">
-        {engines.map((e) => (
-          <li class="rounded-full border border-border bg-surface-2 px-3 py-1 text-sm text-foreground">{e}</li>
-        ))}
-      </ul>
+      <EngineChips class="mt-4" />
     </div>
   </section>
 

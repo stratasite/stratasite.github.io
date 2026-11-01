@@ -1,0 +1,29 @@
+---
+/**
+ * The "Connects to" chip row: every adapter, as a pill, with a monochrome
+ * mark in the chip's text colour where the engine has one (see
+ * src/data/engine-marks.ts). Used on the home page and the ad landing pages.
+ */
+import { engineMarks } from '../data/engine-marks';
+
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+
+const engines = [
+  'SQL Server and Azure SQL', 'Snowflake', 'Databricks', 'Redshift', 'Athena', 'Postgres',
+  'MySQL', 'ClickHouse', 'Druid', 'Trino', 'DuckDB',
+];
+---
+
+<ul class:list={['mx-auto flex max-w-4xl flex-wrap justify-center gap-2', className]}>
+  {engines.map((e) => (
+    <li class="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1 text-sm text-foreground">
+      {engineMarks[e] && (
+        <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 shrink-0 fill-current opacity-80" aria-hidden="true"><path d={engineMarks[e]} /></svg>
+      )}
+      {e}
+    </li>
+  ))}
+</ul>
