@@ -1,22 +1,23 @@
 ---
 title: "Projects"
-description: "Create new Strata projects, clone from source, or link to an existing server project."
+description: "Create new Strata projects, join an existing one, or link to a server project."
 ---
-Create new Strata projects, clone from source, or link to an existing server project.
+Create new Strata projects, join an existing one, or link to a server project.
 
 ## Learning Objectives
 
 After completing this guide, you will be able to:
 - Initialize a new Strata project
 - Add datasource adapters during initialization
-- Clone an existing project from a URL
+- Point a project at a Strata server
+- Join a project that already exists on the server
 - Link a local project to an existing project on app.strata.do
 - Configure `project.yml`
 
 ## Prerequisites
 
 - Strata CLI installed
-- For cloning: repository URL and API key (if required)
+- For joining an existing project: access to its git repository
 - For linking: project ID from app.strata.do
 
 ## Step 1: Initialize a New Project
@@ -52,17 +53,33 @@ strata init my-project -d postgres -d snowflake
 
 Supported adapters: `postgres`, `snowflake`, `mysql`, `sqlserver`, `athena`, `trino`, `duckdb`, `druid`, `clickhouse`, `databricks`, `sqlite`, `redshift`.
 
-## Step 2: Clone from Source
-
-If the project already exists in a repository, clone it:
+**Targeting a different server:** `init` writes `server: https://app.strata.do` into `project.yml` by default. Pass `-s` to point the project somewhere else — a self-hosted or local server, for example:
 
 ```bash
-strata init --source STRATA_PROJECT_URL --api-key YOUR_API_KEY
+strata init my-project -s http://localhost:8080
 ```
 
-**What happens:** The CLI clones and sets up the project. The API key is required if the repository requires authentication.
+Every later command reads the server from `project.yml`, so you only set it once. To deploy to more than one server, give `project.yml` a block per environment and select it with `-e ENVIRONMENT` — see [Deployment](/docs/cli/deployment/).
 
-**Note:** `PROJECT_NAME` is not required when using `--source`; the directory name comes from the project in server.
+## Step 2: Join a Project That Already Exists
+
+A Strata project is its git repository. `project.yml` is committed and carries both the server URL and the `project_id`, so joining a project your team already created is an ordinary clone:
+
+```bash
+git clone https://github.com/example/project.git
+cd project
+strata deploy
+```
+
+**What happens:** `deploy` reads the server from `project.yml` and, because no API key is in your local `.strata` yet, offers to sign you in through the browser. See [Deployment](/docs/cli/deployment/).
+
+**Linking instead:** if you already have a local project and want to attach it to a project on the server, use its project ID rather than cloning:
+
+```bash
+strata project link 12345
+```
+
+This writes `project_id` into `project.yml`. Find the ID on the project's page in app.strata.do.
 
 ## Project Configuration
 

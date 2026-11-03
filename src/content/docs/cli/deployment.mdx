@@ -43,7 +43,7 @@ This treats your semantic layer as **infrastructure as code** — the same rigor
 - A Strata account on [app.strata.do](https://app.strata.do) (no account yet? [start a 14-day trial](https://app.strata.do/signup))
 - Git repository initialized (for version tracking)
 
-You do **not** need to configure a server URL or API key up front. If either is missing, `strata deploy` prompts for the server URL (enter `https://app.strata.do`; it is saved to `project.yml`) and then asks how you'd like to authenticate: **Sign in via browser (recommended)** — the CLI opens your browser and fetches an API key automatically once you sign in — or paste an API key manually (from your Strata web app under **Settings → API Keys**, or from your Strata administrator). Either way the key is saved to `.strata` (gitignored) for future runs.
+You do **not** need to configure a server URL or API key up front. The server defaults to `https://app.strata.do`, and `strata init` writes it into `project.yml` — pass `-s URL` to `init` to target a self-hosted server instead, or use `-e ENVIRONMENT` with a per-environment `server:` block to deploy to more than one. If the API key is missing, `strata deploy` asks how you'd like to authenticate: **Sign in via browser (recommended)** — the CLI opens your browser and fetches an API key automatically once you sign in — or paste an API key manually (from your Strata web app under **Settings → API Keys**, or from your Strata administrator). Either way the key is saved to `.strata` (gitignored) for future runs.
 
 ## Basic Deployment
 
