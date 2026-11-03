@@ -158,7 +158,7 @@ Before adding your own tables, let's deploy the existing model to app.strata.do 
 
 ### 6a. Configure the Server URL and API Key
 
-You can skip this step entirely: the first `strata deploy` prompts for anything missing. It asks for the server URL (enter `https://app.strata.do`; it is saved to `project.yml`), then offers **Sign in via browser (recommended)** — the CLI opens your browser, you sign in, and it fetches and saves an API key to `.strata` automatically.
+You can skip this step entirely: `strata init` already wrote `server: https://app.strata.do` into `project.yml`, and the first `strata deploy` offers **Sign in via browser (recommended)** — the CLI opens your browser, you sign in, and it fetches and saves an API key to `.strata` automatically.
 
 To configure manually instead (or for non-interactive environments like CI):
 
