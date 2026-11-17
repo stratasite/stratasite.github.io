@@ -4,6 +4,29 @@ description: "Connect to Snowflake data warehouses."
 ---
 Connect to Snowflake data warehouses.
 
+## Before you connect
+
+:::warning[A PAT needs a network policy first]
+Snowflake accepts a personal access token only from a user covered by a **network policy**. Until one exists the connection is refused with `Network policy is required.`, so this has to be done before a PAT will work at all.
+:::
+
+Allow the addresses Strata connects from — they are listed on your project's page in the app — together with whatever address you run the CLI from:
+
+```sql
+CREATE NETWORK POLICY strata_access
+  ALLOWED_IP_LIST = ('203.0.113.10', '203.0.113.11', '198.51.100.25');
+
+ALTER USER my_user SET NETWORK_POLICY = strata_access;
+```
+
+`ALLOWED_IP_LIST` replaces the list wholesale, so repeat every address you still need. Then create the token itself under **Admin → Users → your user → Programmatic access tokens**.
+
+:::note[A missing token looks like a blocked address]
+A token that has been deleted or has expired reports the same wording as a blocked address (`Incoming request with IP/Token ... is not allowed to access Snowflake`). If the addresses are right, check the token still exists before hunting for a firewall problem.
+:::
+
+Key pair authentication (`auth_mode: kp`) carries no network policy requirement. Use it if you would rather not manage one.
+
 ## Configuration
 
 ```yaml
@@ -19,9 +42,9 @@ snowflake_dw:
   auth_mode: pat  # pat, kp, oauth
   
   # Optional
-  warehouse: COMPUTE_WH
+  warehouse: MY_WH
   schema: PUBLIC
-  role: ACCOUNTADMIN
+  role: STRATA_READER
   
   # Credentials (set via strata datasource auth)
   # personal_access_token: (for PAT)
@@ -37,9 +60,11 @@ snowflake_dw:
 
 ## Optional Fields
 
-- **warehouse** - Warehouse name
-- **schema** - Schema name (default: `PUBLIC`)
-- **role** - Role name (default: `ACCOUNTADMIN`)
+These have no default. Left unset, Snowflake falls back to whatever the authenticating user has been given.
+
+- **warehouse** - Warehouse name. Trial accounts are created with `SNOWFLAKE_LEARNING_WH`; `COMPUTE_WH` is no longer there by default, so a connection naming it fails on a setting you never chose.
+- **schema** - Schema name. Worth setting: without it, listing tables spans every schema in the database.
+- **role** - Role to assume. Give Strata a read-only role rather than `ACCOUNTADMIN`.
 
 ## Authentication Modes
 
@@ -49,6 +74,8 @@ snowflake_dw:
 auth_mode: pat
 # personal_access_token: (set via strata datasource auth)
 ```
+
+Requires a network policy on the user — see [Before you connect](#before-you-connect).
 
 ### Key Pair (KP)
 
@@ -70,6 +97,18 @@ oauth_scope: SCOPE  # Optional
 
 **Note:** OAuth requires additional setup. See [Snowflake OAuth documentation](https://docs.snowflake.com/en/user-guide/oauth-custom).
 
+## Identifier Case
+
+Snowflake folds an unquoted name to upper case, so a table created as `item` is stored as `ITEM`. Write physical names and column expressions in your model the way you would write them in any other warehouse — Strata resolves each one against the name Snowflake reports:
+
+```yaml
+physical_name: item          # resolves to ITEM
+expression:
+  sql: i_category            # resolves to I_CATEGORY
+```
+
+Quote a name only when the column really is stored in lower or mixed case, which happens when it was created quoted — as tools like Fivetran and dbt do. A quoted name is matched exactly and is never rewritten.
+
 ## Example
 
 ```yaml
@@ -80,9 +119,9 @@ snowflake_dw:
   query_timeout: 3600
   account_identifier: myorg-myaccount
   database: ANALYTICS_DB
-  warehouse: COMPUTE_WH
+  warehouse: MY_WH
   schema: PUBLIC
-  role: ANALYST
+  role: STRATA_READER
   auth_mode: pat
 ```
 
@@ -96,8 +135,8 @@ strata datasource auth snowflake_dw
 
 ## Best Practices
 
-1. **Use PAT for simplicity** - Easiest authentication method
-2. **Use KP for production** - More secure for production
+1. **Set up the network policy first** - A PAT cannot connect without one
+2. **Use KP for production** - More secure, and needs no network policy
 3. **Set appropriate warehouse** - Match query workload
 4. **Use roles** - Follow principle of least privilege
 
