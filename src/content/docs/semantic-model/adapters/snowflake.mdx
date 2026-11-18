@@ -27,9 +27,13 @@ ALTER USER my_user SET RSA_PUBLIC_KEY='<contents of snowflake_key.pub, without t
 
 ```yaml
 auth_mode: kp
-username: my_user
+username: MY_LOGIN_NAME
 # private_key: set with `strata datasource auth <key>`
 ```
+
+:::note[username is the login name, not the user name]
+They differ on accounts created by email signup, where the user is named after the local part but signs in with the full address. `DESC USER my_user;` shows both — use `LOGIN_NAME`. Using the wrong one fails with `JWT token is invalid`, which does not say which of the two is wrong.
+:::
 
 Nothing else is required. Skip to [Configuration](#configuration).
 
@@ -39,24 +43,19 @@ Nothing else is required. Skip to [Configuration](#configuration).
 Snowflake accepts a personal access token only from a user covered by a **network policy**. Until one exists the connection is refused with `Network policy is required.`, so this has to be done before a PAT will work at all.
 :::
 
-Allow the addresses Strata connects from — they are listed on your project's page in the app — together with whatever address you run the CLI from:
+The [Quick Start](/docs/getting-started/quickstart/#before-you-start-allow-stratas-ip-addresses) has the statements, together with the addresses Strata connects from. Add whatever address you run the CLI from as well, since `strata datasource test` connects from your machine rather than from Strata.
 
-```sql
-CREATE NETWORK POLICY strata_access
-  ALLOWED_IP_LIST = ('203.0.113.10', '203.0.113.11', '198.51.100.25');
+Then create the token under **Admin → Users → your user → Programmatic access tokens**. Copy the secret when it is shown; Snowflake does not show it again.
 
-ALTER USER my_user SET NETWORK_POLICY = strata_access;
-```
+:::danger[A policy on your own user can lock you out of Snowflake]
+A network policy governs the Snowflake web UI as well as Strata, so once your address no longer matches you cannot sign in to correct it.
 
-Then create the token itself under **Admin → Users → your user → Programmatic access tokens**. Copy the secret when it is shown; Snowflake does not show it again.
+**Attach the policy to a dedicated service user**, as the Quick Start does — then your own login is unaffected and this cannot happen. If you do attach one to a user you sign in as:
 
-:::danger[The policy can lock you out of Snowflake itself]
-It applies to the web UI as well as to Strata, so once your address changes you cannot sign in to correct it. Before attaching a policy:
+- list **every** address you may connect from, and remember that setting the allowed list **replaces** it rather than adding to it
+- keep another user with **no** policy attached, as a way back in
 
-- list **every** address you may connect from — home, office, VPN. `SET ALLOWED_IP_LIST` **replaces** the list rather than adding to it, so repeat the existing entries whenever you change it
-- keep a second ACCOUNTADMIN user with **no** policy attached, as a way back in
-
-If you are locked out, a user without the policy can clear it with `ALTER USER my_user UNSET NETWORK_POLICY;`. Failing that, only Snowflake Support can restore access.
+To recover, a user without the policy runs `ALTER USER my_user UNSET NETWORK_POLICY;`. Failing that, only Snowflake Support can restore access.
 :::
 
 :::note[A missing token looks like a blocked address]
@@ -98,7 +97,7 @@ snowflake_dw:
 
 These have no default. Left unset, Snowflake falls back to whatever the authenticating user has been given.
 
-- **warehouse** - Warehouse name. Trial accounts are created with `SNOWFLAKE_LEARNING_WH`; `COMPUTE_WH` is no longer there by default, so a connection naming it fails on a setting you never chose.
+- **warehouse** - Warehouse name. Do not assume `COMPUTE_WH`: what a trial is created with varies, and a name that is not there fails the connection on a setting you never chose. `SHOW WAREHOUSES;` lists what the account actually has.
 - **schema** - Schema name. Worth setting: without it, listing tables spans every schema in the database.
 - **role** - Role to assume. Give Strata a read-only role rather than `ACCOUNTADMIN`.
 
