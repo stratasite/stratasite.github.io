@@ -6,6 +6,35 @@ Connect to Snowflake data warehouses.
 
 ## Before you connect
 
+Snowflake offers two ways to authenticate, and the choice matters more than it looks.
+
+:::tip[Prefer key pair unless your address is fixed]
+Key pair (`auth_mode: kp`) needs **no network policy**. A personal access token does, and that policy then governs every connection the user makes — including the Snowflake web UI. If the address you connect from is dynamic, as most home and office connections are, the policy will eventually reject you and you cannot sign in to fix it.
+:::
+
+### Key pair — the simpler path
+
+Generate a key, register the public half, and point the datasource at the private half:
+
+```bash
+openssl genrsa -out snowflake_key.p8 2048
+openssl rsa -in snowflake_key.p8 -pubout -out snowflake_key.pub
+```
+
+```sql
+ALTER USER my_user SET RSA_PUBLIC_KEY='<contents of snowflake_key.pub, without the BEGIN/END lines>';
+```
+
+```yaml
+auth_mode: kp
+username: my_user
+# private_key: set with `strata datasource auth <key>`
+```
+
+Nothing else is required. Skip to [Configuration](#configuration).
+
+### Personal access token — needs a network policy
+
 :::warning[A PAT needs a network policy first]
 Snowflake accepts a personal access token only from a user covered by a **network policy**. Until one exists the connection is refused with `Network policy is required.`, so this has to be done before a PAT will work at all.
 :::
@@ -19,13 +48,20 @@ CREATE NETWORK POLICY strata_access
 ALTER USER my_user SET NETWORK_POLICY = strata_access;
 ```
 
-`ALLOWED_IP_LIST` replaces the list wholesale, so repeat every address you still need. Then create the token itself under **Admin → Users → your user → Programmatic access tokens**.
+Then create the token itself under **Admin → Users → your user → Programmatic access tokens**. Copy the secret when it is shown; Snowflake does not show it again.
 
-:::note[A missing token looks like a blocked address]
-A token that has been deleted or has expired reports the same wording as a blocked address (`Incoming request with IP/Token ... is not allowed to access Snowflake`). If the addresses are right, check the token still exists before hunting for a firewall problem.
+:::danger[The policy can lock you out of Snowflake itself]
+It applies to the web UI as well as to Strata, so once your address changes you cannot sign in to correct it. Before attaching a policy:
+
+- list **every** address you may connect from — home, office, VPN. `SET ALLOWED_IP_LIST` **replaces** the list rather than adding to it, so repeat the existing entries whenever you change it
+- keep a second ACCOUNTADMIN user with **no** policy attached, as a way back in
+
+If you are locked out, a user without the policy can clear it with `ALTER USER my_user UNSET NETWORK_POLICY;`. Failing that, only Snowflake Support can restore access.
 :::
 
-Key pair authentication (`auth_mode: kp`) carries no network policy requirement. Use it if you would rather not manage one.
+:::note[A missing token looks like a blocked address]
+A deleted or expired token reports the same wording as a blocked address (`Incoming request with IP/Token ... is not allowed to access Snowflake`), and so does an `account_identifier` pointing at a different account. If the addresses are right, check the token still exists and that the account identifier matches the account you created it on.
+:::
 
 ## Configuration
 
@@ -135,8 +171,8 @@ strata datasource auth snowflake_dw
 
 ## Best Practices
 
-1. **Set up the network policy first** - A PAT cannot connect without one
-2. **Use KP for production** - More secure, and needs no network policy
+1. **Prefer key pair** - More secure, needs no network policy, and cannot lock you out
+2. **If you use a PAT, set up the network policy first** - and list every address you connect from
 3. **Set appropriate warehouse** - Match query workload
 4. **Use roles** - Follow principle of least privilege
 
