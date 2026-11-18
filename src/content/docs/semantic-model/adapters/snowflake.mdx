@@ -4,6 +4,64 @@ description: "Connect to Snowflake data warehouses."
 ---
 Connect to Snowflake data warehouses.
 
+## Before you connect
+
+Snowflake offers two ways to authenticate, and the choice matters more than it looks.
+
+:::tip[Prefer key pair unless your address is fixed]
+Key pair (`auth_mode: kp`) needs **no network policy**. A personal access token does, and that policy then governs every connection the user makes — including the Snowflake web UI. If the address you connect from is dynamic, as most home and office connections are, the policy will eventually reject you and you cannot sign in to fix it.
+:::
+
+### Key pair — the simpler path
+
+Generate a key, register the public half, and point the datasource at the private half:
+
+```bash
+openssl genrsa -out snowflake_key.p8 2048
+openssl rsa -in snowflake_key.p8 -pubout -out snowflake_key.pub
+```
+
+```sql
+ALTER USER my_user SET RSA_PUBLIC_KEY='<contents of snowflake_key.pub, without the BEGIN/END lines>';
+```
+
+```yaml
+auth_mode: kp
+username: MY_LOGIN_NAME
+# private_key: set with `strata datasource auth <key>`
+```
+
+:::note[username is the login name, not the user name]
+They differ on accounts created by email signup, where the user is named after the local part but signs in with the full address. `DESC USER my_user;` shows both — use `LOGIN_NAME`. Using the wrong one fails with `JWT token is invalid`, which does not say which of the two is wrong.
+:::
+
+Nothing else is required. Skip to [Configuration](#configuration).
+
+### Personal access token — needs a network policy
+
+:::warning[A PAT needs a network policy first]
+Snowflake accepts a personal access token only from a user covered by a **network policy**. Until one exists the connection is refused with `Network policy is required.`, so this has to be done before a PAT will work at all.
+:::
+
+The [Quick Start](/docs/getting-started/quickstart/#before-you-start-allow-stratas-ip-addresses) has the statements, together with the addresses Strata connects from. Add whatever address you run the CLI from as well, since `strata datasource test` connects from your machine rather than from Strata.
+
+Then create the token under **Admin → Users → your user → Programmatic access tokens**. Copy the secret when it is shown; Snowflake does not show it again.
+
+:::danger[A policy on your own user can lock you out of Snowflake]
+A network policy governs the Snowflake web UI as well as Strata, so once your address no longer matches you cannot sign in to correct it.
+
+**Attach the policy to a dedicated service user**, as the Quick Start does — then your own login is unaffected and this cannot happen. If you do attach one to a user you sign in as:
+
+- list **every** address you may connect from, and remember that setting the allowed list **replaces** it rather than adding to it
+- keep another user with **no** policy attached, as a way back in
+
+To recover, a user without the policy runs `ALTER USER my_user UNSET NETWORK_POLICY;`. Failing that, only Snowflake Support can restore access.
+:::
+
+:::note[A missing token looks like a blocked address]
+A deleted or expired token reports the same wording as a blocked address (`Incoming request with IP/Token ... is not allowed to access Snowflake`), and so does an `account_identifier` pointing at a different account. If the addresses are right, check the token still exists and that the account identifier matches the account you created it on.
+:::
+
 ## Configuration
 
 ```yaml
@@ -19,9 +77,9 @@ snowflake_dw:
   auth_mode: pat  # pat, kp, oauth
   
   # Optional
-  warehouse: COMPUTE_WH
+  warehouse: MY_WH
   schema: PUBLIC
-  role: ACCOUNTADMIN
+  role: STRATA_READER
   
   # Credentials (set via strata datasource auth)
   # personal_access_token: (for PAT)
@@ -37,9 +95,11 @@ snowflake_dw:
 
 ## Optional Fields
 
-- **warehouse** - Warehouse name
-- **schema** - Schema name (default: `PUBLIC`)
-- **role** - Role name (default: `ACCOUNTADMIN`)
+These have no default. Left unset, Snowflake falls back to whatever the authenticating user has been given.
+
+- **warehouse** - Warehouse name. Do not assume `COMPUTE_WH`: what a trial is created with varies, and a name that is not there fails the connection on a setting you never chose. `SHOW WAREHOUSES;` lists what the account actually has.
+- **schema** - Schema name. Worth setting: without it, listing tables spans every schema in the database.
+- **role** - Role to assume. Give Strata a read-only role rather than `ACCOUNTADMIN`.
 
 ## Authentication Modes
 
@@ -49,6 +109,8 @@ snowflake_dw:
 auth_mode: pat
 # personal_access_token: (set via strata datasource auth)
 ```
+
+Requires a network policy on the user — see [Before you connect](#before-you-connect).
 
 ### Key Pair (KP)
 
@@ -70,6 +132,18 @@ oauth_scope: SCOPE  # Optional
 
 **Note:** OAuth requires additional setup. See [Snowflake OAuth documentation](https://docs.snowflake.com/en/user-guide/oauth-custom).
 
+## Identifier Case
+
+Snowflake folds an unquoted name to upper case, so a table created as `item` is stored as `ITEM`. Write physical names and column expressions in your model the way you would write them in any other warehouse — Strata resolves each one against the name Snowflake reports:
+
+```yaml
+physical_name: item          # resolves to ITEM
+expression:
+  sql: i_category            # resolves to I_CATEGORY
+```
+
+Quote a name only when the column really is stored in lower or mixed case, which happens when it was created quoted — as tools like Fivetran and dbt do. A quoted name is matched exactly and is never rewritten.
+
 ## Example
 
 ```yaml
@@ -80,9 +154,9 @@ snowflake_dw:
   query_timeout: 3600
   account_identifier: myorg-myaccount
   database: ANALYTICS_DB
-  warehouse: COMPUTE_WH
+  warehouse: MY_WH
   schema: PUBLIC
-  role: ANALYST
+  role: STRATA_READER
   auth_mode: pat
 ```
 
@@ -96,8 +170,8 @@ strata datasource auth snowflake_dw
 
 ## Best Practices
 
-1. **Use PAT for simplicity** - Easiest authentication method
-2. **Use KP for production** - More secure for production
+1. **Prefer key pair** - More secure, needs no network policy, and cannot lock you out
+2. **If you use a PAT, set up the network policy first** - and list every address you connect from
 3. **Set appropriate warehouse** - Match query workload
 4. **Use roles** - Follow principle of least privilege
 
